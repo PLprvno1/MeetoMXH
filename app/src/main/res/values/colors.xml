@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <!-- Tông màu chủ đạo của Meeto -->
+    <color name="meeto_dark_green">#5D7B6F</color>
+    <color name="meeto_olive">#A4C3A2</color>
+    <color name="meeto_light_green">#B0D4B8</color>
+    <color name="meeto_cream">#EAE7D6</color>
+    <color name="meeto_ice_blue">#D7F9FA</color>
+</resources>
