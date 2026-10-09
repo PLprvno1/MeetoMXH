@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/drawer_friends"
+            android:icon="@drawable/ic_friends"
+            android:title="Bạn bè" />
+        <item
+            android:id="@+id/drawer_saved"
+            android:icon="@drawable/ic_bookmark"
+            android:title="Đã lưu" />
+        <item
+            android:id="@+id/drawer_memories"
+            android:icon="@drawable/ic_memories"
+            android:title="Kỷ niệm" />
+        <item
+            android:id="@+id/drawer_marketplace"
+            android:icon="@drawable/ic_marketplace"
+            android:title="Marketplace" />
+    </group>
+
+    <item android:title="Khác">
+        <menu>
+            <item
+                android:id="@+id/drawer_logout"
+                android:icon="@drawable/ic_logout"
+                android:title="Đăng xuất" />
+        </menu>
+    </item>
+</menu>

@@ -3,20 +3,20 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/app_bg"
     android:orientation="vertical"
-    android:padding="24dp"
-    android:background="@color/meeto_cream">
+    android:padding="24dp">
 
     <TextView
         android:id="@+id/tvTitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Tạo tài khoản Meeto"
-        android:textSize="28sp"
-        android:textStyle="bold"
-        android:textColor="@color/meeto_dark_green"
+        android:layout_marginBottom="32dp"
         android:gravity="center"
-        android:layout_marginBottom="32dp" />
+        android:text="Tạo tài khoản Meeto"
+        android:textColor="@color/brand_blue"
+        android:textSize="28sp"
+        android:textStyle="bold" />
 
     <!-- BƯỚC 1: XÁC THỰC TÀI KHOẢN -->
     <LinearLayout
@@ -30,29 +30,35 @@
             android:id="@+id/etEmail"
             android:layout_width="match_parent"
             android:layout_height="50dp"
-            android:background="@color/white"
+            android:layout_marginBottom="16dp"
+            android:autofillHints="emailAddress"
+            android:background="@drawable/bg_edittext"
             android:hint="Email"
-            android:paddingStart="16dp"
             android:inputType="textEmailAddress"
-            android:layout_marginBottom="16dp" />
+            android:paddingHorizontal="16dp"
+            android:textColor="@color/text_primary"
+            android:textColorHint="@color/text_secondary" />
 
         <EditText
             android:id="@+id/etPassword"
             android:layout_width="match_parent"
             android:layout_height="50dp"
-            android:background="@color/white"
+            android:layout_marginBottom="24dp"
+            android:autofillHints="password"
+            android:background="@drawable/bg_edittext"
             android:hint="Mật khẩu (ít nhất 6 ký tự)"
-            android:paddingStart="16dp"
             android:inputType="textPassword"
-            android:layout_marginBottom="24dp" />
+            android:paddingHorizontal="16dp"
+            android:textColor="@color/text_primary"
+            android:textColorHint="@color/text_secondary" />
 
         <Button
             android:id="@+id/btnNextStep1"
             android:layout_width="match_parent"
-            android:layout_height="55dp"
+            android:layout_height="50dp"
             android:text="Tiếp tục"
-            android:textColor="@color/white"
-            app:backgroundTint="@color/meeto_dark_green" />
+            android:textColor="#FFFFFF"
+            app:backgroundTint="@color/brand_blue" />
     </LinearLayout>
 
     <!-- BƯỚC 2: THÔNG TIN CÁ NHÂN (Mặc định ẩn) -->
@@ -67,41 +73,46 @@
             android:id="@+id/etFullName"
             android:layout_width="match_parent"
             android:layout_height="50dp"
-            android:background="@color/white"
+            android:layout_marginBottom="16dp"
+            android:background="@drawable/bg_edittext"
             android:hint="Họ và tên (Bắt buộc)"
-            android:paddingStart="16dp"
-            android:layout_marginBottom="16dp" />
+            android:paddingHorizontal="16dp"
+            android:textColor="@color/text_primary"
+            android:textColorHint="@color/text_secondary" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginBottom="16dp">
+            android:layout_marginBottom="16dp"
+            android:orientation="horizontal">
 
             <EditText
                 android:id="@+id/etLocation"
                 android:layout_width="0dp"
-                android:layout_weight="1"
                 android:layout_height="50dp"
-                android:background="@color/white"
+                android:layout_weight="1"
+                android:background="@drawable/bg_edittext"
                 android:hint="Nơi ở hiện tại"
-                android:paddingStart="16dp" />
+                android:paddingHorizontal="16dp"
+                android:textColor="@color/text_primary"
+                android:textColorHint="@color/text_secondary" />
 
-            <Switch
+            <androidx.appcompat.widget.SwitchCompat
                 android:id="@+id/swLocationPublic"
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
+                android:layout_marginStart="8dp"
                 android:text="Công khai"
-                android:layout_marginStart="8dp"/>
+                android:textColor="@color/text_primary" />
         </LinearLayout>
 
         <Button
             android:id="@+id/btnNextStep2"
             android:layout_width="match_parent"
-            android:layout_height="55dp"
+            android:layout_height="50dp"
             android:text="Tiếp tục"
-            android:textColor="@color/white"
-            app:backgroundTint="@color/meeto_dark_green" />
+            android:textColor="#FFFFFF"
+            app:backgroundTint="@color/brand_blue" />
     </LinearLayout>
 
     <!-- BƯỚC 3: HÌNH ẢNH (Mặc định ẩn) -->
@@ -109,30 +120,34 @@
         android:id="@+id/layoutStep3"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
         android:gravity="center"
+        android:orientation="vertical"
         android:visibility="gone">
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
             android:text="Chọn ảnh đại diện"
-            android:layout_marginBottom="8dp"/>
+            android:textColor="@color/text_primary" />
 
         <ImageView
             android:id="@+id/imgAvatar"
             android:layout_width="120dp"
             android:layout_height="120dp"
-            android:background="@color/meeto_light_green"
-            android:layout_marginBottom="24dp" />
+            android:layout_marginBottom="24dp"
+            android:background="@drawable/bg_edittext"
+            android:contentDescription="@null"
+            android:scaleType="centerCrop"
+            android:src="@drawable/ic_home" />
 
         <Button
             android:id="@+id/btnCompleteRegister"
             android:layout_width="match_parent"
-            android:layout_height="55dp"
+            android:layout_height="50dp"
             android:text="Hoàn tất Đăng ký"
-            android:textColor="@color/white"
-            app:backgroundTint="@color/meeto_dark_green" />
+            android:textColor="#FFFFFF"
+            app:backgroundTint="@color/brand_blue" />
     </LinearLayout>
 
 </LinearLayout>

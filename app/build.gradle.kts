@@ -51,4 +51,10 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     // Cloud Firestore
     implementation("com.google.firebase:firebase-firestore")
+    // Glide
+    implementation("com.github.bumptech.glide:glide:4.16.0")
+    // Facebook Shimmer
+    implementation("com.facebook.shimmer:shimmer:0.5.0")
+    // Lottie Animation
+    implementation("com.airbnb.android:lottie:6.4.0")
 }

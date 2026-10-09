@@ -219,7 +219,10 @@ public class RegisterActivity extends AppCompatActivity {
                 .set(user)
                 .addOnSuccessListener(aVoid -> {
                     Toast.makeText(this, "Đăng ký thành công!", Toast.LENGTH_SHORT).show();
-                    // Bạn có thể thêm lệnh Intent chuyển sang MainActivity tại đây
+                    Intent intent = new Intent(RegisterActivity.this, MainActivity.class);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    startActivity(intent);
+                    finish();
                 })
                 .addOnFailureListener(e -> resetButton("Lỗi lưu dữ liệu: " + e.getMessage()));
     }

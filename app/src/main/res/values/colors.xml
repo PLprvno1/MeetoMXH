@@ -2,10 +2,19 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-    <!-- Tông màu chủ đạo của Meeto -->
-    <color name="meeto_dark_green">#5D7B6F</color>
+
+    <!-- Facebook Style Color Palette (Light Mode) -->
+    <color name="brand_blue">#1877F2</color>
+    <color name="app_bg">#F0F2F5</color>
+    <color name="surface_bg">#FFFFFF</color>
+    <color name="text_primary">#050505</color>
+    <color name="text_secondary">#65676B</color>
+    <color name="divider_color">#CED0D4</color>
+
+    <!-- Backward compatibility colors -->
+    <color name="meeto_dark_green">#1877F2</color>
     <color name="meeto_olive">#A4C3A2</color>
     <color name="meeto_light_green">#B0D4B8</color>
-    <color name="meeto_cream">#EAE7D6</color>
+    <color name="meeto_cream">#F0F2F5</color>
     <color name="meeto_ice_blue">#D7F9FA</color>
 </resources>
