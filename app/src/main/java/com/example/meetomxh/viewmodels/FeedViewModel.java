@@ -23,4 +23,12 @@ public class FeedViewModel extends ViewModel {
     public void likePost(String postId) {
         repository.toggleLikePost(postId);
     }
+
+    public void sharePost(Post originalPost, String comment, FeedRepository.OnPostActionListener listener) {
+        repository.sharePost(originalPost, comment, listener);
+    }
+
+    public void deletePost(String postId, FeedRepository.OnPostActionListener listener) {
+        repository.deletePost(postId, listener);
+    }
 }

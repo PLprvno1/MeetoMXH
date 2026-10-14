@@ -1,29 +1,44 @@
 package com.example.meetomxh;
 
+import android.app.DatePickerDialog;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.provider.MediaStore;
+import android.text.Editable;
+import android.text.InputType;
+import android.text.TextWatcher;
+import android.util.Patterns;
 import android.view.View;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.example.meetomxh.databinding.ActivityRegisterBinding;
+import com.google.firebase.FirebaseException;
+import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
+import com.google.firebase.auth.FirebaseAuthUserCollisionException;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.auth.PhoneAuthCredential;
+import com.google.firebase.auth.PhoneAuthOptions;
+import com.google.firebase.auth.PhoneAuthProvider;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
+import java.util.Calendar;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -37,22 +52,55 @@ import okhttp3.Response;
 public class RegisterActivity extends AppCompatActivity {
 
     private static final String IMGBB_API_KEY = "a6ded9f4bbefeed4cc6dac86bd0fed0a";
-    private Uri selectedImageUri;
 
-    // Khai báo các view
-    private LinearLayout layoutStep1, layoutStep2, layoutStep3;
-    private Button btnNextStep1, btnNextStep2, btnCompleteRegister;
-    private ImageView imgAvatar;
+    private ActivityRegisterBinding binding;
+    private FirebaseAuth mAuth;
+    private FirebaseFirestore db;
 
-    // Khai báo các ô nhập liệu
-    private EditText etEmail, etPassword, etFullName, etLocation;
+    // Quản lý luồng các bước
+    private int currentStep = 1;
+    private boolean isEmailMode = true;
 
-    private final ActivityResultLauncher<Intent> imagePickerLauncher = registerForActivityResult(
+    // Dữ liệu người dùng thu thập qua các bước
+    private String fullName = "";
+    private String selectedDob = "";
+    private Calendar dobCalendar = Calendar.getInstance();
+    private String gender = "Nam";
+    private String email = "";
+    private String phoneNumber = "";
+    private String password = "";
+    private String bio = "";
+
+    // Image Uris
+    private Uri selectedAvatarUri;
+    private Uri selectedCoverUri;
+
+    // Phone Auth
+    private String phoneVerificationId;
+    private PhoneAuthProvider.ForceResendingToken phoneResendToken;
+    private CountDownTimer otpTimer;
+
+    // Password visibility toggles
+    private boolean isPasswordVisible = false;
+    private boolean isConfirmPasswordVisible = false;
+
+    // Pickers
+    private final ActivityResultLauncher<Intent> avatarPickerLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
                 if (result.getResultCode() == RESULT_OK && result.getData() != null) {
-                    selectedImageUri = result.getData().getData();
-                    imgAvatar.setImageURI(selectedImageUri);
+                    selectedAvatarUri = result.getData().getData();
+                    binding.imgAvatarPreview.setImageURI(selectedAvatarUri);
+                }
+            }
+    );
+
+    private final ActivityResultLauncher<Intent> coverPickerLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                    selectedCoverUri = result.getData().getData();
+                    binding.imgCoverPreview.setImageURI(selectedCoverUri);
                 }
             }
     );
@@ -60,96 +108,534 @@ public class RegisterActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_register);
+        binding = ActivityRegisterBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
 
-        // 1. Ánh xạ View
-        layoutStep1 = findViewById(R.id.layoutStep1);
-        layoutStep2 = findViewById(R.id.layoutStep2);
-        layoutStep3 = findViewById(R.id.layoutStep3);
-
-        btnNextStep1 = findViewById(R.id.btnNextStep1);
-        btnNextStep2 = findViewById(R.id.btnNextStep2);
-        btnCompleteRegister = findViewById(R.id.btnCompleteRegister);
-
-        imgAvatar = findViewById(R.id.imgAvatar);
-
-        etEmail = findViewById(R.id.etEmail);
-        etPassword = findViewById(R.id.etPassword);
-        etFullName = findViewById(R.id.etFullName);
-        etLocation = findViewById(R.id.etLocation);
-
-        // 2. Xử lý chuyển bước 1 -> 2
-        btnNextStep1.setOnClickListener(v -> {
-            String email = etEmail.getText().toString().trim();
-            String password = etPassword.getText().toString().trim();
-            if (email.isEmpty() || password.length() < 6) {
-                Toast.makeText(this, "Email không hợp lệ hoặc mật khẩu dưới 6 ký tự", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            layoutStep1.setVisibility(View.GONE);
-            layoutStep2.setVisibility(View.VISIBLE);
+        // Lắng nghe WindowInsets để đẩy khoảng cách trên (padding top) xuống an toàn khỏi viền/camera notch
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(binding.registerMainContainer, (v, insets) -> {
+            androidx.core.graphics.Insets statusBarInsets = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.statusBars());
+            int topPadding = Math.max(statusBarInsets.top + 16, (int) (36 * getResources().getDisplayMetrics().density));
+            v.setPadding(v.getPaddingLeft(), topPadding, v.getPaddingRight(), v.getPaddingBottom());
+            return insets;
         });
 
-        // 3. Xử lý chuyển bước 2 -> 3
-        btnNextStep2.setOnClickListener(v -> {
-            if (etFullName.getText().toString().trim().isEmpty()) {
-                Toast.makeText(this, "Vui lòng nhập Họ và tên", Toast.LENGTH_SHORT).show();
-                return;
+        mAuth = FirebaseAuth.getInstance();
+        db = FirebaseFirestore.getInstance();
+
+        setupUI();
+        showStep(1);
+    }
+
+    private void setupUI() {
+        // Nút Back trên Toolbar
+        binding.btnBack.setOnClickListener(v -> handleBackNavigation());
+
+        // BƯỚC 1: Chọn ngày sinh
+        binding.btnDatePickerCard.setOnClickListener(v -> showDatePicker());
+
+        // BƯỚC 1: Chọn giới tính
+        binding.rgGender.setOnCheckedChangeListener((group, checkedId) -> {
+            if (checkedId == R.id.rbMale) {
+                gender = "Nam";
+                binding.etCustomGenderText.setVisibility(View.GONE);
+            } else if (checkedId == R.id.rbFemale) {
+                gender = "Nữ";
+                binding.etCustomGenderText.setVisibility(View.GONE);
+            } else if (checkedId == R.id.rbCustomGender) {
+                gender = "Tùy chỉnh";
+                binding.etCustomGenderText.setVisibility(View.VISIBLE);
             }
-            layoutStep2.setVisibility(View.GONE);
-            layoutStep3.setVisibility(View.VISIBLE);
         });
 
-        // 4. Chọn ảnh
-        imgAvatar.setOnClickListener(v -> {
-            Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-            imagePickerLauncher.launch(intent);
+        binding.btnNextStep1.setOnClickListener(v -> processStep1());
+
+        // BƯỚC 2: Chuyển Tab Email vs Phone
+        binding.btnTabEmail.setOnClickListener(v -> switchContactTab(true));
+        binding.btnTabPhone.setOnClickListener(v -> switchContactTab(false));
+        binding.btnNextStep2.setOnClickListener(v -> processStep2());
+
+        // BƯỚC 3: Mật khẩu & Nhập lại mật khẩu
+        binding.btnTogglePassword.setOnClickListener(v -> togglePasswordVisibility(true));
+        binding.btnToggleConfirmPassword.setOnClickListener(v -> togglePasswordVisibility(false));
+
+        binding.etPassword.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                updatePasswordStrength(s.toString());
+            }
+            @Override public void afterTextChanged(Editable s) {}
         });
 
-        // 5. Hoàn tất đăng ký (Gộp 3 bước: Auth -> Imgbb -> Firestore)
-        btnCompleteRegister.setOnClickListener(v -> {
-            if (selectedImageUri == null) {
-                Toast.makeText(this, "Vui lòng chọn ảnh đại diện", Toast.LENGTH_SHORT).show();
+        binding.btnSubmitRegister.setOnClickListener(v -> processStep3Submit());
+
+        // BƯỚC 4: Xác minh OTP / Email
+        binding.btnVerifyOtp.setOnClickListener(v -> verifyPhoneOtp());
+        binding.btnResendOtp.setOnClickListener(v -> resendPhoneOtp());
+
+        binding.btnCheckEmailVerified.setOnClickListener(v -> checkEmailVerificationStatus());
+        binding.btnResendEmail.setOnClickListener(v -> resendEmailVerification());
+
+        // BƯỚC 5: Hồ sơ
+        binding.btnPickAvatar.setOnClickListener(v -> pickImage(avatarPickerLauncher));
+        binding.btnPickCover.setOnClickListener(v -> pickImage(coverPickerLauncher));
+
+        binding.btnCompleteProfile.setOnClickListener(v -> completeUserProfile(false));
+        binding.btnSkipProfile.setOnClickListener(v -> completeUserProfile(true));
+    }
+
+    private void handleBackNavigation() {
+        if (currentStep > 1 && currentStep != 4) {
+            showStep(currentStep - 1);
+        } else {
+            finish();
+        }
+    }
+
+    private void showStep(int step) {
+        this.currentStep = step;
+        binding.tvStepIndicator.setText("Bước " + step + "/5");
+        binding.progressBar.setProgress(step, true);
+
+        binding.layoutStep1.setVisibility(step == 1 ? View.VISIBLE : View.GONE);
+        binding.layoutStep2.setVisibility(step == 2 ? View.VISIBLE : View.GONE);
+        binding.layoutStep3.setVisibility(step == 3 ? View.VISIBLE : View.GONE);
+        binding.layoutStep4.setVisibility(step == 4 ? View.VISIBLE : View.GONE);
+        binding.layoutStep5.setVisibility(step == 5 ? View.VISIBLE : View.GONE);
+    }
+
+    // ==================== XỬ LÝ BƯỚC 1: THÔNG TIN CÁ NHÂN ====================
+    private void showDatePicker() {
+        Calendar now = Calendar.getInstance();
+        DatePickerDialog datePickerDialog = new DatePickerDialog(
+                this,
+                (view, year, month, dayOfMonth) -> {
+                    dobCalendar.set(year, month, dayOfMonth);
+                    selectedDob = String.format(Locale.getDefault(), "%02d/%02d/%04d", dayOfMonth, month + 1, year);
+                    binding.tvSelectedDob.setText(selectedDob);
+                    binding.tvSelectedDob.setTextColor(getResources().getColor(R.color.text_primary, getTheme()));
+                },
+                now.get(Calendar.YEAR) - 18,
+                now.get(Calendar.MONTH),
+                now.get(Calendar.DAY_OF_MONTH)
+        );
+        datePickerDialog.getDatePicker().setMaxDate(now.getTimeInMillis());
+        datePickerDialog.show();
+    }
+
+    private void processStep1() {
+        fullName = binding.etFullName.getText().toString().trim();
+        if (fullName.isEmpty() || fullName.length() < 2) {
+            Toast.makeText(this, "Vui lòng nhập họ và tên hợp lệ", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (selectedDob.isEmpty()) {
+            Toast.makeText(this, "Vui lòng chọn ngày sinh của bạn", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Kiểm tra độ tuổi tối thiểu (13 tuổi)
+        Calendar minAgeCal = Calendar.getInstance();
+        minAgeCal.add(Calendar.YEAR, -13);
+        if (dobCalendar.after(minAgeCal)) {
+            Toast.makeText(this, "Bạn phải đủ ít nhất 13 tuổi để sử dụng Meeto", Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        if (binding.rgGender.getCheckedRadioButtonId() == R.id.rbCustomGender) {
+            String customText = binding.etCustomGenderText.getText().toString().trim();
+            if (!customText.isEmpty()) {
+                gender = "Tùy chỉnh: " + customText;
+            }
+        }
+
+        showStep(2);
+    }
+
+    // ==================== XỬ LÝ BƯỚC 2: PHƯƠNG THỨC LIÊN HỆ ====================
+    private void switchContactTab(boolean isEmail) {
+        this.isEmailMode = isEmail;
+        if (isEmail) {
+            binding.btnTabEmail.setBackgroundTintList(getResources().getColorStateList(R.color.brand_blue, getTheme()));
+            binding.btnTabEmail.setTextColor(0xFFFFFFFF);
+            binding.btnTabPhone.setBackgroundTintList(null);
+            binding.btnTabPhone.setTextColor(getResources().getColor(R.color.text_secondary, getTheme()));
+
+            binding.layoutEmailContainer.setVisibility(View.VISIBLE);
+            binding.layoutPhoneContainer.setVisibility(View.GONE);
+        } else {
+            binding.btnTabPhone.setBackgroundTintList(getResources().getColorStateList(R.color.brand_blue, getTheme()));
+            binding.btnTabPhone.setTextColor(0xFFFFFFFF);
+            binding.btnTabEmail.setBackgroundTintList(null);
+            binding.btnTabEmail.setTextColor(getResources().getColor(R.color.text_secondary, getTheme()));
+
+            binding.layoutPhoneContainer.setVisibility(View.VISIBLE);
+            binding.layoutEmailContainer.setVisibility(View.GONE);
+        }
+    }
+
+    private void processStep2() {
+        if (isEmailMode) {
+            email = binding.etEmail.getText().toString().trim().toLowerCase();
+            if (email.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                Toast.makeText(this, "Vui lòng nhập địa chỉ Email đúng định dạng", Toast.LENGTH_SHORT).show();
                 return;
             }
+            phoneNumber = "";
+        } else {
+            String rawPhone = binding.etPhone.getText().toString().trim();
+            if (rawPhone.isEmpty() || rawPhone.length() < 9 || rawPhone.length() > 11) {
+                Toast.makeText(this, "Vui lòng nhập số điện thoại hợp lệ (9 - 11 chữ số)", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            if (rawPhone.startsWith("0")) {
+                rawPhone = rawPhone.substring(1);
+            }
+            phoneNumber = "+84" + rawPhone;
+            email = "";
+        }
 
-            btnCompleteRegister.setEnabled(false);
-            btnCompleteRegister.setText("Đang tạo tài khoản...");
+        // Cập nhật câu tóm tắt ở bước 3
+        if (isEmailMode) {
+            binding.tvContactSummary.setText("Đăng ký tài khoản với Email: " + email);
+        } else {
+            binding.tvContactSummary.setText("Đăng ký tài khoản với SĐT: " + phoneNumber);
+        }
 
-            String email = etEmail.getText().toString().trim();
-            String password = etPassword.getText().toString().trim();
-            String fullName = etFullName.getText().toString().trim();
-            String location = etLocation.getText().toString().trim();
+        showStep(3);
+    }
 
-            // BƯỚC A: Tạo tài khoản trên Firebase Authentication
-            FirebaseAuth.getInstance().createUserWithEmailAndPassword(email, password)
-                    .addOnCompleteListener(task -> {
-                        if (task.isSuccessful()) {
-                            // Tạo Auth thành công, chuyển sang up ảnh
-                            btnCompleteRegister.setText("Đang tải ảnh lên...");
-                            uploadImageToImgbb(selectedImageUri, new OnImageUploadListener() {
-                                @Override
-                                public void onSuccess(String imageUrl) {
-                                    // BƯỚC B & C: Up ảnh thành công, lưu dữ liệu vào Firestore
-                                    saveUserToFirestore(task.getResult().getUser().getUid(), email, fullName, location, imageUrl);
-                                }
+    // ==================== XỬ LÝ BƯỚC 3: MẬT KHẨU ====================
+    private void togglePasswordVisibility(boolean isMainPassword) {
+        if (isMainPassword) {
+            isPasswordVisible = !isPasswordVisible;
+            binding.etPassword.setInputType(isPasswordVisible ?
+                    InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD :
+                    (InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD));
+            binding.btnTogglePassword.setImageResource(isPasswordVisible ? R.drawable.ic_visibility_off : R.drawable.ic_visibility);
+            binding.etPassword.setSelection(binding.etPassword.getText().length());
+        } else {
+            isConfirmPasswordVisible = !isConfirmPasswordVisible;
+            binding.etConfirmPassword.setInputType(isConfirmPasswordVisible ?
+                    InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD :
+                    (InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD));
+            binding.btnToggleConfirmPassword.setImageResource(isConfirmPasswordVisible ? R.drawable.ic_visibility_off : R.drawable.ic_visibility);
+            binding.etConfirmPassword.setSelection(binding.etConfirmPassword.getText().length());
+        }
+    }
 
-                                @Override
-                                public void onFailure(String errorMsg) {
-                                    resetButton("Lỗi tải ảnh: " + errorMsg);
-                                }
-                            });
-                        } else {
-                            resetButton("Lỗi tạo tài khoản: " + task.getException().getMessage());
+    private void updatePasswordStrength(String pwd) {
+        if (pwd.isEmpty()) {
+            binding.tvPasswordStrength.setText("Độ mạnh mật khẩu: Chưa nhập");
+            binding.tvPasswordStrength.setTextColor(getResources().getColor(R.color.text_secondary, getTheme()));
+            return;
+        }
+
+        if (pwd.length() < 8) {
+            binding.tvPasswordStrength.setText("Độ mạnh mật khẩu: Yếu (Yêu cầu ít nhất 8 ký tự)");
+            binding.tvPasswordStrength.setTextColor(0xFFE41E3F);
+        } else if (pwd.length() >= 10 && pwd.matches(".*[0-9].*") && pwd.matches(".*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>/?].*")) {
+            binding.tvPasswordStrength.setText("Độ mạnh mật khẩu: Rất mạnh ✅");
+            binding.tvPasswordStrength.setTextColor(0xFF45BD62);
+        } else {
+            binding.tvPasswordStrength.setText("Độ mạnh mật khẩu: Khá tốt 👍");
+            binding.tvPasswordStrength.setTextColor(0xFF1877F2);
+        }
+    }
+
+    private void processStep3Submit() {
+        password = binding.etPassword.getText().toString().trim();
+        String confirmPwd = binding.etConfirmPassword.getText().toString().trim();
+
+        if (password.length() < 8) {
+            Toast.makeText(this, "Mật khẩu phải có ít nhất 8 ký tự", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (!password.equals(confirmPwd)) {
+            Toast.makeText(this, "Mật khẩu xác nhận không trùng khớp", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        binding.btnSubmitRegister.setEnabled(false);
+        binding.btnSubmitRegister.setText("Đang khởi tạo tài khoản...");
+
+        if (isEmailMode) {
+            startEmailAccountCreation();
+        } else {
+            startPhoneAccountCreation();
+        }
+    }
+
+    // ==================== BƯỚC 4: THỰC HIỆN TẠO TÀI KHOẢN & XÁC MINH ====================
+
+    // A. LUỒNG EMAIL
+    private void startEmailAccountCreation() {
+        mAuth.createUserWithEmailAndPassword(email, password)
+                .addOnCompleteListener(this, task -> {
+                    binding.btnSubmitRegister.setEnabled(true);
+                    binding.btnSubmitRegister.setText("Tạo tài khoản");
+
+                    if (task.isSuccessful() && mAuth.getCurrentUser() != null) {
+                        FirebaseUser user = mAuth.getCurrentUser();
+                        sendEmailVerificationLink(user);
+                    } else {
+                        String errorMsg = "Tạo tài khoản thất bại";
+                        if (task.getException() instanceof FirebaseAuthUserCollisionException) {
+                            errorMsg = "Địa chỉ email này đã được sử dụng bởi tài khoản khác";
+                        } else if (task.getException() != null) {
+                            errorMsg = task.getException().getMessage();
                         }
-                    });
+                        Toast.makeText(RegisterActivity.this, errorMsg, Toast.LENGTH_LONG).show();
+                    }
+                });
+    }
+
+    private void sendEmailVerificationLink(FirebaseUser user) {
+        user.sendEmailVerification().addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                showStep(4);
+                binding.layoutPhoneVerification.setVisibility(View.GONE);
+                binding.layoutEmailVerification.setVisibility(View.VISIBLE);
+
+                String maskedEmail = email.replaceAll("(^.?)[^@]*", "$1***");
+                binding.tvEmailVerifySubtitle.setText("Chúng tôi đã gửi liên kết xác minh tới email: " + maskedEmail + ". Vui lòng mở hộp thư email, nhấn vào liên kết xác minh rồi bấm nút bên dưới.");
+            } else {
+                Toast.makeText(this, "Không thể gửi email xác minh: " + (task.getException() != null ? task.getException().getMessage() : ""), Toast.LENGTH_LONG).show();
+            }
         });
     }
 
-    private void resetButton(String errorMsg) {
-        btnCompleteRegister.setEnabled(true);
-        btnCompleteRegister.setText("Hoàn tất Đăng ký");
-        Toast.makeText(this, errorMsg, Toast.LENGTH_LONG).show();
+    private void checkEmailVerificationStatus() {
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user == null) {
+            Toast.makeText(this, "Phiên đăng ký hết hạn. Vui lòng thử lại.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        binding.btnCheckEmailVerified.setEnabled(false);
+        binding.btnCheckEmailVerified.setText("Đang kiểm tra...");
+
+        user.reload().addOnCompleteListener(task -> {
+            binding.btnCheckEmailVerified.setEnabled(true);
+            binding.btnCheckEmailVerified.setText("Tôi đã xác minh Email");
+
+            if (user.isEmailVerified()) {
+                Toast.makeText(RegisterActivity.this, "Xác minh Email thành công!", Toast.LENGTH_SHORT).show();
+                showStep(5);
+            } else {
+                Toast.makeText(RegisterActivity.this, "Email chưa được xác minh. Vui lòng kiểm tra hộp thư của bạn.", Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+    private void resendEmailVerification() {
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user != null) {
+            user.sendEmailVerification().addOnSuccessListener(aVoid ->
+                    Toast.makeText(this, "Đã gửi lại email xác minh!", Toast.LENGTH_SHORT).show()
+            ).addOnFailureListener(e ->
+                    Toast.makeText(this, "Gửi lại thất bại: " + e.getMessage(), Toast.LENGTH_SHORT).show()
+            );
+        }
+    }
+
+    // B. LUỒNG PHONE OTP
+    private void startPhoneAccountCreation() {
+        PhoneAuthOptions options = PhoneAuthOptions.newBuilder(mAuth)
+                .setPhoneNumber(phoneNumber)
+                .setTimeout(60L, TimeUnit.SECONDS)
+                .setActivity(this)
+                .setCallbacks(mPhoneCallbacks)
+                .build();
+        PhoneAuthProvider.verifyPhoneNumber(options);
+    }
+
+    private final PhoneAuthProvider.OnVerificationStateChangedCallbacks mPhoneCallbacks =
+            new PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
+                @Override
+                public void onVerificationCompleted(@NonNull PhoneAuthCredential credential) {
+                    signInWithPhoneCredential(credential);
+                }
+
+                @Override
+                public void onVerificationFailed(@NonNull FirebaseException e) {
+                    binding.btnSubmitRegister.setEnabled(true);
+                    binding.btnSubmitRegister.setText("Tạo tài khoản");
+                    Toast.makeText(RegisterActivity.this, "Xác minh SĐT thất bại: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                }
+
+                @Override
+                public void onCodeSent(@NonNull String verificationId, @NonNull PhoneAuthProvider.ForceResendingToken token) {
+                    binding.btnSubmitRegister.setEnabled(true);
+                    binding.btnSubmitRegister.setText("Tạo tài khoản");
+
+                    phoneVerificationId = verificationId;
+                    phoneResendToken = token;
+
+                    showStep(4);
+                    binding.layoutEmailVerification.setVisibility(View.GONE);
+                    binding.layoutPhoneVerification.setVisibility(View.VISIBLE);
+
+                    String maskedPhone = phoneNumber.substring(0, 3) + "****" + phoneNumber.substring(phoneNumber.length() - 3);
+                    binding.tvPhoneOtpSubtitle.setText("Mã xác minh OTP 6 chữ số vừa được gửi tới " + maskedPhone);
+
+                    startOtpCountdownTimer();
+                }
+            };
+
+    private void startOtpCountdownTimer() {
+        binding.btnResendOtp.setVisibility(View.GONE);
+        binding.tvOtpTimer.setVisibility(View.VISIBLE);
+
+        if (otpTimer != null) {
+            otpTimer.cancel();
+        }
+
+        otpTimer = new CountDownTimer(60000, 1000) {
+            @Override
+            public void onTick(long millisUntilFinished) {
+                binding.tvOtpTimer.setText("Gửi lại mã sau " + (millisUntilFinished / 1000) + "s");
+            }
+
+            @Override
+            public void onFinish() {
+                binding.tvOtpTimer.setVisibility(View.GONE);
+                binding.btnResendOtp.setVisibility(View.VISIBLE);
+            }
+        }.start();
+    }
+
+    private void resendPhoneOtp() {
+        if (phoneResendToken != null) {
+            PhoneAuthOptions options = PhoneAuthOptions.newBuilder(mAuth)
+                    .setPhoneNumber(phoneNumber)
+                    .setTimeout(60L, TimeUnit.SECONDS)
+                    .setActivity(this)
+                    .setCallbacks(mPhoneCallbacks)
+                    .setForceResendingToken(phoneResendToken)
+                    .build();
+            PhoneAuthProvider.verifyPhoneNumber(options);
+            Toast.makeText(this, "Đang gửi lại mã OTP...", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void verifyPhoneOtp() {
+        String code = binding.etOtpCode.getText().toString().trim();
+        if (code.length() != 6) {
+            Toast.makeText(this, "Vui lòng nhập đủ 6 chữ số mã OTP", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (phoneVerificationId == null) {
+            Toast.makeText(this, "Mã OTP đã hết hạn. Vui lòng bấm gửi lại mã.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        binding.btnVerifyOtp.setEnabled(false);
+        binding.btnVerifyOtp.setText("Đang kiểm tra...");
+
+        PhoneAuthCredential credential = PhoneAuthProvider.getCredential(phoneVerificationId, code);
+        signInWithPhoneCredential(credential);
+    }
+
+    private void signInWithPhoneCredential(PhoneAuthCredential credential) {
+        mAuth.signInWithCredential(credential).addOnCompleteListener(this, task -> {
+            binding.btnVerifyOtp.setEnabled(true);
+            binding.btnVerifyOtp.setText("Xác minh & Tiếp tục");
+
+            if (task.isSuccessful()) {
+                Toast.makeText(RegisterActivity.this, "Xác minh số điện thoại thành công!", Toast.LENGTH_SHORT).show();
+                showStep(5);
+            } else {
+                String error = "Mã OTP không chính xác hoặc đã hết hạn";
+                if (task.getException() instanceof FirebaseAuthInvalidCredentialsException) {
+                    error = "Mã OTP không hợp lệ. Vui lòng kiểm tra lại.";
+                }
+                Toast.makeText(RegisterActivity.this, error, Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+    // ==================== BƯỚC 5: KHỞI TẠO HỒ SƠ ====================
+    private void pickImage(ActivityResultLauncher<Intent> launcher) {
+        Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+        launcher.launch(intent);
+    }
+
+    private void completeUserProfile(boolean isSkip) {
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+        if (currentUser == null) {
+            Toast.makeText(this, "Không tìm thấy phiên đăng nhập. Vui lòng thử lại.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        bio = binding.etBio.getText().toString().trim();
+
+        binding.btnCompleteProfile.setEnabled(false);
+        binding.btnCompleteProfile.setText("Đang lưu hồ sơ...");
+
+        if (!isSkip && selectedAvatarUri != null) {
+            uploadImageToImgbb(selectedAvatarUri, new OnImageUploadListener() {
+                @Override
+                public void onSuccess(String avatarUrl) {
+                    if (selectedCoverUri != null) {
+                        uploadImageToImgbb(selectedCoverUri, new OnImageUploadListener() {
+                            @Override
+                            public void onSuccess(String coverUrl) {
+                                saveUserProfileToFirestore(currentUser.getUid(), avatarUrl, coverUrl);
+                            }
+
+                            @Override
+                            public void onFailure(String errorMsg) {
+                                saveUserProfileToFirestore(currentUser.getUid(), avatarUrl, "");
+                            }
+                        });
+                    } else {
+                        saveUserProfileToFirestore(currentUser.getUid(), avatarUrl, "");
+                    }
+                }
+
+                @Override
+                public void onFailure(String errorMsg) {
+                    saveUserProfileToFirestore(currentUser.getUid(), "", "");
+                }
+            });
+        } else {
+            saveUserProfileToFirestore(currentUser.getUid(), "", "");
+        }
+    }
+
+    private void saveUserProfileToFirestore(String uid, String avatarUrl, String coverUrl) {
+        Map<String, Object> userMap = new HashMap<>();
+        userMap.put("uid", uid);
+        userMap.put("fullName", fullName);
+        userMap.put("dateOfBirth", selectedDob);
+        userMap.put("gender", gender);
+        userMap.put("email", email);
+        userMap.put("phoneNumber", phoneNumber);
+        userMap.put("avatarUrl", avatarUrl);
+        userMap.put("coverUrl", coverUrl);
+        userMap.put("bio", bio);
+        userMap.put("contactVerified", true);
+        userMap.put("profileCompleted", true);
+        userMap.put("createdAt", System.currentTimeMillis());
+        userMap.put("updatedAt", System.currentTimeMillis());
+
+        db.collection("Users").document(uid)
+                .set(userMap)
+                .addOnSuccessListener(aVoid -> {
+                    Toast.makeText(RegisterActivity.this, "Đăng ký thành công! Chào mừng bạn đến với Meeto.", Toast.LENGTH_SHORT).show();
+                    Intent intent = new Intent(RegisterActivity.this, MainActivity.class);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    startActivity(intent);
+                    finish();
+                })
+                .addOnFailureListener(e -> {
+                    binding.btnCompleteProfile.setEnabled(true);
+                    binding.btnCompleteProfile.setText("Hoàn tất & Vào trang chủ");
+                    Toast.makeText(RegisterActivity.this, "Lưu thông tin hồ sơ thất bại: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                });
     }
 
     public interface OnImageUploadListener {
@@ -170,7 +656,7 @@ public class RegisterActivity extends AppCompatActivity {
 
             RequestBody requestBody = new MultipartBody.Builder()
                     .setType(MultipartBody.FORM)
-                    .addFormDataPart("image", "avatar.jpg",
+                    .addFormDataPart("image", "upload.jpg",
                             RequestBody.create(imageBytes, MediaType.parse("image/*")))
                     .build();
 
@@ -204,26 +690,11 @@ public class RegisterActivity extends AppCompatActivity {
             listener.onFailure("Không đọc được file ảnh: " + e.getMessage());
         }
     }
-
-    // Hàm lưu Firestore nhận trực tiếp dữ liệu từ các bước trên
-    private void saveUserToFirestore(String userId, String email, String fullName, String location, String avatarUrl) {
-        Map<String, Object> user = new HashMap<>();
-        user.put("userId", userId);
-        user.put("email", email);
-        user.put("fullName", fullName);
-        user.put("location", location);
-        user.put("avatarUrl", avatarUrl);
-        user.put("createdAt", System.currentTimeMillis());
-
-        FirebaseFirestore.getInstance().collection("Users").document(userId)
-                .set(user)
-                .addOnSuccessListener(aVoid -> {
-                    Toast.makeText(this, "Đăng ký thành công!", Toast.LENGTH_SHORT).show();
-                    Intent intent = new Intent(RegisterActivity.this, MainActivity.class);
-                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                    startActivity(intent);
-                    finish();
-                })
-                .addOnFailureListener(e -> resetButton("Lỗi lưu dữ liệu: " + e.getMessage()));
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (otpTimer != null) {
+            otpTimer.cancel();
+        }
     }
 }

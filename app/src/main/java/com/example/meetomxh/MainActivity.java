@@ -14,6 +14,7 @@ import androidx.fragment.app.Fragment;
 
 import com.example.meetomxh.databinding.ActivityMainBinding;
 import com.example.meetomxh.fragments.FeedFragment;
+import com.example.meetomxh.fragments.FriendsFragment;
 import com.example.meetomxh.fragments.InboxFragment;
 import com.example.meetomxh.fragments.ProfileFragment;
 import com.google.firebase.auth.FirebaseAuth;
@@ -67,7 +68,7 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(this, "Màn hình Video đang phát triển", Toast.LENGTH_SHORT).show();
                 return true;
             } else if (itemId == R.id.nav_friends) {
-                loadFragment(new InboxFragment());
+                loadFragment(new FriendsFragment());
                 return true;
             } else if (itemId == R.id.nav_notifications) {
                 Toast.makeText(this, "Màn hình Thông báo đang phát triển", Toast.LENGTH_SHORT).show();
@@ -83,7 +84,7 @@ public class MainActivity extends AppCompatActivity {
         binding.navView.setNavigationItemSelectedListener(item -> {
             int itemId = item.getItemId();
             if (itemId == R.id.drawer_friends) {
-                loadFragment(new InboxFragment());
+                loadFragment(new FriendsFragment());
             } else if (itemId == R.id.drawer_saved) {
                 Toast.makeText(this, "Mục Đã lưu", Toast.LENGTH_SHORT).show();
             } else if (itemId == R.id.drawer_memories) {

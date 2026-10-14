@@ -4,6 +4,7 @@ import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.PopupMenu;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -16,6 +17,8 @@ import com.example.meetomxh.databinding.ItemPostBinding;
 import com.example.meetomxh.databinding.ItemStoryListBinding;
 import com.example.meetomxh.models.Post;
 import com.example.meetomxh.models.Story;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,7 +32,10 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     public interface OnPostClickListener {
         void onLikeClick(Post post);
         void onCommentClick(Post post);
+        void onShareClick(Post post);
         void onCreatePostClick();
+        void onAuthorClick(Post post);
+        void onDeletePostClick(Post post);
     }
 
     private final List<Post> postList = new ArrayList<>();
@@ -87,7 +93,6 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         } else if (holder instanceof StoriesViewHolder) {
             ((StoriesViewHolder) holder).bind(storyList);
         } else if (holder instanceof PostViewHolder) {
-            // Position in postList is position - 2
             int postIndex = position - 2;
             if (postIndex >= 0 && postIndex < postList.size()) {
                 ((PostViewHolder) holder).bind(postList.get(postIndex), listener);
@@ -97,11 +102,9 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     @Override
     public int getItemCount() {
-        // 2 header items (Create Post & Stories) + postList.size()
         return 2 + postList.size();
     }
 
-    // ViewHolder 1: Create Post
     public static class CreatePostViewHolder extends RecyclerView.ViewHolder {
         private final ItemCreatePostBinding binding;
 
@@ -116,10 +119,10 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             };
             binding.tvWhatOnYourMind.setOnClickListener(clickListener);
             binding.btnCreatePostPhoto.setOnClickListener(clickListener);
+            binding.ivCreatePostAvatar.setOnClickListener(clickListener);
         }
     }
 
-    // ViewHolder 2: Stories
     public static class StoriesViewHolder extends RecyclerView.ViewHolder {
         private final ItemStoryListBinding binding;
 
@@ -136,7 +139,6 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         }
     }
 
-    // ViewHolder 3: Post
     public static class PostViewHolder extends RecyclerView.ViewHolder {
         private final ItemPostBinding binding;
 
@@ -147,13 +149,13 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
         public void bind(Post post, OnPostClickListener listener) {
             binding.tvUserName.setText(post.getUserName());
-            binding.tvTimeAgo.setText(post.getTimeAgo());
+            binding.tvTimeAgo.setText(post.getTimeAgo() != null ? post.getTimeAgo() : "Vừa xong");
             binding.tvContent.setText(post.getContent());
 
             binding.tvLikesCount.setText(post.getLikesCount() + " lượt thích");
             binding.tvCommentsCount.setText(post.getCommentsCount() + " bình luận");
 
-            // Avatar
+            // Author Avatar
             if (post.getUserAvatar() != null && !post.getUserAvatar().isEmpty()) {
                 Glide.with(binding.ivAvatar.getContext())
                         .load(post.getUserAvatar())
@@ -164,11 +166,18 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 binding.ivAvatar.setImageResource(R.drawable.ic_home);
             }
 
+            View.OnClickListener authorClickListener = v -> {
+                if (listener != null) listener.onAuthorClick(post);
+            };
+            binding.ivAvatar.setOnClickListener(authorClickListener);
+            binding.tvUserName.setOnClickListener(authorClickListener);
+
             // Post Image
-            if (post.getPostImage() != null && !post.getPostImage().isEmpty()) {
+            String postImg = post.getPostImage();
+            if (postImg != null && !postImg.isEmpty()) {
                 binding.ivPostImage.setVisibility(View.VISIBLE);
                 Glide.with(binding.ivPostImage.getContext())
-                        .load(post.getPostImage())
+                        .load(postImg)
                         .placeholder(R.drawable.ic_home)
                         .error(R.drawable.ic_home)
                         .into(binding.ivPostImage);
@@ -176,7 +185,7 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 binding.ivPostImage.setVisibility(View.GONE);
             }
 
-            // Like status
+            // Like Status
             if (post.isLiked()) {
                 binding.ivLikeIcon.setImageResource(R.drawable.ic_like_filled);
                 binding.tvLikeText.setTextColor(Color.parseColor("#1877F2"));
@@ -185,7 +194,7 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 binding.tvLikeText.setTextColor(Color.parseColor("#65676B"));
             }
 
-            // Pop/Bounce Animation on Like button
+            // Like Animation
             binding.btnLike.setOnClickListener(v -> {
                 binding.ivLikeIcon.animate()
                         .scaleX(1.4f)
@@ -198,14 +207,31 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                                 .start())
                         .start();
 
-                if (listener != null) {
-                    listener.onLikeClick(post);
-                }
+                if (listener != null) listener.onLikeClick(post);
             });
 
             binding.btnComment.setOnClickListener(v -> {
-                if (listener != null) {
-                    listener.onCommentClick(post);
+                if (listener != null) listener.onCommentClick(post);
+            });
+
+            binding.btnShare.setOnClickListener(v -> {
+                if (listener != null) listener.onShareClick(post);
+            });
+
+            // More Options Popup Menu
+            binding.ibMore.setOnClickListener(v -> {
+                FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+                if (currentUser != null && currentUser.getUid().equals(post.getAuthorUid())) {
+                    PopupMenu popup = new PopupMenu(v.getContext(), v);
+                    popup.getMenu().add("Xóa bài viết");
+                    popup.setOnMenuItemClickListener(item -> {
+                        if ("Xóa bài viết".equals(item.getTitle().toString())) {
+                            if (listener != null) listener.onDeletePostClick(post);
+                            return true;
+                        }
+                        return false;
+                    });
+                    popup.show();
                 }
             });
         }
