@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/messageRow"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="start"
+    android:orientation="horizontal"
+    android:paddingVertical="3dp">
+
+    <LinearLayout
+        android:id="@+id/messageBubble"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_chat_bubble_other"
+        android:elevation="1dp"
+        android:orientation="vertical"
+        android:paddingHorizontal="14dp"
+        android:paddingTop="9dp"
+        android:paddingBottom="6dp">
+
+        <TextView
+            android:id="@+id/tvReplyPreview"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="5dp"
+            android:maxWidth="280dp"
+            android:maxLines="2"
+            android:ellipsize="end"
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp"
+            android:visibility="gone" />
+
+        <ImageView
+            android:id="@+id/ivMessageImage"
+            android:layout_width="220dp"
+            android:layout_height="180dp"
+            android:layout_marginBottom="4dp"
+            android:contentDescription="Chat image"
+            android:scaleType="centerCrop"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/tvMessageText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:maxWidth="280dp"
+            android:textColor="@color/text_primary"
+            android:textSize="15sp" />
+
+        <TextView
+            android:id="@+id/tvMessageTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:layout_marginTop="3dp"
+            android:textColor="@color/text_secondary"
+            android:textSize="10sp" />
+
+        <TextView
+            android:id="@+id/tvMessageReceipt"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:textColor="@color/chat_bubble_mine_secondary"
+            android:textSize="9sp"
+            android:visibility="gone" />
+    </LinearLayout>
+</LinearLayout>

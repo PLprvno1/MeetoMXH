@@ -20,6 +20,7 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -216,12 +217,16 @@ public class CreatePostActivity extends AppCompatActivity {
 
     private void uploadImageToImgbb(Uri imageUri, OnImageUploadListener listener) {
         try {
-            InputStream inputStream = getContentResolver().openInputStream(imageUri);
             ByteArrayOutputStream byteBuffer = new ByteArrayOutputStream();
             byte[] buffer = new byte[1024];
             int len;
-            while ((len = inputStream.read(buffer)) != -1) {
-                byteBuffer.write(buffer, 0, len);
+            try (InputStream inputStream = getContentResolver().openInputStream(imageUri)) {
+                if (inputStream == null) {
+                    throw new IOException("Không thể mở file ảnh");
+                }
+                while ((len = inputStream.read(buffer)) != -1) {
+                    byteBuffer.write(buffer, 0, len);
+                }
             }
             byte[] imageBytes = byteBuffer.toByteArray();
 
@@ -244,16 +249,18 @@ public class CreatePostActivity extends AppCompatActivity {
 
                 @Override
                 public void onResponse(Call call, Response response) throws java.io.IOException {
-                    if (response.isSuccessful() && response.body() != null) {
-                        try {
-                            String responseBody = response.body().string();
-                            String imageUrl = new JSONObject(responseBody).getJSONObject("data").getString("url");
-                            runOnUiThread(() -> listener.onSuccess(imageUrl));
-                        } catch (Exception e) {
-                            runOnUiThread(() -> listener.onFailure("Lỗi xử lý JSON"));
+                    try (Response closeableResponse = response) {
+                        if (closeableResponse.isSuccessful() && closeableResponse.body() != null) {
+                            try {
+                                String responseBody = closeableResponse.body().string();
+                                String imageUrl = new JSONObject(responseBody).getJSONObject("data").getString("url");
+                                runOnUiThread(() -> listener.onSuccess(imageUrl));
+                            } catch (Exception e) {
+                                runOnUiThread(() -> listener.onFailure("Lỗi xử lý JSON"));
+                            }
+                        } else {
+                            runOnUiThread(() -> listener.onFailure("Imgbb lỗi mã: " + closeableResponse.code()));
                         }
-                    } else {
-                        runOnUiThread(() -> listener.onFailure("Imgbb lỗi mã: " + response.code()));
                     }
                 }
             });

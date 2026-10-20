@@ -31,11 +31,25 @@
             android:exported="false" />
 
         <activity
+            android:name=".ForgotPasswordActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
             android:name=".MainActivity"
             android:exported="false" />
 
         <activity
             android:name=".ProfileActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ChatActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name=".ChatImageViewerActivity"
             android:exported="false" />
 
         <activity

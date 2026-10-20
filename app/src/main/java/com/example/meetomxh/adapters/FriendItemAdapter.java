@@ -69,7 +69,10 @@ public class FriendItemAdapter extends RecyclerView.Adapter<FriendItemAdapter.Fr
             User user = item.getUser();
             if (user == null) return;
 
-            binding.tvFriendName.setText(user.getFullName() != null ? user.getFullName() : user.getEmail());
+            String displayName = user.getFullName();
+            if (displayName == null || displayName.trim().isEmpty()) displayName = user.getEmail();
+            if (displayName == null || displayName.trim().isEmpty()) displayName = "Người dùng";
+            binding.tvFriendName.setText(displayName);
 
             if (user.getAvatarUrl() != null && !user.getAvatarUrl().isEmpty()) {
                 Glide.with(binding.ivFriendAvatar.getContext())
@@ -78,6 +81,7 @@ public class FriendItemAdapter extends RecyclerView.Adapter<FriendItemAdapter.Fr
                         .error(R.drawable.ic_home)
                         .into(binding.ivFriendAvatar);
             } else {
+                Glide.with(binding.ivFriendAvatar.getContext()).clear(binding.ivFriendAvatar);
                 binding.ivFriendAvatar.setImageResource(R.drawable.ic_home);
             }
 

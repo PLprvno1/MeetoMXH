@@ -18,6 +18,7 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.example.meetomxh.CreatePostActivity;
+import com.example.meetomxh.R;
 import com.example.meetomxh.ProfileActivity;
 import com.example.meetomxh.adapters.FeedAdapter;
 import com.example.meetomxh.databinding.FragmentFeedBinding;
@@ -72,10 +73,15 @@ public class FeedFragment extends Fragment implements FeedAdapter.OnPostClickLis
             }
         }, 1500);
 
-        // Bắt sự kiện click FloatingActionButton (Nút Chat Messenger)
-        binding.fabChat.setOnClickListener(v ->
-                Toast.makeText(requireContext(), "Mở màn hình Chat Messenger", Toast.LENGTH_SHORT).show()
-        );
+        binding.fabChat.setOnClickListener(v -> {
+            if (!isAdded()) return;
+            androidx.fragment.app.FragmentManager fragmentManager = getParentFragmentManager();
+            if (fragmentManager.findFragmentById(R.id.fragment_container) instanceof InboxFragment) return;
+            fragmentManager.beginTransaction()
+                    .replace(R.id.fragment_container, new InboxFragment())
+                    .addToBackStack("inbox")
+                    .commit();
+        });
     }
 
     @Override

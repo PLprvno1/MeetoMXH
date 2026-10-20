@@ -53,9 +53,21 @@
         android:maxLines="1"
         android:textColor="@color/text_secondary"
         android:textSize="14sp"
-        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/viewUnread"
         app:layout_constraintStart_toEndOf="@id/ivAvatar"
         app:layout_constraintTop_toBottomOf="@id/tvChatName"
         tools:text="Nội dung tin nhắn cuối thu gọn 1 dòng..." />
+
+    <View
+        android:id="@+id/viewUnread"
+        android:layout_width="9dp"
+        android:layout_height="9dp"
+        android:layout_marginStart="8dp"
+        android:background="@drawable/bg_unread_dot"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@id/tvLastMessage"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/tvLastMessage"
+        app:layout_constraintTop_toTopOf="@id/tvLastMessage" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -43,7 +43,7 @@ public class LoginActivity extends AppCompatActivity {
 
         // Bắt sự kiện Quên mật khẩu
         binding.tvForgotPassword.setOnClickListener(v -> {
-            Toast.makeText(this, "Tính năng Quên mật khẩu đang được phát triển", Toast.LENGTH_SHORT).show();
+            startActivity(new Intent(LoginActivity.this, ForgotPasswordActivity.class));
         });
     }
 

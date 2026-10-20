@@ -103,14 +103,18 @@ public class MainActivity extends AppCompatActivity {
         });
 
         // Messenger Click
-        binding.btnMessenger.setOnClickListener(v ->
-                Toast.makeText(this, "Mở cuộc trò chuyện", Toast.LENGTH_SHORT).show()
-        );
+        binding.btnMessenger.setOnClickListener(v -> openInbox());
 
-        // Search Click
-        binding.btnSearch.setOnClickListener(v ->
-                Toast.makeText(this, "Mở Tìm kiếm", Toast.LENGTH_SHORT).show()
-        );
+        binding.btnSearch.setOnClickListener(v -> {
+            FriendsFragment searchFragment = new FriendsFragment();
+            Bundle arguments = new Bundle();
+            arguments.putBoolean(FriendsFragment.ARG_OPEN_SEARCH, true);
+            searchFragment.setArguments(arguments);
+            getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.fragment_container, searchFragment)
+                    .addToBackStack("user_search")
+                    .commit();
+        });
 
         // Handle Back Press for Drawer
         getOnBackPressedDispatcher().addCallback(this, new androidx.activity.OnBackPressedCallback(true) {
@@ -129,6 +133,15 @@ public class MainActivity extends AppCompatActivity {
     private void loadFragment(Fragment fragment) {
         getSupportFragmentManager().beginTransaction()
                 .replace(R.id.fragment_container, fragment)
+                .commit();
+    }
+
+    private void openInbox() {
+        Fragment current = getSupportFragmentManager().findFragmentById(R.id.fragment_container);
+        if (current instanceof InboxFragment) return;
+        getSupportFragmentManager().beginTransaction()
+                .replace(R.id.fragment_container, new InboxFragment())
+                .addToBackStack("inbox")
                 .commit();
     }
 }

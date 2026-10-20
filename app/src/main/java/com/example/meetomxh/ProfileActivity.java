@@ -1,16 +1,19 @@
 package com.example.meetomxh;
 
 import android.os.Bundle;
+import android.content.Intent;
 import android.view.View;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.bumptech.glide.Glide;
+import com.example.meetomxh.ChatActivity;
 import com.example.meetomxh.databinding.ActivityProfileBinding;
 import com.example.meetomxh.models.FriendItem;
 import com.example.meetomxh.models.User;
 import com.example.meetomxh.repositories.FriendRepository;
+import com.example.meetomxh.repositories.ChatRepository;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -23,6 +26,7 @@ public class ProfileActivity extends AppCompatActivity {
     private FirebaseAuth mAuth;
 
     private String targetUid;
+    private boolean targetProfileExists;
     private FriendItem.RelationshipStatus currentRelationshipStatus = FriendItem.RelationshipStatus.NO_RELATION;
 
     @Override
@@ -49,6 +53,8 @@ public class ProfileActivity extends AppCompatActivity {
         }
 
         binding.btnBack.setOnClickListener(v -> finish());
+        binding.btnMessage.setVisibility(View.GONE);
+        binding.btnMessage.setOnClickListener(v -> openChatWithTarget());
 
         loadUserProfile();
         loadRelationshipStatus();
@@ -62,6 +68,7 @@ public class ProfileActivity extends AppCompatActivity {
                     if (document.exists()) {
                         User user = document.toObject(User.class);
                         if (user != null) {
+                            targetProfileExists = true;
                             binding.tvFullName.setText(user.getFullName() != null ? user.getFullName() : user.getEmail());
                             binding.tvBio.setText(user.getBio() != null && !user.getBio().isEmpty() ? user.getBio() : "Chưa có tiểu sử");
                             binding.tvGender.setText("Giới tính: " + (user.getGender() != null ? user.getGender() : "Chưa cập nhật"));
@@ -81,8 +88,11 @@ public class ProfileActivity extends AppCompatActivity {
                                         .placeholder(R.color.divider_color)
                                         .into(binding.imgCover);
                             }
+                            updateMessageButton();
                         }
                     } else {
+                        targetProfileExists = false;
+                        updateMessageButton();
                         Toast.makeText(this, "Người dùng không tồn tại", Toast.LENGTH_SHORT).show();
                     }
                 })
@@ -116,6 +126,7 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void updateActionButtonsUI() {
+        updateMessageButton();
         if (currentRelationshipStatus == FriendItem.RelationshipStatus.SELF) {
             binding.btnEditProfile.setVisibility(View.VISIBLE);
             binding.btnPrimaryAction.setVisibility(View.GONE);
@@ -160,6 +171,38 @@ public class ProfileActivity extends AppCompatActivity {
             );
             binding.btnSecondaryAction.setOnClickListener(v -> handleRemoveRelation("Đã hủy kết bạn"));
         }
+    }
+
+    private void updateMessageButton() {
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+        boolean isSelf = currentUser != null && currentUser.getUid().equals(targetUid);
+        binding.btnMessage.setVisibility(targetProfileExists && !isSelf ? View.VISIBLE : View.GONE);
+    }
+
+    private void openChatWithTarget() {
+        if (!targetProfileExists || targetUid == null || targetUid.trim().isEmpty()) {
+            Toast.makeText(this, "Không thể mở cuộc trò chuyện với hồ sơ này", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        binding.btnMessage.setEnabled(false);
+        ChatRepository.getInstance().getOrCreatePrivateChat(targetUid, new ChatRepository.OnChatListener() {
+            @Override
+            public void onSuccess(com.example.meetomxh.models.Chat chat) {
+                if (isDestroyed() || isFinishing()) return;
+                binding.btnMessage.setEnabled(true);
+                Intent intent = new Intent(ProfileActivity.this, ChatActivity.class);
+                intent.putExtra(ChatActivity.EXTRA_CHAT_ID, chat.getChatId());
+                intent.putExtra(ChatActivity.EXTRA_OTHER_UID, targetUid);
+                startActivity(intent);
+            }
+
+            @Override
+            public void onError(String error) {
+                if (isDestroyed() || isFinishing()) return;
+                binding.btnMessage.setEnabled(true);
+                Toast.makeText(ProfileActivity.this, error, Toast.LENGTH_LONG).show();
+            }
+        });
     }
 
     private void handleSendRequest() {

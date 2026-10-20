@@ -39,6 +39,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_margin="16dp"
+        android:translationY="-100dp"
         android:contentDescription="Nhắn tin"
         android:src="@drawable/ic_messenger"
         app:backgroundTint="@color/brand_blue"

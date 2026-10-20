@@ -10,12 +10,15 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.SetOptions;
 
+import android.util.Log;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class FriendRepository {
+    private static final String TAG = "FriendRepository";
 
     public interface OnFriendActionListener {
         void onSuccess(String message);
@@ -265,7 +268,7 @@ public class FriendRepository {
         }
 
         String currentUid = currentUser.getUid();
-        String trimmedQuery = queryText != null ? queryText.trim() : "";
+        String trimmedQuery = UserSearchQuery.normalize(queryText);
 
         if (trimmedQuery.isEmpty()) {
             getSuggestedFriends(listener);
@@ -274,16 +277,23 @@ public class FriendRepository {
 
         db.collection("Users")
                 .whereGreaterThanOrEqualTo("fullName", trimmedQuery)
-                .whereLessThanOrEqualTo("fullName", trimmedQuery + "\uf8ff")
+                .whereLessThanOrEqualTo("fullName", UserSearchQuery.prefixUpperBound(trimmedQuery))
                 .limit(20)
                 .get()
                 .addOnSuccessListener(querySnapshots -> {
                     List<User> userList = new ArrayList<>();
                     for (QueryDocumentSnapshot doc : querySnapshots) {
                         if (!doc.getId().equals(currentUid)) {
-                            User u = doc.toObject(User.class);
-                            u.setUid(doc.getId());
-                            userList.add(u);
+                            try {
+                                User u = doc.toObject(User.class);
+                                if (u != null) {
+                                    u.setUid(doc.getId());
+                                    userList.add(u);
+                                }
+                            } catch (RuntimeException mappingError) {
+                                // A malformed optional profile must not fail the entire search.
+                                Log.w(TAG, "Skipping a user document that cannot be mapped", mappingError);
+                            }
                         }
                     }
                     attachRelationshipsAndReturn(userList, listener);

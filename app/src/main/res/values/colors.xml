@@ -10,6 +10,10 @@
     <color name="text_primary">#050505</color>
     <color name="text_secondary">#65676B</color>
     <color name="divider_color">#CED0D4</color>
+    <color name="chat_bubble_mine">#1877F2</color>
+    <color name="chat_bubble_other">#FFFFFF</color>
+    <color name="chat_bubble_mine_text">#FFFFFFFF</color>
+    <color name="chat_bubble_mine_secondary">#DCEBFF</color>
 
     <!-- Backward compatibility colors -->
     <color name="meeto_dark_green">#1877F2</color>

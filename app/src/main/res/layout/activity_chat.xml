@@ -1,0 +1,287 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/app_bg"
+    android:orientation="vertical">
+
+<LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="64dp"
+        android:background="@color/surface_bg"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="8dp">
+
+        <ImageButton
+            android:id="@+id/btnChatBack"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Quay lại"
+            android:padding="10dp"
+            android:src="@drawable/ic_arrow_back"
+            app:tint="@color/text_primary" />
+
+        <com.google.android.material.imageview.ShapeableImageView
+            android:id="@+id/ivChatAvatar"
+            android:layout_width="42dp"
+            android:layout_height="42dp"
+            android:layout_marginStart="4dp"
+            android:contentDescription="@null"
+            android:scaleType="centerCrop"
+            android:src="@drawable/ic_home"
+            app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full" />
+
+        <TextView
+            android:id="@+id/tvChatTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:text="Đang mở cuộc trò chuyện…"
+            android:textColor="@color/text_primary"
+            android:textSize="17sp"
+            android:textStyle="bold" />
+
+        <ImageButton
+            android:id="@+id/btnChatSearch"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Search messages"
+            android:src="@drawable/ic_search"
+            app:tint="@color/text_primary" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/layoutMessageSearch"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/surface_bg"
+        android:orientation="vertical"
+        android:paddingHorizontal="12dp"
+        android:paddingBottom="8dp"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <EditText
+                android:id="@+id/etSearchMessages"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:background="@drawable/bg_edittext"
+                android:hint="Search text in loaded messages"
+                android:imeOptions="actionSearch"
+                android:inputType="text"
+                android:paddingHorizontal="14dp"
+                android:singleLine="true"
+                android:textColor="@color/text_primary"
+                android:textColorHint="@color/text_secondary" />
+
+            <ImageButton
+                android:id="@+id/btnCloseSearch"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Close search"
+                android:src="@drawable/ic_clear"
+                app:tint="@color/text_primary" />
+        </LinearLayout>
+
+        <ProgressBar
+            android:id="@+id/progressMessageSearch"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="2dp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/tvMessageSearchState"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="4dp"
+            android:paddingVertical="6dp"
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp"
+            android:visibility="gone" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvMessageSearchResults"
+            android:layout_width="match_parent"
+            android:layout_height="160dp"
+            android:visibility="gone" />
+    </LinearLayout>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvMessages"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:paddingHorizontal="12dp"
+            android:paddingTop="12dp"
+            android:paddingBottom="8dp" />
+
+        <ProgressBar
+            android:id="@+id/progressMessages"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center" />
+
+        <TextView
+            android:id="@+id/tvMessagesState"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:gravity="center"
+            android:padding="32dp"
+            android:textColor="@color/text_secondary"
+            android:textSize="15sp"
+            android:visibility="gone" />
+    </FrameLayout>
+
+    <LinearLayout
+        android:id="@+id/layoutImageUploadStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="4dp"
+        android:visibility="gone">
+
+        <ProgressBar
+            android:id="@+id/progressImageUpload"
+            style="?android:attr/progressBarStyleSmall"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/tvImageUploadStatus"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp" />
+
+        <ImageButton
+            android:id="@+id/btnCancelImageUpload"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Discard selected image"
+            android:src="@drawable/ic_clear"
+            app:tint="@color/text_secondary" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/layoutReplyComposer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="6dp"
+        android:background="@color/surface_bg"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/tvReplyComposer"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:maxLines="2"
+            android:ellipsize="end"
+            android:textColor="@color/text_secondary"
+            android:textSize="13sp" />
+
+        <ImageButton
+            android:id="@+id/btnCancelReply"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Hủy trả lời"
+            android:src="@drawable/ic_clear"
+            app:tint="@color/text_secondary" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/surface_bg"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="12dp"
+        android:paddingVertical="8dp">
+
+        <ImageButton
+            android:id="@+id/btnAttachImage"
+            android:layout_width="44dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Attach image"
+            android:src="@drawable/ic_photo"
+            app:tint="@color/text_primary" />
+
+        <EditText
+            android:id="@+id/etMessage"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="@drawable/bg_edittext"
+            android:hint="Nhập tin nhắn…"
+            android:imeOptions="actionSend"
+            android:inputType="textCapSentences|textMultiLine"
+            android:maxHeight="112dp"
+            android:maxLines="4"
+            android:minHeight="48dp"
+            android:paddingHorizontal="16dp"
+            android:paddingVertical="8dp"
+            android:textColor="@color/text_primary"
+            android:textColorHint="@color/text_secondary"
+            android:textSize="15sp" />
+
+        <FrameLayout
+            android:layout_width="64dp"
+            android:layout_height="48dp"
+            android:layout_marginStart="8dp">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSendMessage"
+                style="@style/Widget.Material3.Button.UnelevatedButton"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:text="Gửi"
+                android:textAllCaps="false"
+                android:textColor="@color/white"
+                android:textStyle="bold"
+                app:backgroundTint="@color/brand_blue"
+                app:cornerRadius="24dp" />
+
+            <ProgressBar
+                android:id="@+id/progressSending"
+                style="?android:attr/progressBarStyleSmall"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="center"
+                android:visibility="gone" />
+        </FrameLayout>
+    </LinearLayout>
+</LinearLayout>
