@@ -97,6 +97,12 @@
             android:visibility="visible"
             tools:src="@drawable/ic_home" />
 
+        <VideoView
+            android:id="@+id/videoPostPlayer"
+            android:layout_width="match_parent"
+            android:layout_height="240dp"
+            android:visibility="gone" />
+
         <!-- Stats Row: Likes & Comments count -->
         <LinearLayout
             android:layout_width="match_parent"

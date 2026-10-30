@@ -174,7 +174,18 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
             // Post Image
             String postImg = post.getPostImage();
-            if (postImg != null && !postImg.isEmpty()) {
+            boolean isVideo = "video".equals(post.getMediaType());
+            if (isVideo && postImg != null && !postImg.isEmpty()) {
+                binding.ivPostImage.setVisibility(View.GONE);
+                binding.videoPostPlayer.setVisibility(View.VISIBLE);
+                binding.videoPostPlayer.setVideoURI(android.net.Uri.parse(postImg));
+                binding.videoPostPlayer.setOnPreparedListener(player -> {
+                    player.setLooping(true);
+                    binding.videoPostPlayer.start();
+                });
+            } else if (postImg != null && !postImg.isEmpty()) {
+                binding.videoPostPlayer.stopPlayback();
+                binding.videoPostPlayer.setVisibility(View.GONE);
                 binding.ivPostImage.setVisibility(View.VISIBLE);
                 Glide.with(binding.ivPostImage.getContext())
                         .load(postImg)
@@ -182,6 +193,8 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                         .error(R.drawable.ic_home)
                         .into(binding.ivPostImage);
             } else {
+                binding.videoPostPlayer.stopPlayback();
+                binding.videoPostPlayer.setVisibility(View.GONE);
                 binding.ivPostImage.setVisibility(View.GONE);
             }
 

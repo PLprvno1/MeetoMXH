@@ -1,7 +1,17 @@
+import java.util.Properties
 plugins {
     alias(libs.plugins.android.application)
     id("com.google.gms.google-services")
 }
+
+val localProperties = Properties().apply {
+    val file = rootProject.file("local.properties")
+    if (file.exists()) {
+        file.inputStream().use { load(it) }
+    }
+}
+
+fun quotedBuildConfigValue(value: String): String = "\"${value.replace("\\", "\\\\").replace("\"", "\\\"")}\""
 
 android {
     namespace = "com.example.meetomxh"
@@ -15,6 +25,9 @@ android {
         targetSdk = 37
         versionCode = 1
         versionName = "1.0"
+
+        buildConfigField("String", "SUPABASE_URL", quotedBuildConfigValue(localProperties.getProperty("supabase.url", "")))
+        buildConfigField("String", "SUPABASE_ANON_KEY", quotedBuildConfigValue(localProperties.getProperty("supabase.anonKey", "")))
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -32,6 +45,7 @@ android {
     }
     buildFeatures {
         viewBinding = true
+        buildConfig = true
     }
 }
 
@@ -43,12 +57,10 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.espresso.core)
     androidTestImplementation(libs.ext.junit)
-    implementation("com.google.firebase:firebase-storage")
     implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     // Firebase Authentication
     implementation("com.google.firebase:firebase-auth")
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
     // Cloud Firestore
     implementation("com.google.firebase:firebase-firestore")
     // Glide

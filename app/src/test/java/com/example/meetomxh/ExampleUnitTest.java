@@ -79,9 +79,9 @@ public class ExampleUnitTest {
     }
 
     @Test
-    public void imageMessageRequiresFirebaseStorageDownloadUrl() {
+    public void imageMessageRequiresSupabaseStoragePublicUrl() {
         assertTrue(ChatRepository.isValidStorageImageUrl(
-                "https://firebasestorage.googleapis.com/v0/b/demo/o/Chats%2Ffile.jpg?alt=media&token=x"));
+                "https://demo.supabase.co/storage/v1/object/public/meeto-media/chats/file.jpg"));
         assertFalse(ChatRepository.isValidStorageImageUrl("https://example.com/photo.jpg"));
         assertFalse(ChatRepository.isValidStorageImageUrl(""));
     }

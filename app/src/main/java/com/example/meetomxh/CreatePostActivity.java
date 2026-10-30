@@ -3,7 +3,6 @@ package com.example.meetomxh;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.provider.MediaStore;
 import android.view.View;
 import android.widget.Toast;
 
@@ -13,32 +12,18 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.bumptech.glide.Glide;
 import com.example.meetomxh.databinding.ActivityCreatePostBinding;
+import com.example.meetomxh.storage.SupabaseStorage;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 
-import org.json.JSONObject;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import okhttp3.Call;
-import okhttp3.Callback;
-import okhttp3.MediaType;
-import okhttp3.MultipartBody;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
 
 public class CreatePostActivity extends AppCompatActivity {
-
-    private static final String IMGBB_API_KEY = "a6ded9f4bbefeed4cc6dac86bd0fed0a";
 
     private ActivityCreatePostBinding binding;
     private FirebaseAuth mAuth;
@@ -55,7 +40,9 @@ public class CreatePostActivity extends AppCompatActivity {
                 if (result.getResultCode() == RESULT_OK && result.getData() != null) {
                     selectedImageUri = result.getData().getData();
                     binding.layoutImagePreview.setVisibility(View.VISIBLE);
-                    binding.ivSelectedImagePreview.setImageURI(selectedImageUri);
+                    String mime = getContentResolver().getType(selectedImageUri);
+                    if (mime != null && mime.startsWith("image/")) binding.ivSelectedImagePreview.setImageURI(selectedImageUri);
+                    else binding.ivSelectedImagePreview.setImageResource(R.drawable.ic_photo);
                 }
             }
     );
@@ -92,7 +79,10 @@ public class CreatePostActivity extends AppCompatActivity {
         binding.btnBack.setOnClickListener(v -> finish());
 
         binding.btnPickImage.setOnClickListener(v -> {
-            Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+            Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+            intent.setType("*/*");
+            intent.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"image/*", "video/*"});
+            intent.addCategory(Intent.CATEGORY_OPENABLE);
             imagePickerLauncher.launch(intent);
         });
 
@@ -142,32 +132,28 @@ public class CreatePostActivity extends AppCompatActivity {
 
     private void submitPost(String authorUid) {
         String content = binding.etPostContent.getText().toString().trim();
-
         if (content.isEmpty() && selectedImageUri == null) {
-            Toast.makeText(this, "Vui lòng nhập nội dung hoặc chọn ảnh để đăng bài", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Vui lòng nhập nội dung hoặc chọn ảnh/video để đăng bài", Toast.LENGTH_SHORT).show();
             return;
         }
-
         binding.btnPostSubmit.setEnabled(false);
         binding.btnPostSubmit.setText("Đang đăng...");
-
-        if (selectedImageUri != null) {
-            uploadImageToImgbb(selectedImageUri, new OnImageUploadListener() {
-                @Override
-                public void onSuccess(String imageUrl) {
-                    savePostToFirestore(authorUid, content, imageUrl);
-                }
-
-                @Override
-                public void onFailure(String errorMsg) {
+        if (selectedImageUri == null) {
+            savePostToFirestore(authorUid, content, "");
+            return;
+        }
+        SupabaseStorage.upload(getContentResolver(), selectedImageUri, "posts", authorUid, new SupabaseStorage.UploadListener() {
+            @Override public void onSuccess(String mediaUrl) {
+                runOnUiThread(() -> savePostToFirestore(authorUid, content, mediaUrl));
+            }
+            @Override public void onFailure(String errorMsg) {
+                runOnUiThread(() -> {
                     binding.btnPostSubmit.setEnabled(true);
                     binding.btnPostSubmit.setText("Đăng");
-                    Toast.makeText(CreatePostActivity.this, "Lỗi tải ảnh: " + errorMsg, Toast.LENGTH_SHORT).show();
-                }
-            });
-        } else {
-            savePostToFirestore(authorUid, content, "");
-        }
+                    Toast.makeText(CreatePostActivity.this, "Lỗi tải tệp: " + errorMsg, Toast.LENGTH_SHORT).show();
+                });
+            }
+        });
     }
 
     private void savePostToFirestore(String authorUid, String content, String imageUrl) {
@@ -187,6 +173,8 @@ public class CreatePostActivity extends AppCompatActivity {
         postMap.put("content", content);
         postMap.put("postImage", imageUrl);
         postMap.put("imageUrls", imageUrls);
+        String mimeType = selectedImageUri == null ? "" : getContentResolver().getType(selectedImageUri);
+        postMap.put("mediaType", mimeType != null && mimeType.startsWith("video/") ? "video" : (imageUrl.isEmpty() ? "" : "image"));
         postMap.put("likesCount", 0);
         postMap.put("commentsCount", 0);
         postMap.put("sharesCount", 0);
@@ -210,62 +198,4 @@ public class CreatePostActivity extends AppCompatActivity {
                 });
     }
 
-    public interface OnImageUploadListener {
-        void onSuccess(String imageUrl);
-        void onFailure(String errorMsg);
-    }
-
-    private void uploadImageToImgbb(Uri imageUri, OnImageUploadListener listener) {
-        try {
-            ByteArrayOutputStream byteBuffer = new ByteArrayOutputStream();
-            byte[] buffer = new byte[1024];
-            int len;
-            try (InputStream inputStream = getContentResolver().openInputStream(imageUri)) {
-                if (inputStream == null) {
-                    throw new IOException("Không thể mở file ảnh");
-                }
-                while ((len = inputStream.read(buffer)) != -1) {
-                    byteBuffer.write(buffer, 0, len);
-                }
-            }
-            byte[] imageBytes = byteBuffer.toByteArray();
-
-            RequestBody requestBody = new MultipartBody.Builder()
-                    .setType(MultipartBody.FORM)
-                    .addFormDataPart("image", "post.jpg",
-                            RequestBody.create(imageBytes, MediaType.parse("image/*")))
-                    .build();
-
-            Request request = new Request.Builder()
-                    .url("https://api.imgbb.com/1/upload?key=" + IMGBB_API_KEY)
-                    .post(requestBody)
-                    .build();
-
-            new OkHttpClient().newCall(request).enqueue(new Callback() {
-                @Override
-                public void onFailure(Call call, java.io.IOException e) {
-                    runOnUiThread(() -> listener.onFailure(e.getMessage()));
-                }
-
-                @Override
-                public void onResponse(Call call, Response response) throws java.io.IOException {
-                    try (Response closeableResponse = response) {
-                        if (closeableResponse.isSuccessful() && closeableResponse.body() != null) {
-                            try {
-                                String responseBody = closeableResponse.body().string();
-                                String imageUrl = new JSONObject(responseBody).getJSONObject("data").getString("url");
-                                runOnUiThread(() -> listener.onSuccess(imageUrl));
-                            } catch (Exception e) {
-                                runOnUiThread(() -> listener.onFailure("Lỗi xử lý JSON"));
-                            }
-                        } else {
-                            runOnUiThread(() -> listener.onFailure("Imgbb lỗi mã: " + closeableResponse.code()));
-                        }
-                    }
-                }
-            });
-        } catch (Exception e) {
-            listener.onFailure("Không đọc được file ảnh: " + e.getMessage());
-        }
-    }
 }

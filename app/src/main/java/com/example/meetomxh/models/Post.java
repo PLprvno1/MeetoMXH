@@ -11,6 +11,7 @@ public class Post {
     private String timeAgo;
     private String content;
     private String postImage;
+    private String mediaType;
     private List<String> imageUrls;
     private int likesCount;
     private int commentsCount;
@@ -107,6 +108,10 @@ public class Post {
     public void setPostImage(String postImage) {
         this.postImage = postImage;
     }
+
+    public String getMediaType() { return mediaType; }
+
+    public void setMediaType(String mediaType) { this.mediaType = mediaType; }
 
     public List<String> getImageUrls() {
         return imageUrls;

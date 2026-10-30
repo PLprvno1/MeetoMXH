@@ -36,22 +36,19 @@ import com.example.meetomxh.models.Chat;
 import com.example.meetomxh.models.ChatMessage;
 import com.example.meetomxh.models.User;
 import com.example.meetomxh.repositories.ChatRepository;
+import com.example.meetomxh.storage.SupabaseStorage;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.Timestamp;
-import com.google.firebase.storage.FirebaseStorage;
-import com.google.firebase.storage.StorageMetadata;
-import com.google.firebase.storage.StorageReference;
-import com.google.firebase.storage.UploadTask;
 
 import java.util.List;
 import java.util.ArrayList;
-import java.util.Locale;
-import java.util.UUID;
 import java.util.HashSet;
 import java.util.Set;
+
+import okhttp3.Call;
 
 public class ChatActivity extends AppCompatActivity {
     public static final String EXTRA_CHAT_ID = "chat_id";
@@ -73,7 +70,7 @@ public class ChatActivity extends AppCompatActivity {
     private ChatMessage replyTarget;
     private ActivityResultLauncher<PickVisualMediaRequest> imagePickerLauncher;
     private Uri pendingImageUri;
-    private UploadTask activeUploadTask;
+    private Call activeUploadCall;
     private String uploadedImageUrl;
     private boolean uploadingImage;
     private boolean followImageAfterSend;
@@ -234,8 +231,7 @@ public class ChatActivity extends AppCompatActivity {
         removeChatStateListener();
         searchGeneration++;
         if (pendingSearch != null) searchHandler.removeCallbacks(pendingSearch);
-        if (activeUploadTask != null && activeUploadTask.isInProgress()) activeUploadTask.cancel();
-        activeUploadTask = null;
+        if (activeUploadCall != null) activeUploadCall.cancel();
         binding = null;
         super.onDestroy();
     }
@@ -508,42 +504,25 @@ public class ChatActivity extends AppCompatActivity {
             return;
         }
         if (pendingImageUri == null) return;
-        String mimeType = getContentResolver().getType(pendingImageUri);
-        if (mimeType == null || !mimeType.toLowerCase(Locale.ROOT).startsWith("image/")) {
-            showImageFailure("The selected file is not a supported image.");
-            return;
-        }
-
         uploadingImage = true;
         setImageUploadStatus("Uploading image…", true);
-        try {
-            String fileName = UUID.randomUUID().toString();
-            StorageReference imageRef = FirebaseStorage.getInstance().getReference()
-                    .child("Chats").child(chatId).child("Images").child(currentUid).child(fileName);
-            StorageMetadata metadata = new StorageMetadata.Builder().setContentType(mimeType).build();
-            activeUploadTask = imageRef.putFile(pendingImageUri, metadata);
-            activeUploadTask.addOnSuccessListener(taskSnapshot -> {
-                activeUploadTask = null;
-                if (!canUpdateImageUi()) return;
-                imageRef.getDownloadUrl()
-                        .addOnSuccessListener(downloadUri -> {
+        activeUploadCall = SupabaseStorage.upload(getContentResolver(), pendingImageUri, "chats/" + chatId, currentUid,
+                new SupabaseStorage.UploadListener() {
+                    @Override public void onSuccess(String url) {
+                        runOnUiThread(() -> {
+                            activeUploadCall = null;
                             if (!canUpdateImageUi()) return;
-                            uploadedImageUrl = downloadUri == null ? null : downloadUri.toString();
-                            if (uploadedImageUrl == null || !uploadedImageUrl.startsWith("https://")) {
-                                showImageFailure("Image upload completed without a valid download URL.");
-                            } else {
-                                sendUploadedImageMessage();
-                            }
-                        })
-                        .addOnFailureListener(error -> showImageFailure("Could not get image URL: " + error.getLocalizedMessage()));
-            }).addOnFailureListener(error -> {
-                activeUploadTask = null;
-                showImageFailure("Image upload failed: " + error.getLocalizedMessage());
-            });
-        } catch (Exception error) {
-            activeUploadTask = null;
-            showImageFailure("Could not start image upload: " + error.getLocalizedMessage());
-        }
+                            uploadedImageUrl = url;
+                            sendUploadedImageMessage();
+                        });
+                    }
+                    @Override public void onFailure(String error) {
+                        runOnUiThread(() -> {
+                            activeUploadCall = null;
+                            showImageFailure("Image upload failed: " + error);
+                        });
+                    }
+                });
     }
 
     private void sendUploadedImageMessage() {
@@ -560,7 +539,7 @@ public class ChatActivity extends AppCompatActivity {
                 uploadingImage = false;
                 pendingImageUri = null;
                 uploadedImageUrl = null;
-                activeUploadTask = null;
+                activeUploadCall = null;
                 binding.layoutImageUploadStatus.setVisibility(View.GONE);
                 binding.btnAttachImage.setEnabled(true);
                 if (followImageAfterSend) {

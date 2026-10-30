@@ -394,8 +394,8 @@ public class ChatRepository {
     }
 
     public static boolean isValidStorageImageUrl(String url) {
-        return url != null && url.startsWith("https://firebasestorage.googleapis.com/v0/b/")
-                && url.contains("/o/") && url.contains("alt=media");
+        return url != null && url.startsWith("https://")
+                && url.contains("/storage/v1/object/public/meeto-media/");
     }
 
     public void recallMessage(String chatId, ChatMessage selected, OnMessageActionListener listener) {

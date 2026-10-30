@@ -20,6 +20,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.meetomxh.databinding.ActivityRegisterBinding;
+import com.example.meetomxh.storage.SupabaseStorage;
 import com.google.firebase.FirebaseException;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
@@ -31,29 +32,15 @@ import com.google.firebase.auth.PhoneAuthOptions;
 import com.google.firebase.auth.PhoneAuthProvider;
 import com.google.firebase.firestore.FirebaseFirestore;
 
-import org.json.JSONObject;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import okhttp3.Call;
-import okhttp3.Callback;
-import okhttp3.MediaType;
-import okhttp3.MultipartBody;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
 
 public class RegisterActivity extends AppCompatActivity {
-
-    private static final String IMGBB_API_KEY = "a6ded9f4bbefeed4cc6dac86bd0fed0a";
 
     private ActivityRegisterBinding binding;
     private FirebaseAuth mAuth;
@@ -578,11 +565,11 @@ public class RegisterActivity extends AppCompatActivity {
         binding.btnCompleteProfile.setText("Đang lưu hồ sơ...");
 
         if (!isSkip && selectedAvatarUri != null) {
-            uploadImageToImgbb(selectedAvatarUri, new OnImageUploadListener() {
+            uploadImageToSupabase(selectedAvatarUri, new OnImageUploadListener() {
                 @Override
                 public void onSuccess(String avatarUrl) {
                     if (selectedCoverUri != null) {
-                        uploadImageToImgbb(selectedCoverUri, new OnImageUploadListener() {
+                        uploadImageToSupabase(selectedCoverUri, new OnImageUploadListener() {
                             @Override
                             public void onSuccess(String coverUrl) {
                                 saveUserProfileToFirestore(currentUser.getUid(), avatarUrl, coverUrl);
@@ -652,58 +639,13 @@ public class RegisterActivity extends AppCompatActivity {
         void onFailure(String errorMsg);
     }
 
-    private void uploadImageToImgbb(Uri imageUri, OnImageUploadListener listener) {
-        try {
-            ByteArrayOutputStream byteBuffer = new ByteArrayOutputStream();
-            byte[] buffer = new byte[1024];
-            int len;
-            try (InputStream inputStream = getContentResolver().openInputStream(imageUri)) {
-                if (inputStream == null) {
-                    throw new IOException("Không thể mở file ảnh");
-                }
-                while ((len = inputStream.read(buffer)) != -1) {
-                    byteBuffer.write(buffer, 0, len);
-                }
-            }
-            byte[] imageBytes = byteBuffer.toByteArray();
-
-            RequestBody requestBody = new MultipartBody.Builder()
-                    .setType(MultipartBody.FORM)
-                    .addFormDataPart("image", "upload.jpg",
-                            RequestBody.create(imageBytes, MediaType.parse("image/*")))
-                    .build();
-
-            Request request = new Request.Builder()
-                    .url("https://api.imgbb.com/1/upload?key=" + IMGBB_API_KEY)
-                    .post(requestBody)
-                    .build();
-
-            new OkHttpClient().newCall(request).enqueue(new Callback() {
-                @Override
-                public void onFailure(Call call, java.io.IOException e) {
-                    runOnUiThread(() -> listener.onFailure(e.getMessage()));
-                }
-
-                @Override
-                public void onResponse(Call call, Response response) throws java.io.IOException {
-                    try (Response closeableResponse = response) {
-                        if (closeableResponse.isSuccessful() && closeableResponse.body() != null) {
-                            try {
-                                String responseBody = closeableResponse.body().string();
-                                String imageUrl = new JSONObject(responseBody).getJSONObject("data").getString("url");
-                                runOnUiThread(() -> listener.onSuccess(imageUrl));
-                            } catch (Exception e) {
-                                runOnUiThread(() -> listener.onFailure("Lỗi xử lý JSON"));
-                            }
-                        } else {
-                            runOnUiThread(() -> listener.onFailure("Imgbb lỗi mã: " + closeableResponse.code()));
-                        }
-                    }
-                }
-            });
-        } catch (Exception e) {
-            listener.onFailure("Không đọc được file ảnh: " + e.getMessage());
-        }
+    private void uploadImageToSupabase(Uri imageUri, OnImageUploadListener listener) {
+        FirebaseUser user = mAuth.getCurrentUser();
+        String uid = user == null ? "unknown" : user.getUid();
+        SupabaseStorage.upload(getContentResolver(), imageUri, "profiles", uid, new SupabaseStorage.UploadListener() {
+            @Override public void onSuccess(String url) { runOnUiThread(() -> listener.onSuccess(url)); }
+            @Override public void onFailure(String error) { runOnUiThread(() -> listener.onFailure(error)); }
+        });
     }
     @Override
     protected void onDestroy() {
