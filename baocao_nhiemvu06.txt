@@ -1,0 +1,102 @@
+BÁO CÁO NHIỆM VỤ 06 — SUPABASE PHASE B
+Ngày 01/11/2026, Asia/Bangkok. Workspace F:\MeetoMXH.
+
+KẾT QUẢ
+CODED + LOCAL TESTED: Posts, feed, share, Friends, Comments/replies, desired-state Reactions, private profile/social Storage và worker kiểm bytes/cleanup thực.
+STAGING VERIFIED: CHƯA. PRODUCTION DEPLOYED: CHƯA. Không kết nối hoặc sửa Supabase Cloud. Không chuyển Android khỏi Firebase trong nhiệm vụ này.
+
+1. MIGRATIONS
+Giữ nguyên bytes 001 foundation,002 authorization,003 auth_profile và toàn bộ evidence/báo cáo 04/05/05B.
+Thêm 6 migration, version tăng:
+- 20261101000400_social.sql: 21 RPC social, read grants/projection, shared mutation/block serialization.
+- 20261101000500_media.sql: 2 RPC media, private buckets/policies, worker-only ABI.
+- 20261101000600_media_cleanup_safety.sql: recheck liên kết sau asset lock, không sweep purpose future.
+- 20261101000700_friend_request_receipts.sql: lưu cả UUID duplicate-pair/crossed send để retry sau cancel/unfriend không tạo mới.
+- 20261101000800_media_quota_reservations.sql: giữ worst-case reservation trong pending_delete/quarantined tới khi Storage purge thành công.
+- 20261101000900_media_cleanup_fairness.sql: lọc linked assets trước LIMIT để backlog không làm orphan starvation.
+CLI db push --local áp thực, ledger tổng9; manifest SHA2569 entries khớp. Không sửa ledger/reset/xóa volumes/DROP CASCADE. 36 public tables,79 FK,104 CHECK,110 indexes giữ nguyên.
+Rehearsal rollback đầu bắt syntax IF/CASE size validation ở005; dừng, sửa trước apply, rehearsal lại thành công. Không migration thất bại bị đánh dấu thành công. Các fix sau apply dùng migration mới.
+
+2. RPC HOÀN THÀNH
+23 public RPC B, cộng8 A=31:
+Friends9: send_friend_request,accept_friend_request,decline_friend_request,cancel_friend_request,unfriend,get_friends,get_received_requests,get_sent_requests,get_suggestions.
+Posts7: create_post,share_post,edit_post,delete_post,get_post,get_feed,get_user_posts.
+Reaction1: set_post_reaction(type/null), không toggle.
+Comments4: create_comment,edit_comment,delete_comment,list_comments; reply qua parent_id.
+Media2: prepare_upload,finalize_upload.
+Tên edit/list theo catalog, không tạo alias update/get trùng. Catalog đã cập nhật status và link hợp đồng chính xác trong MEETO_PHASE_B_IMPLEMENTATION.md.
+Public invoker/private definer explicit execute, search_path rỗng, auth.uid actor; không client author/counter/admin fields. Unknown actor parameter404. Direct social DML đóng.
+
+3. LUỒNG THỰC
+Text hoặc1–10 attachments ready/owned/purpose đúng và ordered. Public/Friends/Private enforce DB; public vẫn authenticated, không guest. Group mode chưa bật. Timestamp server, canonical create hash/idempotency, edit/delete version conflict; failed attach rollback cả post.
+Feed/user posts keyset(created_at,id),max50; thử32 bài qua nhiều trang không lặp/mất. Share reference readable personal original, không share-chain hoặc snapshot; source revoke làm người khác không đọc share, owner chỉ shell không source reference/content.
+Comments cùng parent post, immutable parent, tối đa8 cấp, tombstone body=null giữ replies. Không write sau post delete. Reactions một row/user/post, đổi type không tăng total, unset retry no-op. Counters đối soát với rows thực.
+Friend directed request/canonical friendship; self/duplicate/wrong actor/missing request/block bị chặn. Crossed send trả incoming, không autoaccept. Receipt giữ UUID retry cả đường cross/duplicate. Accept retry sau unfriend409, không phục hồi quan hệ. Block wrapper tiếp tục A cleanup; unblock không restore.
+Totals là aggregate thật, có thể gồm người bị viewer block; không cam kết che timing hay totals theo viewer.
+
+4. STORAGE VÀ POLICIES
+profile-media private: JPEG/PNG/WebP,bucket10MiB,avatar/cover.
+social-media private: JPEG/PNG/WebP/MP4,bucket50MiB,post; worker image10MiB/video50MiB. Video thấp hơn đề xuất100MiB vì giữ nguyên config local50MiB.
+Không tạo bucket chat/group chưa cần; prepare purpose story/message/group bị deny. Không chạy storage.sql cũ public/anon.
+INSERT meeto_b_insert: active verified JWT, owner_id thực, exact pending intent/path,15 phút. SELECT meeto_b_get: chỉ authenticated GET/info, current parent ACL. Không client sign/list/copy/move/upsert/delete policy, không bucket management grant. Public URL bị deny. Batch sign có thể200 từng signedURL=null, kiểm không có bearer URL thực được cấp.
+Server path uid/asset/original.ext. Pending≤10,100 chưa deleted/user,budget500MiB reserve worst-case cả pending_delete/quarantined. Orphan cleanup24h; quota vẫn giữ nếu delete lỗi/chưa đến hạn.
+
+5. WORKER THỰC
+Invoke-MediaWorker.ps1 chạy local một lượt, không daemon/Edge. User upload HTTP JWT ->worker dùng local service role chỉ memory để đọc ->magic+actual size+ffprobe dimensions/codec/duration+full FFmpeg decode ->server-only verified marker ->caller finalize ->RPC attach profile/post.
+Ảnh/video≤40M pixels,video≤300s; không tin MIME/size client. Network protocols disabled khi decode,timeout30s/process,decoderthreads1. Metadata registry whitelist không EXIF tags; chưa re-encode/xóa EXIF trong bytes, không antivirus hoặc transcoding production.
+FFmpeg9.0.2 essentials ở Temp, publisher Gyan .7z SHA256 đã kiểm. Không cài PATH/service/dependency Android. ZIP tải đầu chậm được bỏ; chuyển .7z có checksum thành công. Fixture PNG/JPEG/WebP/H264 MP4 do FFmpeg tạo, không dữ liệu cá nhân, xóa đúng thư mục fixture sau test.
+Finalize trước verify409, owner khác404, expired410; hai finalize đồng thời200/200 cùng asset ready.
+Delete/edit/replace deny read trước purge; old profile bytes chờ24h theo A. Worker claim dedup media.retire SKIP LOCKED,lease2phút,attempt fencing,max5/backoff/dead,reclaim lease. Storage API DELETE thật ngoài transaction rồi mark deleted/done; missing idempotent. Không SQL DELETE storage.objects.
+Đã fault inject delete failure để kiểm retry/backoff/dead/requeue/reclaim, rồi delete Storage thật và trusted GET xác nhận object mất. Fault injection không được mô tả là outage mạng thật. Chưa scheduler/alert UI Cloud; script hiện local-only.
+
+6. HTTP/RLS/JWT
+473 B assertions đạt,0 fail,4 Auth accounts synthetic mỗi lượt. Signup/verify Mailpit/password login cấp JWT thật. Không mint JWT giả/GUC để chứng nhận HTTP.
+23 RPC đều kiểm missing/forged JWT,actor spoof,incomplete,suspended,deleting và token thật đã cấp trước khi operator gỡ email confirmation. Toàn bộ DB gates đúng.
+Nonfriend Friends-only,other Private,block hai chiều,foreign edit/delete,guess IDs,hash/counter DML đều deny. Ready media chưa attach deny kể cả owner; attach đúng parent mới cho đọc. Revoke audience/block/replace/delete có hiệu lực ở GET mới. Không lộ DOB/private profile qua social projection.
+
+7. CONCURRENCY
+7 real JWT HTTP barriers nằm trong473 assertions:
+- Retry create cùng UUID:200/200,cùng ID/hash,không duplicate.
+- Hai like cùng user:200/200,một row.
+- Like hai users:200/200,count2.
+- Cross friend requests:200/200,một pending,cùng direction canonical.
+- Accept/cancel:200/409,không hai terminal transitions.
+- Delete/comment:serialization hợp lệ,comment trước delete có thể200/200 hoặc delete trước comment200/404; deleted post không có comment mới sau delete.
+- Hai finalize:200/200,cùng ready asset.
+Observer thấy hai authenticator connections đợi DB lock trước release. Operator chỉ barrier/setup/checkpoint; business chạy HTTP JWT.
+Local MVP dùng transaction advisory lock chung6061101 cho mutation B/set_block. Đúngness được kiểm nhưng throughput toàn B bị serialize; chưa load/stress benchmark hoặc chứng nhận scale.
+
+8. STORAGE TESTS
+Upload/download synthetic PNG/JPEG/WebP/MP4 thật; magic/decode check,finalize,ordered attachment,profile avatar+cover replace,foreign owner/path/anonymous deny,MIME allowlist,size10MiB HTTP deny,upsert/copy/move/delete/sign/batch/list denial,private publicURL deny,authenticated video Range206 trả16bytes,revoke/block/delete,orphan không upload và orphan có bytes,purge/retry/dead/lease/quota đều chạy.
+Signed URL không được phát nên không có capability còn sống sau revoke trong luồng này. Request mới kiểm RLS; bytes đã tải,cache/stream đang chạy không thu hồi được. Chưa CDN/cache invalidation,large-video/TUS/S3/transforms malicious fuzz/load; không suy các route chưa chạy đã pass.
+
+9. REGRESSION A
+174 HTTP assertions suite A gốc đạt lại,đủ8 RPC/Auth/reset/onboarding/block/RLS.
+87 SQL assertions PG17 managed Auth thật đạt,rollback fixtures; adapter memory chỉ đổi expectation posts/comments nay được B SELECT,giữ messages/device subscriptions đóng. Không sửa source/evidence05B hoặc cài stubs.
+7 expiry assertions đạt:GoTrue mint token60s,before accepted,exp+35 rejected401,refresh accepted. Finally restore config bytes TTL3600,stop/start giữ volumes. Chạy sau HTTP B,không restart khi B suite còn hoạt động.
+25 catalog/ACL assertions đạt:36 architecture/RLS,31 RPC,owners/default EXECUTE deny,worker-only ABI closed,future grants closed,2 private buckets,9 ledger versions,no app publication. Evidence không cộng cumulative numbers thành production certificate.
+Probe cleanup-backlog riêng1 SQL assertion rollback đạt:101 asset ready cũ còn attach không chiếm batch LIMIT làm orphan kế tiếp starvation. Migration009 lọc candidates trước LIMIT,giữ recheck sau row lock; không retire linked media,fixtures rollback. Không cộng probe này vào473 HTTP.
+
+10. FILE MỚI/SỬA
+Mới: migrations004–009; supabase/scripts/PhaseB-Local.ps1,Invoke-MediaWorker.ps1,Invoke-PhaseBDeployment.ps1; supabase/tests/Invoke-PhaseBHttp.ps1; database_design/validation_phase_06/ gồmREADME,Prepare-MediaTools,Invoke-PhaseARegression,Test-Handoff,catalogue.sql,protected hashes và evidence JSON; báo cáo này; MEETO_PHASE_B_IMPLEMENTATION.md.
+Sửa: supabase/migrations.sha256.json thêm6 checksums; MEETO_RPC_IMPLEMENTATION_CATALOG.md và MEETO_IMPLEMENTATION_ROADMAP.md thêm cập nhật B.
+Không sửa Android Java/XML/Gradle/Firebase/ImgBB/local.properties,3 migrations A,config bytes cuối,storage.sql cũ,báo cáo/evidence04/05/05B. Handoff script kiểm hash source/evidence được bảo vệ,parse PowerShell,UTF8,credential scan,health,ledger replay.
+
+11. GIỚI HẠN/BLOCKED
+Không STAGING VERIFIED/PRODUCTION DEPLOYED. Không Cloud connection/deploy.
+Readiness không đồng nghĩa xong toàn roadmap A: account deletion/retention/reauth/SMTP production/backup restore/rate limit vẫn mở. Worker mới local executable,chưa scheduler/durable deployment production; global lock chưa benchmark; media antivirus/sandbox/EXIF sanitization/cache/large-video/TUS/S3 chưa chứng nhận.
+Completed friend request receipts state done là checkpoints cùng transaction,không broadcast. Media.retire được worker xử lý. Event block cũ A vẫn pending vì transport thuộc phase sau. Feed/comments polling/refetch; không publication/Broadcast/push mới,không notification dispatcher giả.
+Không triển khai Chat/Groups/Stories/Notifications/Moderation C/D/E.
+
+12. TRƯỚC CHUYỂN ANDROID
+Đã khảo sát Post/Comment,FriendRepository,CreatePost/PostAdapter/Comments sheet,SupabaseStorage. Backend trảUUID,body,audience,kind,version,ordered asset IDs,my_reaction; adapter cần map visibility/content/normal/epoch và không dùng authorName/avatar snapshot client. Comment cần parent/version/state,tombstone UI; Friends dùng request_id/direction canonical,self graph.
+Cần Supabase Auth/relogin/session refresh/deep link,repository DTO/idempotency queue/optimistic conflicts,authenticated Glide/OkHttp/videoRange và cache theo user,media worker polling/409UX,feature flags,mapping Firebase UID,staging rehearsal/freeze/rollback và legacy publicURL retirement có inventory. Storage Android hiện anon bearer/public meeto-media chưa tương thích,chưa bị sửa/xóa.
+
+13. STAGING/CLOUD VÀ PHASE C
+Phase C: nền social/profile/media local đủ để bắt đầu nhiệm vụ C riêng; chưa chứng nhận chat/realtime/private channel delivery/history/receipts. Cần thiết kế/kiểm thử riêng,không tự bật.
+Staging BLOCKED bởi chưa có nhiệm vụ/đích remote được duyệt,cần inventory/backup/restore,migration owners/default grants/old Storage policies/ABI,review retention/quotas/global-lock throughput,worker scheduler/runtime sandbox,auth recovery,load/security/cache và Android integration. Project thật/production là deployment riêng sau nghiệm thu; nhiệm vụ06 chỉ local.
+
+14. BÀN GIAO RUNTIME/DỮ LIỆU
+Supabase local RUNNING9 containers,healthy cho container có healthcheck;PostgREST HTTP thực đạt. API127.0.0.1:54321,DB54322,Studio54323,Mailpit54324. TTL3600 khôi phục bytes nguyên. Portable PG không khởi động trong06,đã dừng;không listener55439. FFmpeg không service nền.
+Synthetic users/posts/comments/assets và Mailpit giữ trong local volumes để review;ready avatar/cover,pending intents và retired profile bytes chờ24h có chủ đích. Không tự xóa Auth accounts/reset volumes. Muốn dừng giữ dữ liệu dùng CLI stop trong workspace,không --no-backup/db reset.
+Chi tiết contracts/limits/evidence/lệnh: database_design/MEETO_PHASE_B_IMPLEMENTATION.md và database_design/validation_phase_06/README.md.

@@ -1,0 +1,7 @@
+﻿{
+    "apkSha256":  "4C6CCA144B557C2E54905B50C29414FED277E4E50668FAF86226569D1EE353FC",
+    "serviceRoleFound":  false,
+    "localJwtSecretFound":  false,
+    "localAnonPresent":  true,
+    "legacyRuntimeMarkers":  false
+}

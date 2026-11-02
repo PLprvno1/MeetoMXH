@@ -1,0 +1,35 @@
+﻿{
+    "environment":  "LOCAL SUPABASE HTTP; genuine GoTrue expiration",
+    "tests":  [
+                  {
+                      "test":  "local Auth admin creates expiry fixture",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "normal password login issues expiry JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "GoTrue-issued JWT lifetime is 60 seconds",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "same JWT accepted before expiry",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "expired GoTrue JWT rejected by PostgREST 401",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "refresh succeeds after access JWT expiry",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "new GoTrue JWT accepted after refresh",
+                      "passed":  true
+                  }
+              ],
+    "failed":  0,
+    "passed":  7
+}

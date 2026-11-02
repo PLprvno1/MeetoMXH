@@ -1,133 +1,37 @@
 package com.example.meetomxh.storage;
-
 import android.content.ContentResolver;
 import android.net.Uri;
-import android.text.TextUtils;
-import android.webkit.MimeTypeMap;
-
-import com.example.meetomxh.BuildConfig;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.Locale;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
-
-import okhttp3.Call;
-import okhttp3.Callback;
-import okhttp3.MediaType;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
+import com.example.meetomxh.supabase.*;
+import okhttp3.*;
 import okio.BufferedSink;
-
-/** Uploads image and video files to a public Supabase Storage bucket. */
+import org.json.*;
+import java.io.*;
 public final class SupabaseStorage {
-    public static final String BUCKET = "meeto-media";
-    private static final OkHttpClient CLIENT = new OkHttpClient.Builder()
-            .connectTimeout(30, TimeUnit.SECONDS)
-            .writeTimeout(0, TimeUnit.MILLISECONDS)
-            .readTimeout(60, TimeUnit.SECONDS)
-            .build();
-
-    private SupabaseStorage() { }
-
-    public interface UploadListener {
-        void onSuccess(String publicUrl);
-        void onFailure(String message);
-    }
-
-    public static Call upload(ContentResolver resolver, Uri uri, String folder, String ownerId, UploadListener listener) {
-        if (TextUtils.isEmpty(BuildConfig.SUPABASE_URL) || TextUtils.isEmpty(BuildConfig.SUPABASE_ANON_KEY)) {
-            listener.onFailure("Thiếu supabase.url hoặc supabase.anonKey trong local.properties.");
-            return null;
-        }
-        String mime = resolver.getType(uri);
-        if (mime == null || !(mime.toLowerCase(Locale.ROOT).startsWith("image/")
-                || mime.toLowerCase(Locale.ROOT).startsWith("video/"))) {
-            listener.onFailure("Chỉ hỗ trợ tệp ảnh hoặc video.");
-            return null;
-        }
-
-        String extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(mime);
-        String path = safeSegment(folder) + "/" + safeSegment(ownerId) + "/" + UUID.randomUUID()
-                + (TextUtils.isEmpty(extension) ? "" : "." + extension);
-        String baseUrl = BuildConfig.SUPABASE_URL.replaceAll("/+$", "");
-        String encodedPath = encodePath(path);
-        RequestBody body = new UriRequestBody(resolver, uri, mime);
-        Request request = new Request.Builder()
-                .url(baseUrl + "/storage/v1/object/" + encodeSegment(BUCKET) + "/" + encodedPath)
-                .header("apikey", BuildConfig.SUPABASE_ANON_KEY)
-                .header("Authorization", "Bearer " + BuildConfig.SUPABASE_ANON_KEY)
-                .header("x-upsert", "false")
-                .post(body)
-                .build();
-
-        Call call = CLIENT.newCall(request);
-        call.enqueue(new Callback() {
-            @Override public void onFailure(Call call, IOException error) {
-                listener.onFailure(error.getLocalizedMessage() == null ? "Tải tệp lên Supabase thất bại." : error.getLocalizedMessage());
-            }
-
-            @Override public void onResponse(Call call, Response response) throws IOException {
-                try (Response closeable = response) {
-                    if (closeable.isSuccessful()) {
-                        listener.onSuccess(baseUrl + "/storage/v1/object/public/" + encodeSegment(BUCKET) + "/" + encodedPath);
-                    } else {
-                        listener.onFailure("Supabase Storage trả về mã " + closeable.code() + ". Kiểm tra bucket và policy Storage.");
-                    }
-                }
-            }
-        });
-        return call;
-    }
-
-    private static String safeSegment(String value) {
-        if (TextUtils.isEmpty(value)) return "unknown";
-        return value.replaceAll("[^A-Za-z0-9_-]", "_");
-    }
-
-    private static String encodePath(String path) {
-        String[] segments = path.split("/");
-        StringBuilder encoded = new StringBuilder();
-        for (String segment : segments) {
-            if (encoded.length() > 0) encoded.append('/');
-            encoded.append(encodeSegment(segment));
-        }
-        return encoded.toString();
-    }
-
-    private static String encodeSegment(String value) {
-        try {
-            return URLEncoder.encode(value, "UTF-8").replace("+", "%20");
-        } catch (java.io.UnsupportedEncodingException e) {
-            throw new IllegalStateException(e);
-        }
-    }
-    private static final class UriRequestBody extends RequestBody {
-        private final ContentResolver resolver;
-        private final Uri uri;
-        private final MediaType mediaType;
-
-        UriRequestBody(ContentResolver resolver, Uri uri, String mime) {
-            this.resolver = resolver;
-            this.uri = uri;
-            this.mediaType = MediaType.parse(mime);
-        }
-
-        @Override public MediaType contentType() { return mediaType; }
-        @Override public long contentLength() { return -1; }
-
-        @Override public void writeTo(BufferedSink sink) throws IOException {
-            try (InputStream input = resolver.openInputStream(uri)) {
-                if (input == null) throw new IOException("Không thể mở tệp đã chọn.");
-                byte[] buffer = new byte[64 * 1024];
-                int count;
-                while ((count = input.read(buffer)) != -1) sink.write(buffer, 0, count);
-            }
-        }
-    }
+ public interface UploadListener {void onSuccess(String assetReference);void onFailure(String message);default void onProgress(int percent){}}
+ public static final class Transfer {private volatile boolean cancelled;private volatile Call call;public void cancel(){cancelled=true;if(call!=null)call.cancel();}public boolean isCanceled(){return cancelled;}}
+ public static Transfer upload(ContentResolver resolver,Uri uri,String folder,String owner,UploadListener listener){
+  Transfer transfer=new Transfer();long epoch=SessionManager.getInstance().generation();
+  Api.IO.execute(()->{try{
+   String mime=resolver.getType(uri);if(mime==null)throw new IOException("MIME unavailable");
+   String purpose=folder.startsWith("chats/")?"message":folder.contains("avatar")?"avatar":folder.contains("cover")?"cover":"post";
+   String operation=folder+uri+mime;String request=RequestIds.get("upload",operation);
+   JSONObject args=Api.obj("p_mime",mime,"p_client_request_id",request);String rpc;
+   if(purpose.equals("message")){args.put("p_conversation_id",folder.substring(6));rpc="prepare_message_upload";}else{args.put("p_purpose",purpose);rpc="prepare_upload";}
+   JSONObject intent=RpcClient.object(rpc,args);String token=SessionManager.getInstance().access(false);
+   long size=-1;try(android.content.res.AssetFileDescriptor fd=resolver.openAssetFileDescriptor(uri,"r")){if(fd!=null)size=fd.getLength();}final long length=size;final String type=mime;
+   RequestBody bytes=new RequestBody(){public MediaType contentType(){return MediaType.parse(type);}public long contentLength(){return length;}public void writeTo(BufferedSink sink)throws IOException{try(InputStream in=resolver.openInputStream(uri)){if(in==null)throw new IOException("Cannot read media");byte[] buf=new byte[32768];int n;long total=0;int last=-1;while((n=in.read(buf))!=-1){if(transfer.cancelled||epoch!=SessionManager.getInstance().generation())throw new IOException("Cancelled");sink.write(buf,0,n);total+=n;int percent=length>0?(int)Math.min(100,total*100/length):0;if(percent/5!=last/5){last=percent;Api.MAIN.post(()->listener.onProgress(percent));}}}}};
+   Request upload=new Request.Builder().url(SupabaseConfig.URL+"/storage/v1/object/"+intent.getString("bucket_id")+"/"+intent.getString("object_path")).header("apikey",SupabaseConfig.KEY).header("Authorization","Bearer "+token).header("x-upsert","false").header("cache-control","0").post(bytes).build();
+   if(transfer.cancelled)return;transfer.call=SupabaseHttpClient.CLIENT.newCall(upload);try(Response response=transfer.call.execute()){if(!response.isSuccessful()&&response.code()!=409)throw new ErrorMapper.HttpError(response.code(),"upload");}
+   for(int i=0;i<120;i++){
+    if(transfer.cancelled||epoch!=SessionManager.getInstance().generation())return;
+    try{JSONObject ready=RpcClient.object("finalize_upload",Api.obj("p_asset_id",intent.getString("id")));if(ready.optString("state").equals("ready")){RequestIds.complete("upload",operation);String ref=Dto.asset(ready.getString("id"));Api.MAIN.post(()->{if(!transfer.cancelled&&epoch==SessionManager.getInstance().generation())listener.onSuccess(ref);});return;}}
+    catch(ErrorMapper.HttpError e){if(e.status!=409)throw e;}
+    Thread.sleep(1000);
+   }
+   Api.MAIN.post(()->{if(epoch==SessionManager.getInstance().generation())listener.onFailure("Tệp đang chờ xác minh. Hãy thử lại sau.");});
+  }catch(Exception e){String error=ErrorMapper.message(e);Api.MAIN.post(()->{if(!transfer.cancelled&&epoch==SessionManager.getInstance().generation())listener.onFailure(error);});}});
+  return transfer;
+ }
+ public static JSONObject info(String reference)throws Exception{String id=Dto.assetId(reference);java.util.UUID.fromString(id);JSONArray rows=(JSONArray)SupabaseHttpClient.authorized("GET","/rest/v1/media_assets?id=eq."+id+"&select=id,bucket_id,object_path,mime_type",null);if(rows.length()!=1)throw new ErrorMapper.HttpError(404,"media_unavailable");return rows.getJSONObject(0);}
+ public static String url(JSONObject asset)throws Exception{return SupabaseConfig.URL+"/storage/v1/object/authenticated/"+asset.getString("bucket_id")+"/"+asset.getString("object_path");}
 }

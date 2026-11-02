@@ -1,0 +1,50 @@
+BÁO CÁO NHIỆM VỤ 05 — SUPABASE FOUNDATION VÀ AUTH/PROFILE
+Ngày 01/11/2026, Asia/Bangkok. Workspace F:\MeetoMXH.
+
+1. KẾT QUẢ CHÍNH
+Đã triển khai mã backend thật trong supabase/migrations: 3 migration versioned, 36 bảng scaffold dependency closure, 21 authorization helpers, 8 public RPC Auth/Profile. SHA-256 manifest và deployment wrapper được tạo mới.
+CODED + LOCAL TESTED bằng PostgreSQL 16.11 portable. Chưa STAGING VERIFIED; chưa PRODUCTION DEPLOYED.
+Supabase local stack/JWT HTTP tests đang BLOCKED vì máy thiếu Docker/Podman; WSL chưa cài. Không dùng Auth stubs để tuyên bố Supabase thật hoạt động.
+
+2. MIGRATION VÀ API
+20261101000100_foundation.sql: schema/FK/index/default grants deny; chỉ database rỗng có Supabase Auth prerequisite.
+20261101000200_authorization.sql: full helper dependencies, RLS và grants Phase A; đóng FUTURE cả table lẫn column privileges; không Storage/Realtime managed policies chưa test.
+20261101000300_auth_profile.sql: bootstrap trigger/recovery, onboarding, profile/private updates, get/search/block và minimal EXECUTE.
+RPC: bootstrap_profile; get_my_profile; complete_onboarding; update_profile; update_profile_private; get_profile; search_profiles; set_block.
+Settings owner PATCH có column grants/RLS và JSON CHECK; không client write role/status/onboarding/private DOB.
+Auth email/password/verify/refresh/logout/reset dùng Supabase Auth chuẩn, không tạo password/session tables. Config bật xác minh email, tắt anonymous/SMS signup. Chưa test service thật.
+
+3. KIỂM THỬ THỰC CHẠY
+Database mới meeto_phase05: 3 migrations apply sạch, 36 bảng/79 FK/104 CHECK.
+87 assertions Phase A đạt, 0 lỗi: RPC validation, self/other/anonymous/incomplete/unverified/suspended/deleting, bootstrap recovery, attachment purpose/owner/state, private projection, rollback, settings, column grants, block cleanup.
+3 race RPC Phase A đạt: version conflict PT409; bootstrap và update serialize; bootstrap retry cùng UID. Có 2 client connections thật và observer xác nhận lock overlap.
+4 migration controls đạt: manifest tampering deny, applied ledger checksum drift deny, deliberate DDL failure rollback, replay 0 applied/3 skipped.
+Chạy lại audit04 trên database riêng: 99 assertions + 3 race patterns cũ đạt. Không coi đây là integration Auth/Storage/Realtime.
+CLI chính thức 2.122.0 tải Windows binary, kiểm SHA-256 rồi chạy --version/init thành công. start báo thiếu Docker/Podman; local db push dry-run báo localhost:54322 không kết nối. Không gọi remote.
+HTTP suite với GoTrue/PostgREST, token hợp lệ/giả mạo, Mailpit, signup/login/refresh/reset, bootstrap/RLS/suspension đã viết nhưng CHƯA CHẠY vì không có stack.
+
+4. VẤN ĐỀ ĐÃ SỬA
+Ngăn active user đọc placeholder profile chưa onboarding của người khác.
+Không dùng table REVOKE để giả đã gỡ column SELECT: future column grants không được cài trong Phase A.
+Thống nhất Auth row lock trước status/profile để bootstrap/update không đảo thứ tự khóa; race đã test.
+Supabase CLI mới không nhận PG16 config; local stack config dùng PG17; portable test PG16 ghi riêng.
+
+5. PHẦN CÒN THIẾU
+Chưa Supabase stack/staging thật: JWT cryptography, GoTrue trigger owner, PostgREST HTTP mapping, Auth reset/deep link, actual grants/CLI ledger integration.
+Chưa pipeline upload/finalize/cleanup bytes hoặc Storage policies/buckets thực; RPC profile kiểm asset registry đã ready/owned/purpose. Retire outbox có code, worker chưa triển khai ở A.
+Chưa request/delete account và worker: cần duyệt reauth/retention/private chat/last-admin. Gate state deleting đã có và test, không phải tính năng self-delete hoàn tất.
+Phone OTP chưa bật, cần SMS provider. Không triển khai nghiệp vụ Stories/Groups/Chat/Notifications, không chuyển sang B.
+
+6. BÀN GIAO VÀ BƯỚC CHỦ DỰ ÁN
+Chi tiết 11 mục: database_design/MEETO_PHASE_A_IMPLEMENTATION.md.
+Migrations/config/manifest/scripts/HTTP suite: supabase/.
+Local SQL/RPC/concurrency/ledger tests và evidence: database_design/validation_phase_a/.
+Cài Docker/Podman phù hợp để chạy local stack, chạy HTTP suite với local key giữ trong biến môi trường, duyệt staging project cụ thể và backup/owners/checksum trước dry-run/apply.
+Chủ dự án tự login/link CLI trực tiếp; không cần gửi secret/password vào báo cáo. Chưa có quyền production; không db push/reset remote trong nhiệm vụ này.
+Không sửa Android, local.properties, Firebase/ImgBB, supabase/storage.sql cũ hoặc baocao.txt/baocao_nhiemvu04.txt. Báo cáo này là tệp mới.
+
+XÁC MINH BÀN GIAO CUỐI
+- Manifest3 migration khớp SHA-256; kiểm tra4 migration controls đạt sau rà soát script.
+- 19 artifact implementation/test/report được kiểm UTF-8 hợp lệ, không rỗng; scripts PowerShell parse0 lỗi.
+- PostgreSQL portable đã dừng; pg_ctl status trả3 (không chạy). Không để server thử nghiệm nền.
+- Báo cáo/evidence phân biệt rõ PostgreSQL local với Supabase service còn BLOCKED; không production deploy.

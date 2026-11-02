@@ -13,7 +13,7 @@ import com.bumptech.glide.Glide;
 import com.example.meetomxh.R;
 import com.example.meetomxh.databinding.ItemChatMessageBinding;
 import com.example.meetomxh.models.ChatMessage;
-import com.google.firebase.Timestamp;
+import com.example.meetomxh.supabase.ServerTime;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class ChatMessageAdapter extends RecyclerView.Adapter<ChatMessageAdapter.MessageViewHolder> {
+    private static final Object RECEIPT_CHANGED = new Object();
     public interface OnMessageInteractionListener {
         void onLongPress(ChatMessage message);
         void onReplyTap(String messageId);
@@ -34,7 +35,7 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<ChatMessageAdapter.
     private final String currentUid;
     private OnMessageInteractionListener interactionListener;
     private final Set<String> busyMessageIds = new HashSet<>();
-    private Timestamp otherParticipantLastReadAt;
+    private Long otherParticipantLastReadSeq;
 
     public ChatMessageAdapter(String currentUid) {
         this.currentUid = currentUid;
@@ -74,9 +75,9 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<ChatMessageAdapter.
     }
 
     public void setInteractionListener(OnMessageInteractionListener listener) { interactionListener = listener; }
-    public void setOtherParticipantLastReadAt(Timestamp timestamp) {
-        if (otherParticipantLastReadAt == null ? timestamp == null : otherParticipantLastReadAt.equals(timestamp)) return;
-        otherParticipantLastReadAt = timestamp;
+    public void setOtherParticipantLastReadSeq(Long sequence) {
+        if (otherParticipantLastReadSeq == null ? sequence == null : otherParticipantLastReadSeq.equals(sequence)) return;
+        otherParticipantLastReadSeq = sequence;
         notifyReadReceiptsChanged();
     }
 
@@ -84,7 +85,7 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<ChatMessageAdapter.
         for (int index = messages.size() - 1; index >= 0; index--) {
             ChatMessage message = messages.get(index);
             if (currentUid != null && currentUid.equals(message.getSenderId())) {
-                notifyItemChanged(index);
+                notifyItemChanged(index, RECEIPT_CHANGED);
                 return;
             }
         }
@@ -105,6 +106,13 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<ChatMessageAdapter.
 
     @Override
     public void onBindViewHolder(@NonNull MessageViewHolder holder, int position) {
+        String latestOutgoingId = latestOutgoingId();
+        holder.bind(messages.get(position), currentUid, interactionListener,
+                busyMessageIds.contains(messages.get(position).getMessageId()), allMessages,
+                otherParticipantLastReadSeq, latestOutgoingId);
+    }
+
+    private String latestOutgoingId() {
         String latestOutgoingId = null;
         for (int i = messages.size() - 1; i >= 0; i--) {
             if (currentUid != null && currentUid.equals(messages.get(i).getSenderId())) {
@@ -112,9 +120,15 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<ChatMessageAdapter.
                 break;
             }
         }
-        holder.bind(messages.get(position), currentUid, interactionListener,
-                busyMessageIds.contains(messages.get(position).getMessageId()), allMessages,
-                otherParticipantLastReadAt, latestOutgoingId);
+        return latestOutgoingId;
+    }
+
+    @Override public void onBindViewHolder(@NonNull MessageViewHolder holder, int position,
+                                         @NonNull List<Object> payloads) {
+        if (!payloads.isEmpty() && payloads.stream().allMatch(value -> value == RECEIPT_CHANGED)) {
+            ChatMessage message = messages.get(position);
+            holder.bindReceipt(message, currentUid, otherParticipantLastReadSeq, latestOutgoingId());
+        } else onBindViewHolder(holder, position);
     }
 
     @Override
@@ -152,18 +166,18 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<ChatMessageAdapter.
         }
 
         void bind(ChatMessage message, String currentUid, OnMessageInteractionListener listener, boolean busy,
-                  List<ChatMessage> allMessages, Timestamp otherReadAt, String latestOutgoingId) {
+                  List<ChatMessage> allMessages, Long otherReadSeq, String latestOutgoingId) {
             boolean mine = currentUid != null && currentUid.equals(message.getSenderId());
             binding.messageRow.setGravity(mine ? Gravity.END : Gravity.START);
             binding.messageBubble.setBackgroundResource(mine
                     ? R.drawable.bg_chat_bubble_mine : R.drawable.bg_chat_bubble_other);
             binding.tvMessageText.setText(message.getDisplayText());
             boolean hasImage = !message.isRecalled() && "image".equals(message.getType())
-                    && message.getImageUrl() != null && message.getImageUrl().startsWith("https://");
+                    && com.example.meetomxh.repositories.ChatRepository.isValidStorageImageUrl(message.getImageUrl());
             binding.ivMessageImage.setVisibility(hasImage ? android.view.View.VISIBLE : android.view.View.GONE);
             binding.tvMessageText.setVisibility(hasImage ? android.view.View.GONE : android.view.View.VISIBLE);
             if (hasImage) {
-                Glide.with(binding.ivMessageImage).load(message.getImageUrl())
+                Glide.with(binding.ivMessageImage).applyDefaultRequestOptions(new com.bumptech.glide.request.RequestOptions().diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.NONE).skipMemoryCache(true)).load(message.getImageUrl())
                         .placeholder(R.drawable.ic_photo).error(R.drawable.ic_photo)
                         .centerCrop().into(binding.ivMessageImage);
                 binding.ivMessageImage.setOnClickListener(v -> {
@@ -188,13 +202,17 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<ChatMessageAdapter.
                 binding.tvReplyPreview.setVisibility(android.view.View.GONE);
                 binding.tvReplyPreview.setOnClickListener(null);
             }
-            binding.messageBubble.setOnLongClickListener(v -> {
+            android.view.View.OnLongClickListener messageActions = v -> {
                 if (busy || message.getMessageId() == null || message.getSenderId() == null
                         || message.getSenderId().trim().isEmpty()
                         || listener == null) return true;
                 listener.onLongPress(message);
                 return true;
-            });
+            };
+            binding.messageBubble.setOnLongClickListener(messageActions);
+            binding.tvMessageText.setOnLongClickListener(messageActions);
+            binding.tvReplyPreview.setOnLongClickListener(messageActions);
+            binding.ivMessageImage.setOnLongClickListener(messageActions);
             int textColor = ContextCompat.getColor(binding.getRoot().getContext(),
                     mine ? R.color.chat_bubble_mine_text : R.color.text_primary);
             binding.tvMessageText.setTextColor(textColor);
@@ -203,12 +221,16 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<ChatMessageAdapter.
                     .format(new Date(message.getCreatedAt().toDate().getTime())));
             binding.tvMessageTime.setTextColor(ContextCompat.getColor(binding.getRoot().getContext(),
                     mine ? R.color.chat_bubble_mine_secondary : R.color.text_secondary));
+            bindReceipt(message, currentUid, otherReadSeq, latestOutgoingId);
+        }
+
+        void bindReceipt(ChatMessage message, String currentUid, Long otherReadSeq, String latestOutgoingId) {
+            boolean mine = currentUid != null && currentUid.equals(message.getSenderId());
             boolean showReceipt = mine && message.getMessageId() != null
                     && message.getMessageId().equals(latestOutgoingId);
             binding.tvMessageReceipt.setVisibility(showReceipt ? android.view.View.VISIBLE : android.view.View.GONE);
             if (showReceipt) {
-                boolean read = otherReadAt != null && message.getCreatedAt() != null
-                        && message.getCreatedAt().compareTo(otherReadAt) <= 0;
+                boolean read = otherReadSeq != null && message.seq > 0 && message.seq <= otherReadSeq;
                 binding.tvMessageReceipt.setText(read ? "Đã xem" : "Đã gửi");
             }
         }

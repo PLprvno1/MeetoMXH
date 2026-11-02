@@ -1,0 +1,412 @@
+﻿[
+    {
+        "path":  ".gitignore",
+        "exists":  true,
+        "sha256":  "9CF4358B7043DAA31A7F5B5183ED9830EC90B0A1C8DBDA82E3FA05B69AFD6E2E"
+    },
+    {
+        "path":  "app/build.gradle.kts",
+        "exists":  true,
+        "sha256":  "EBCC31BBC895B184DB6F4C941C03EC28C8351EC47570AF2B18E12116A13BB1B7"
+    },
+    {
+        "path":  "app/google-services.json",
+        "exists":  false,
+        "sha256":  null
+    },
+    {
+        "path":  "app/src/androidTest/assets/verified-small.mp4",
+        "exists":  true,
+        "sha256":  "BE2F6A9FFBFEE51A854B44C55F2077ABDCBCCD1B07FE93DF070FEFF6A153F79F"
+    },
+    {
+        "path":  "app/src/androidTest/java/com/example/meetomxh/ChatHistoryTest.java",
+        "exists":  true,
+        "sha256":  "6D0CA1E1A2539BF0F19F1B9D859C48F1B06CF5DA95907F266EC201882B8CE5DD"
+    },
+    {
+        "path":  "app/src/androidTest/java/com/example/meetomxh/ClientSecurityTest.java",
+        "exists":  true,
+        "sha256":  "4B43A9D34BD8BF065E47291FEBF2C39E350993CAB0483C6E2F349C24918996C5"
+    },
+    {
+        "path":  "app/src/androidTest/java/com/example/meetomxh/CommentsUiTest.java",
+        "exists":  true,
+        "sha256":  "3D4176FA3751A0E5DFE3A5C8F00FA0D164819C8A9E74A47B84298E1FF6924E69"
+    },
+    {
+        "path":  "app/src/androidTest/java/com/example/meetomxh/ExpiryTest.java",
+        "exists":  true,
+        "sha256":  "6C5123CC9443F6D2B1189B647C21520956C96A63C2E6F7222F6E991DA06DA247"
+    },
+    {
+        "path":  "app/src/androidTest/java/com/example/meetomxh/FeedRenderingTest.java",
+        "exists":  true,
+        "sha256":  "D8257F169044038CDC021FE4F7CAF446C863B94D9DFDCDBE60C010394C2BF258"
+    },
+    {
+        "path":  "app/src/androidTest/java/com/example/meetomxh/MediaAndMessengerTest.java",
+        "exists":  true,
+        "sha256":  "7DB04E2FC65179DB750BD4A3925641665C29849CA93EB1B4ADB27DA69B0075AF"
+    },
+    {
+        "path":  "app/src/androidTest/java/com/example/meetomxh/NetworkRecoveryTest.java",
+        "exists":  true,
+        "sha256":  "90C852D73D0B32EB0D56B903BE26BC9946A012266423CFD9F09B3B9204B0965C"
+    },
+    {
+        "path":  "app/src/androidTest/java/com/example/meetomxh/RecoveryTest.java",
+        "exists":  true,
+        "sha256":  "25C788FF6667AFB2425102692FA57D3A51A30037959F4A5DC70B3689C890621E"
+    },
+    {
+        "path":  "app/src/androidTest/java/com/example/meetomxh/SessionRestoreTest.java",
+        "exists":  true,
+        "sha256":  "620FA528E133ACC679F3443BCF1813778DCADFC6A3BFBCDB6CF55141D644C2E7"
+    },
+    {
+        "path":  "app/src/androidTest/java/com/example/meetomxh/SupabaseCutoverTest.java",
+        "exists":  true,
+        "sha256":  "BF1AE849515F3EA3CCD961B58C3FF512B51545F80F6EF10C4C52452C19C2D40E"
+    },
+    {
+        "path":  "app/src/debug/AndroidManifest.xml",
+        "exists":  true,
+        "sha256":  "3FD782B268F618EF0C725797E88FB9EBCCD30FD33685F4F263F535CDAD53B520"
+    },
+    {
+        "path":  "app/src/debug/res/xml/debug_network_security.xml",
+        "exists":  true,
+        "sha256":  "FEDED23F424C5DB456688FCB512993C408551B8F4A24A824767D9FE09C8FB6C5"
+    },
+    {
+        "path":  "app/src/main/AndroidManifest.xml",
+        "exists":  true,
+        "sha256":  "1457791542B3A0D5DF0923B1489178A965D2FEFF7F47F98EAF1E75C29E0DE5EB"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/adapters/ChatMessageAdapter.java",
+        "exists":  true,
+        "sha256":  "89B5A3D527BD2E81CCBEFCFC40C72522365F7DA0D811C0425487F9AE54466B60"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/adapters/CommentAdapter.java",
+        "exists":  true,
+        "sha256":  "66EBA211BE3ECD8E6BEAB1C9E84E049C6B57F4F553FF34C682A66EC9ED549496"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/adapters/FeedAdapter.java",
+        "exists":  true,
+        "sha256":  "94E30A3C1AB60F4C6B215249126AA74C9FCCE206F7E62DE636619E4898A5BAF1"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/adapters/FriendItemAdapter.java",
+        "exists":  true,
+        "sha256":  "8F422A012E5FBCE4D2ED004BF1F7EF9EA74D2DF0233748D4F57A65584D12AE81"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/adapters/InboxAdapter.java",
+        "exists":  true,
+        "sha256":  "5AA94CADBD832216CB91CCF78467332E2737CA178DAEEB8219A7BC0B90896211"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/adapters/PostAdapter.java",
+        "exists":  true,
+        "sha256":  "C6B14919B9044974A62FABCE2F79CAC47193BFEE574C6CBD3DD3E557D1529365"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/adapters/StoryAdapter.java",
+        "exists":  true,
+        "sha256":  "DA1961D65DED37256BC9E7063D709DBEDBEB9CBAE547169FDCACDCE1C2944515"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/AuthCallbackActivity.java",
+        "exists":  true,
+        "sha256":  "AA8704535ABA9BA8BC830CEFD02CBAA9BBAD0268EFAD97BFB37C60B1E155CA6C"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/ChatActivity.java",
+        "exists":  true,
+        "sha256":  "129F11AAD3A63ED514E91A22282D365362C873A63081D0D0582206CD4D89933D"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/ChatImageViewerActivity.java",
+        "exists":  true,
+        "sha256":  "F447E163D7601F1DCEDC51E449BD0807D0B89287131447DD0F3B971C2B83937D"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/CreatePostActivity.java",
+        "exists":  true,
+        "sha256":  "5F247CDAE611DE510436BF6E773725DE13CE8C4A8576E731668589347F358360"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/ForgotPasswordActivity.java",
+        "exists":  true,
+        "sha256":  "127E4485EE6BE381996F991952B5E466CF7DFD883A1C79100511FCC1EAAA256C"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/fragments/CommentsBottomSheetFragment.java",
+        "exists":  true,
+        "sha256":  "BCE14F56053B94557BCFC3390840A2EDF8D3DD43F5D17E7FEA170CC3D5F0B388"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/fragments/FeedFragment.java",
+        "exists":  true,
+        "sha256":  "686C35A72265D7863D6E2B5EAFBC528E29AB87B08A81627B50C98E85E2EF988B"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/fragments/FriendsFragment.java",
+        "exists":  true,
+        "sha256":  "9CD9BA959B00BF208DA70551DB1BC8CB3A6FED099E904A868230F6A627ADC3F4"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/fragments/InboxFragment.java",
+        "exists":  true,
+        "sha256":  "FD3D938F7CB3BF884AF0F21F7A282D9CC22B066FE48C37BF464E15AB7EDC5F54"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/fragments/ProfileFragment.java",
+        "exists":  true,
+        "sha256":  "CED9E370038AACC1F29723D4217606925B703E4766643EE33D25ABE5FD8070B0"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/LoginActivity.java",
+        "exists":  true,
+        "sha256":  "054B776D011C18EA5FC862E379FAFB4897CA1B8103BC86CB53A92E77E6110459"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/MainActivity.java",
+        "exists":  true,
+        "sha256":  "5A4ED28D89169774FE3FB9DE358AEB816AF45B81666BD54C160A3F6A7FC3A5ED"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/MeetoApplication.java",
+        "exists":  true,
+        "sha256":  "0A6F9C1B0667D253160F97F8BE8533C6A6E26124C41EC031412D307D8A4B61B8"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/models/Chat.java",
+        "exists":  true,
+        "sha256":  "008BE2661AEE112C2CB43693954DF748122E4FBFBADC8745FD459FBD4825C707"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/models/ChatMessage.java",
+        "exists":  true,
+        "sha256":  "8E39122E60D429A2B178B8D9BD4B04F2223287169AC4F875DE3E35EBB97D3125"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/models/Comment.java",
+        "exists":  true,
+        "sha256":  "4B5C47CF0BFC9D20AC738151A76061A65EC7DC0ECD6D04630F5975910363EC4E"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/models/FriendItem.java",
+        "exists":  true,
+        "sha256":  "156750EDB366FF0319EF93F986D4E84B79DFC3484AF05B2CF56035DD4DC9A3F7"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/models/Inbox.java",
+        "exists":  true,
+        "sha256":  "A1A66A8F93D70DB572327C7B1846B3CE1EC1C16F0F07E529A4A71609425267B3"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/models/Post.java",
+        "exists":  true,
+        "sha256":  "E5FC2FCE795C13BE0E09AA94AFD79767F1C8B10D9819CB3E99ECDC084A750A54"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/ProfileActivity.java",
+        "exists":  true,
+        "sha256":  "68C058A6F3D4F11764F3D24E4672B145E687B7A131A4F089278822AF3C91737A"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/ProfileEditActivity.java",
+        "exists":  true,
+        "sha256":  "E730BDA6B292ABDEF97D38C252DF10AF6F3E8152264679745C54D7ECFC773621"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/RegisterActivity.java",
+        "exists":  true,
+        "sha256":  "7EF99869447285FB0247D5240DDEA9CCD2261386756AF613B4D93D2E47032B59"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/repositories/ChatRepository.java",
+        "exists":  true,
+        "sha256":  "7B69A7BDD2197BBDA599C5B2DA090126906E3F77C15D48E7C96189BB0C7AFF12"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/repositories/FeedRepository.java",
+        "exists":  true,
+        "sha256":  "AC4E40C04C31F92E9799B69C690F19663FB269A45C8B36399E9C2A6BCD891E99"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/repositories/FriendRepository.java",
+        "exists":  true,
+        "sha256":  "4A1158A89C90EE11FE6EC1F366CD66A9AA8F1F0C5016704DC740E260834C2C18"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/repositories/UserSearchQuery.java",
+        "exists":  true,
+        "sha256":  "4F62F81FEB811C42CACA9D0406C903B073381581232C2EE0AEA19EAE0F149D9B"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/storage/PrivateAssetLoader.java",
+        "exists":  true,
+        "sha256":  "C2A02DAFDB3743ED190766D27A342A3FA8BC15C3ABCA16A03CAEF43F6CEA66C0"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/storage/SupabaseStorage.java",
+        "exists":  true,
+        "sha256":  "635E02012B8E98E7343FF65123EA2FFD58205CD387B99BCC9CB97FFFF1A7B17A"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/supabase/Api.java",
+        "exists":  true,
+        "sha256":  "43069B3DA658E87C45216D5953F7C376E9C98EC32866E4AB3FC247006A255FA3"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/supabase/ChatControls.java",
+        "exists":  true,
+        "sha256":  "2080DE2E77E781FE1032BA3437A466936E2A2DDD8165A83E2DB01A807CEF5CE7"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/supabase/CommentClient.java",
+        "exists":  true,
+        "sha256":  "1C7DE6A18CDA7AA93CDDB5564CD8CD3536C3BEB38F5AEC8B25334BC2391324C9"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/supabase/Dto.java",
+        "exists":  true,
+        "sha256":  "67E31C76305B711D2CD8472367F6461516B9389296577D41E26D403023FB55B1"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/supabase/EncryptedVault.java",
+        "exists":  true,
+        "sha256":  "623091063F7B3D8CD440927482F6EAF8BBBEA87E6FC4EBC8CB0CA9FC1E1AB4F5"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/supabase/ErrorMapper.java",
+        "exists":  true,
+        "sha256":  "4A966A6754301CCF28D87299A40F705A61061DA17FE4A6BB33D19BE36B781B65"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/supabase/EventDeduplicator.java",
+        "exists":  true,
+        "sha256":  "49AA51257593C0892103322F20014F73DA5091D17B4700F40A779701D03782A1"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/supabase/Forms.java",
+        "exists":  true,
+        "sha256":  "3CB92E594CFB6496618BCEB5E29490C4562678029D2972FA72DDB1573CA8EDC7"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/supabase/MessageOutbox.java",
+        "exists":  true,
+        "sha256":  "C6606841F6F07A4C59F593293B826B2F4D517301EE886CB16AD12CA93E29FED5"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/supabase/Observer.java",
+        "exists":  true,
+        "sha256":  "2D6E5030DB03E4C877FBA6CC85915906BEE5E7FF09617C263E4D7F5AA7E067DB"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/supabase/PostDetails.java",
+        "exists":  true,
+        "sha256":  "063B4A9908964C230828CF9A65074DE1E3F0E9C2CC3E95C2866A6663C226ACAF"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/supabase/ProfileClient.java",
+        "exists":  true,
+        "sha256":  "C19AC8296438724336584CB2949C0D85CCC1E2FECE30F08A012FF4A0508FB44B"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/supabase/RealtimeClient.java",
+        "exists":  true,
+        "sha256":  "C3214C1755E845274BEE12A8DBB15BE3334D481E8C00BF7B0F3FF51276957C87"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/supabase/RequestIds.java",
+        "exists":  true,
+        "sha256":  "F0F8215521222264CAA96B16FCB6373A15A98A6900A534B768DF24C22B1DC0BC"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/supabase/RpcClient.java",
+        "exists":  true,
+        "sha256":  "3906A463A84AAED3F262A3B9760B9491C13DE2B375B128E0FC981EB245F0023B"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/supabase/ServerTime.java",
+        "exists":  true,
+        "sha256":  "2E69C5227705568D06F6DEBBDDA827E106BABD435D1BB0CEDB28033E9D7B6ACB"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/supabase/SessionManager.java",
+        "exists":  true,
+        "sha256":  "D1CEB62644AF3A7C6E2DB28CD22043719B07A348ADCA2554111AD74F8CD0E421"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/supabase/SessionUser.java",
+        "exists":  true,
+        "sha256":  "B79314933BFD55115FAEABAB975864A69C23F596CA04AF61441EB9715B6E6096"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/supabase/Subscription.java",
+        "exists":  true,
+        "sha256":  "1C48E01F147E3EDF651B0AABEACAB8B90C62864F6A9AA35513A1BF2146B7CB13"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/supabase/SupabaseAuthClient.java",
+        "exists":  true,
+        "sha256":  "84E97F24002B44A130C773B4D26286E400E9D4654A4466AC02C31E208B33BF73"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/supabase/SupabaseConfig.java",
+        "exists":  true,
+        "sha256":  "025EEB85F83FD3F3F2CAB73A9072472CA7852605DCDB6C5AF81ED7B778E906AE"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/supabase/SupabaseHttpClient.java",
+        "exists":  true,
+        "sha256":  "EA598E6AAFA3589EC2BFA2A20FDCB8ED7FB64B509337F4A302AD99065CA50FC4"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/UserPostsActivity.java",
+        "exists":  true,
+        "sha256":  "182BA53DED7E9739F3495D53D0253ED68EE05E7085F068839922EF36522C1187"
+    },
+    {
+        "path":  "app/src/main/res/layout/activity_chat_image_viewer.xml",
+        "exists":  true,
+        "sha256":  "6C3BD86CB6229C16E27925B8136185086E08759B39C7C9CD5935744EAF15CD7C"
+    },
+    {
+        "path":  "app/src/main/res/layout/activity_form.xml",
+        "exists":  true,
+        "sha256":  "C14FB817E67CBA1EB38E4CFD535E30E264217E3D0A3F051628C4CE515F923BFC"
+    },
+    {
+        "path":  "app/src/main/res/layout/fragment_feed.xml",
+        "exists":  true,
+        "sha256":  "4984917ED2229639B0A4A0E3EA9F6B6CA47AC6D7800F8908DC657E493C554DAE"
+    },
+    {
+        "path":  "app/src/main/res/layout/fragment_inbox.xml",
+        "exists":  true,
+        "sha256":  "DC4D49F07B778B1CBCADBA387B8CC5E48D9AC0F5BD0C125000848A44D9DD978D"
+    },
+    {
+        "path":  "app/src/test/java/com/example/meetomxh/ExampleUnitTest.java",
+        "exists":  true,
+        "sha256":  "0DA152D197A6F74F949BFA8FB8CAFFC854ED6FCB2EB697CFA69F4E4834AF29BB"
+    },
+    {
+        "path":  "build.gradle.kts",
+        "exists":  true,
+        "sha256":  "95C06B00787DA2D890F35A0B1EE8716DEAA665121F9F4B62DF38AD85C588471A"
+    },
+    {
+        "path":  "google-services.json",
+        "exists":  false,
+        "sha256":  null
+    }
+]

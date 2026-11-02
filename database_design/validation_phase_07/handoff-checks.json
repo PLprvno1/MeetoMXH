@@ -1,0 +1,28 @@
+﻿{
+    "scope":  "LOCAL ONLY",
+    "protectedFilesUnchanged":  1216,
+    "originalMigrationsUnchanged":  9,
+    "manifestMigrations":  15,
+    "applicationTables":  36,
+    "publicRpc":  49,
+    "containersRunning":  9,
+    "jwtExpiry":  3600,
+    "realtimePrivateOnly":  true,
+    "applicationPublications":  0,
+    "portableListenerAbsent":  true,
+    "sqlFixturesRolledBack":  true,
+    "powershellParsed":  15,
+    "nodeSyntax":  "PASS",
+    "utf8Artifacts":  38,
+    "credentialScan":  "no credential-shaped values",
+    "replay":  "upToDate",
+    "cloudDeployment":  false,
+    "tests":  {
+                  "bHttp":  473,
+                  "aSql":  87,
+                  "catalogue":  33,
+                  "aHttp":  174,
+                  "websocket":  40,
+                  "cHttp":  511
+              }
+}

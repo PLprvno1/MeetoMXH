@@ -1,0 +1,9 @@
+{
+  "actualRootUi": true,
+  "actualReplyUi": true,
+  "simultaneousSiblingReplies": true,
+  "selectedReplyDeletePreservedSibling": true,
+  "survivingReplyEditedThroughUi": true,
+  "emptyCommentDidNotCommit": true,
+  "authorResolvedByProfileAcl": true
+}

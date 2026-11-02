@@ -1,0 +1,14 @@
+﻿{
+    "upToDate":  true,
+    "dryRun":  false,
+    "migrations":  [
+
+                   ],
+    "seeds":  [
+
+              ],
+    "roles":  [
+
+              ],
+    "message":  "Local database is up to date."
+}

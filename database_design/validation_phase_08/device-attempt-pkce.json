@@ -1,0 +1,33 @@
+{
+  "environment": "Android emulator -> Supabase local",
+  "checks": [
+    {
+      "check": "screen LoginActivity",
+      "pass": true
+    },
+    {
+      "check": "screen RegisterActivity",
+      "pass": true
+    },
+    {
+      "check": "mail verification stays loopback",
+      "pass": true
+    },
+    {
+      "check": "signup requires email confirmation",
+      "pass": true
+    },
+    {
+      "check": "unverified password login denied",
+      "pass": true
+    },
+    {
+      "check": "GoTrue PKCE redirect",
+      "pass": true
+    },
+    {
+      "check": "screen RegisterActivity",
+      "pass": false
+    }
+  ]
+}

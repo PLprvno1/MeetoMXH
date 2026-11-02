@@ -1,23 +1,24 @@
 package com.example.meetomxh.models;
 
-import com.google.firebase.Timestamp;
-import com.google.firebase.firestore.DocumentSnapshot;
+import com.example.meetomxh.supabase.ServerTime;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.ArrayList;
 
-/** Chat message stored below Chats/{chatId}/Messages/{messageId}. */
+/** Chat message projected by the authorized message RPC. */
 public class ChatMessage {
+    public long seq,version;
     private String messageId;
     private String senderId;
     private String receiverId;
     private String type;
     private String text;
     private String imageUrl;
-    private Timestamp createdAt;
+    private ServerTime createdAt;
     private boolean isRecalled;
-    private Timestamp recalledAt;
+    private ServerTime recalledAt;
     private List<String> deletedFor = new ArrayList<>();
     private String replyToMessageId;
     private String replyToSenderId;
@@ -37,12 +38,12 @@ public class ChatMessage {
     public void setText(String text) { this.text = text; }
     public String getImageUrl() { return imageUrl; }
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
-    public Timestamp getCreatedAt() { return createdAt; }
-    public void setCreatedAt(Timestamp createdAt) { this.createdAt = createdAt; }
+    public ServerTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(ServerTime createdAt) { this.createdAt = createdAt; }
     public boolean isRecalled() { return isRecalled; }
     public void setRecalled(boolean recalled) { isRecalled = recalled; }
-    public Timestamp getRecalledAt() { return recalledAt; }
-    public void setRecalledAt(Timestamp recalledAt) { this.recalledAt = recalledAt; }
+    public ServerTime getRecalledAt() { return recalledAt; }
+    public void setRecalledAt(ServerTime recalledAt) { this.recalledAt = recalledAt; }
     public List<String> getDeletedFor() { return deletedFor; }
     public void setDeletedFor(List<String> deletedFor) { this.deletedFor = deletedFor; }
     public String getReplyToMessageId() { return replyToMessageId; }
@@ -67,39 +68,4 @@ public class ChatMessage {
                 && text != null && text.toLowerCase(Locale.ROOT).contains(needle);
     }
 
-    public static ChatMessage fromSnapshot(DocumentSnapshot snapshot) {
-        if (snapshot == null || !snapshot.exists()) return null;
-        ChatMessage message = new ChatMessage();
-        message.setMessageId(snapshot.getId());
-        message.setSenderId(readString(snapshot, "senderId"));
-        message.setReceiverId(readString(snapshot, "receiverId"));
-        message.setType(readString(snapshot, "type"));
-        message.setText(readString(snapshot, "text"));
-        message.setImageUrl(readString(snapshot, "imageUrl"));
-        message.setCreatedAt(readTimestamp(snapshot, "createdAt"));
-        message.setRecalled(Boolean.TRUE.equals(snapshot.get("isRecalled")));
-        message.setRecalledAt(readTimestamp(snapshot, "recalledAt"));
-        message.setDeletedFor(readStringList(snapshot.get("deletedFor")));
-        message.setReplyToMessageId(readString(snapshot, "replyToMessageId"));
-        message.setReplyToSenderId(readString(snapshot, "replyToSenderId"));
-        message.setReplyPreview(readString(snapshot, "replyPreview"));
-        return message;
-    }
-
-    private static String readString(DocumentSnapshot snapshot, String key) {
-        Object value = snapshot.get(key);
-        return value instanceof String ? (String) value : null;
-    }
-
-    private static Timestamp readTimestamp(DocumentSnapshot snapshot, String key) {
-        Object value = snapshot.get(key);
-        return value instanceof Timestamp ? (Timestamp) value : null;
-    }
-
-    private static List<String> readStringList(Object value) {
-        List<String> result = new ArrayList<>();
-        if (value instanceof List<?>) for (Object item : (List<?>) value)
-            if (item instanceof String) result.add((String) item);
-        return result;
-    }
 }

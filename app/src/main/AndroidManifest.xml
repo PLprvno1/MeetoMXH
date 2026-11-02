@@ -3,10 +3,10 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
 
     <application
-        android:allowBackup="true"
+        android:name=".MeetoApplication"
+        android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
@@ -19,6 +19,7 @@
         <!-- LoginActivity là màn hình khởi chạy đầu tiên -->
         <activity
             android:name=".LoginActivity"
+            android:launchMode="singleTask"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -42,6 +43,11 @@
         <activity
             android:name=".ProfileActivity"
             android:exported="false" />
+        <activity android:name=".ProfileEditActivity" android:exported="false" />
+        <activity android:name=".UserPostsActivity" android:exported="false" />
+        <activity android:name=".AuthCallbackActivity" android:exported="true">
+            <intent-filter><action android:name="android.intent.action.VIEW"/><category android:name="android.intent.category.DEFAULT"/><category android:name="android.intent.category.BROWSABLE"/><data android:scheme="meeto" android:host="auth" android:path="/callback"/></intent-filter>
+        </activity>
 
         <activity
             android:name=".ChatActivity"

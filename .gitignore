@@ -13,3 +13,8 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+/supabase.debug.properties
+/database_design/validation_phase_08/emulator-*.img*
+/database_design/validation_phase_08/android-before.zip
+/database_design/validation_phase_08/legacy-*.backup

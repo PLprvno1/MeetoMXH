@@ -1,0 +1,139 @@
+﻿{
+    "environment":  "REAL SUPABASE POSTGRES 17 CATALOG",
+    "passed":  33,
+    "failed":  0,
+    "tests":  [
+                  {
+                      "label":  "104 CHECK constraints",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "110 indexes",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "21 boolean authorization helpers",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "36 application tables",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "49 public RPC wrappers",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "79 foreign keys",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "all 36 tables enable RLS",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "all definer functions have empty search_path",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "anon authenticated roles cannot bypass RLS",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "CLI ledger has exact 15 versions",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "definer owner has BYPASSRLS",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "each live group has an operative admin",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "exactly one transactional send event per message",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "five scoped Storage policies",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "future table and column privileges closed",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "GoTrue-owned real auth.users",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "internal actor and worker helpers denied",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "markers bounded by stream and read implies delivered",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "new function default EXECUTE deny",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "new table default access deny",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "no app table replication enabled",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "no PUBLIC EXECUTE on app functions",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "private pair has exactly two matching active members",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "real bootstrap trigger owner postgres",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "Realtime own user receive-only policy",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "Realtime private-only tenant",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "Realtime topic ABI exists",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "RPC grants authenticated only",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "sequence contiguous and high water reconciles",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "Storage objects owner_id text",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "Storage operation ABI exists",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "Storage standard upload restrictive gate",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "three private A B C buckets",
+                      "passed":  true
+                  }
+              ]
+}

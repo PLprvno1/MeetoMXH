@@ -1,0 +1,7 @@
+{
+  "mailpitRealRecovery": true,
+  "PKCE": true,
+  "resetUi": true,
+  "logoutAfterReset": true,
+  "newPasswordUiLogin": true
+}

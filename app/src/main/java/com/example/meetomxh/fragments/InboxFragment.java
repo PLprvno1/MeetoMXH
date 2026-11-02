@@ -18,10 +18,10 @@ import com.example.meetomxh.models.Chat;
 import com.example.meetomxh.models.Inbox;
 import com.example.meetomxh.models.User;
 import com.example.meetomxh.repositories.ChatRepository;
-import com.google.firebase.Timestamp;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.ListenerRegistration;
+import com.example.meetomxh.supabase.ServerTime;
+import com.example.meetomxh.supabase.SessionManager;
+import com.example.meetomxh.supabase.*;
+import com.example.meetomxh.supabase.Subscription;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -38,7 +38,7 @@ public class InboxFragment extends Fragment {
     private FragmentInboxBinding binding;
     private InboxAdapter adapter;
     private ChatRepository chatRepository;
-    private ListenerRegistration chatsRegistration;
+    private Subscription chatsRegistration;
     private final Map<String, UserProfile> profiles = new HashMap<>();
     private final Set<String> profilesLoading = new HashSet<>();
     private List<Chat> chats = new ArrayList<>();
@@ -58,8 +58,9 @@ public class InboxFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         chatRepository = ChatRepository.getInstance();
-        currentUid = FirebaseAuth.getInstance().getCurrentUser() == null
-                ? null : FirebaseAuth.getInstance().getCurrentUser().getUid();
+        binding.btnCreateChatGroup.setOnClickListener(v -> ChatControls.create(requireActivity()));
+        currentUid = SessionManager.getInstance().getCurrentUser() == null
+                ? null : SessionManager.getInstance().getCurrentUser().getUid();
         binding.rvInbox.setLayoutManager(new LinearLayoutManager(requireContext()));
         adapter = new InboxAdapter(this::openChat);
         binding.rvInbox.setAdapter(adapter);
@@ -130,26 +131,7 @@ public class InboxFragment extends Fragment {
         return binding != null && isAdded() && generation == chatsListenerGeneration;
     }
 
-    private void loadProfileOnce(String uid) {
-        if (profiles.containsKey(uid) || !profilesLoading.add(uid)) return;
-        FirebaseFirestore.getInstance().collection("Users").document(uid).get()
-                .addOnSuccessListener(snapshot -> {
-                    profilesLoading.remove(uid);
-                    if (binding == null || !isAdded()) return;
-                    User user = snapshot.exists() ? snapshot.toObject(User.class) : null;
-                    String name = user == null ? null : user.getFullName();
-                    if (name == null || name.trim().isEmpty()) name = "Người dùng";
-                    String avatar = user == null ? null : user.getAvatarUrl();
-                    profiles.put(uid, new UserProfile(name, avatar));
-                    renderChats();
-                })
-                .addOnFailureListener(error -> {
-                    profilesLoading.remove(uid);
-                    if (binding == null || !isAdded()) return;
-                    profiles.put(uid, new UserProfile("Người dùng", null));
-                    renderChats();
-                });
-    }
+    private void loadProfileOnce(String uid) {if(profiles.containsKey(uid)||!profilesLoading.add(uid))return;ProfileClient.get(uid,new Api.Callback<com.example.meetomxh.models.User>(){public void success(com.example.meetomxh.models.User user){profilesLoading.remove(uid);if(binding==null)return;profiles.put(uid,new UserProfile(user.getFullName(),user.getAvatarUrl()));renderChats();}public void error(String e){profilesLoading.remove(uid);if(binding!=null){profiles.put(uid,new UserProfile("NgÆ°á»i dÃ¹ng khÃ´ng kháº£ dá»¥ng",null));renderChats();}}});}
 
     private void renderChats() {
         if (binding == null || adapter == null) return;
@@ -170,7 +152,7 @@ public class InboxFragment extends Fragment {
         for (Chat chat : chats) {
             String otherUid = getOtherUid(chat);
             if (otherUid == null) continue;
-            UserProfile profile = profiles.get(otherUid);
+            UserProfile profile = "group".equals(chat.getType()) ? new UserProfile(chat.title + ("archived".equals(chat.state)?" (lÆ°u trá»¯)":""),null) : profiles.get(otherUid);
             String preview = chat.getLastMessage();
             if (chat.getLastMessageHiddenFor() != null && currentUid != null
                     && chat.getLastMessageHiddenFor().contains(currentUid)) preview = "Tin nhắn đã xóa";
@@ -180,7 +162,7 @@ public class InboxFragment extends Fragment {
                     profile == null ? "Người dùng" : profile.name,
                     preview,
                     profile == null ? null : profile.avatarUrl,
-                    formatTimestamp(chat.getLastMessageAt()));
+                    formatServerTime(chat.getLastMessageAt()));
             row.setUnread(chat.isUnreadFor(currentUid));
             rows.add(row);
         }
@@ -193,8 +175,8 @@ public class InboxFragment extends Fragment {
 
     private void sortChatsNewestFirst() {
         chats.sort((first, second) -> {
-            Timestamp firstTime = first.getLastMessageAt();
-            Timestamp secondTime = second.getLastMessageAt();
+            ServerTime firstTime = first.getLastMessageAt();
+            ServerTime secondTime = second.getLastMessageAt();
             if (firstTime == null && secondTime == null) return 0;
             if (firstTime == null) return 1;
             if (secondTime == null) return -1;
@@ -203,14 +185,14 @@ public class InboxFragment extends Fragment {
     }
 
     private String getOtherUid(Chat chat) {
-        if (chat == null || chat.getParticipants() == null || chat.getParticipants().size() != 2) return null;
+        if(chat!=null && "group".equals(chat.getType())) return chat.getChatId(); if (chat == null || chat.getParticipants() == null || chat.getParticipants().size() != 2) return null;
         for (String participant : chat.getParticipants()) {
             if (participant != null && !participant.equals(currentUid)) return participant;
         }
         return null;
     }
 
-    private String formatTimestamp(Timestamp timestamp) {
+    private String formatServerTime(ServerTime timestamp) {
         if (timestamp == null) return "";
         Date date = timestamp.toDate();
         long elapsed = System.currentTimeMillis() - date.getTime();
@@ -224,7 +206,7 @@ public class InboxFragment extends Fragment {
         if (inbox == null || inbox.getId() == null || inbox.getOtherUid() == null) return;
         Intent intent = new Intent(requireContext(), ChatActivity.class);
         intent.putExtra(ChatActivity.EXTRA_CHAT_ID, inbox.getId());
-        intent.putExtra(ChatActivity.EXTRA_OTHER_UID, inbox.getOtherUid());
+        if(!inbox.getId().equals(inbox.getOtherUid()))intent.putExtra(ChatActivity.EXTRA_OTHER_UID, inbox.getOtherUid());
         startActivity(intent);
     }
 

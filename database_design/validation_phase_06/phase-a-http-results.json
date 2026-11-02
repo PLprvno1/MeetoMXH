@@ -1,0 +1,703 @@
+﻿{
+    "environment":  "LOCAL SUPABASE HTTP",
+    "passed":  174,
+    "failed":  0,
+    "tests":  [
+                  {
+                      "test":  "anon data denied",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "invalid JWT denied",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "signup accepted",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "confirmation required before session",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "unverified login denied",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "signup email verified",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "password login",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "verified access token issued",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "bootstrap with valid JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "metadata did not auto-complete onboarding",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "onboarding with valid JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "signup accepted",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "confirmation required before session",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "unverified login denied",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "signup email verified",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "password login",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "verified access token issued",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "bootstrap with valid JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "metadata did not auto-complete onboarding",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "onboarding with valid JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "invalid signup email rejected 400",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "weak signup password rejected",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "wrong password rejected",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "duplicate signup returns no session",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "forged JWT signature denied",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "bootstrap_profile missing JWT denied",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "bootstrap_profile forged JWT denied",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "bootstrap_profile client actor parameter rejected",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_my_profile missing JWT denied",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_my_profile forged JWT denied",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_my_profile client actor parameter rejected",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "complete_onboarding missing JWT denied",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "complete_onboarding forged JWT denied",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "complete_onboarding client actor parameter rejected",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "update_profile missing JWT denied",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "update_profile forged JWT denied",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "update_profile client actor parameter rejected",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "update_profile_private missing JWT denied",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "update_profile_private forged JWT denied",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "update_profile_private client actor parameter rejected",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_profile missing JWT denied",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_profile forged JWT denied",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_profile client actor parameter rejected",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "search_profiles missing JWT denied",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "search_profiles forged JWT denied",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "search_profiles client actor parameter rejected",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "set_block missing JWT denied",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "set_block forged JWT denied",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "set_block client actor parameter rejected",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get public other profile",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "other profile has no private fields",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "search profiles via real JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "search includes public peer without private fields",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "search invalid limit 422",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "block self 422",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "block peer",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "block retry",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "block hides profile both directions",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "blocked search",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "blocked peer absent from search",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "unblock peer",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "unblock retry",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "bootstrap_profile unverified account gate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_my_profile unverified account gate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "complete_onboarding unverified account gate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "update_profile unverified account gate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "update_profile_private unverified account gate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_profile unverified account gate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "search_profiles unverified account gate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "set_block unverified account gate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "signup accepted",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "confirmation required before session",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "unverified login denied",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "signup email verified",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "password login",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "verified access token issued",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "bootstrap with valid JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "metadata did not auto-complete onboarding",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "bootstrap_profile incomplete onboarding gate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_my_profile incomplete onboarding gate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "update_profile incomplete onboarding gate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "update_profile_private incomplete onboarding gate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_profile incomplete onboarding gate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "search_profiles incomplete onboarding gate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "set_block incomplete onboarding gate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "incomplete onboarding invalid fields 422",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "active cannot see incomplete placeholder",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "Auth account without profile reports bootstrap required",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "recover entirely missing profile after real signup",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "full bootstrap recovery retry",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "full recovery retains identity and stable initial version",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "suspended Auth login still issues JWT; application gate required",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "bootstrap_profile suspended account gate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "bootstrap_profile suspended minimal envelope",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_my_profile suspended account gate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_my_profile suspended minimal envelope",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "complete_onboarding suspended account gate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "update_profile suspended account gate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "update_profile_private suspended account gate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_profile suspended account gate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "search_profiles suspended account gate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "set_block suspended account gate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "suspended raw RLS request",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "suspended raw profiles empty",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "deleting Auth login still issues JWT; application gate required",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "bootstrap_profile deleting account gate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "bootstrap_profile deleting minimal envelope",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_my_profile deleting account gate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_my_profile deleting minimal envelope",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "complete_onboarding deleting account gate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "update_profile deleting account gate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "update_profile_private deleting account gate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_profile deleting account gate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "search_profiles deleting account gate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "set_block deleting account gate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "deleting raw RLS request",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "deleting raw profiles empty",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "onboard retry",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "onboard retry version stable",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "underage private update rejected",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "valid private update",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "private update increments version",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "private update retry",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "private retry stable version",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "private stale version maps PT409",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "asset validation maps PT422",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "profile after rejected asset",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "rejected asset leaves profile unchanged",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "direct mutation denied profiles",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "direct mutation denied profile_private",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "direct mutation denied account_status",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "direct mutation denied system_roles",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "own settings update",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "other settings PATCH filtered by RLS",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "other settings after unauthorized PATCH",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "other settings unchanged by RLS-filtered PATCH",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "settings JSON constraint enforced through HTTP",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "settings after rejected JSON",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "invalid settings PATCH rolls back all columns",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "private other profile denied",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "private raw query permitted but filtered",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "private fields filtered by RLS",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "B profile before A edit",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "A own edit",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "own edit retry",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "own edit retry stable version",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "public stale version maps PT409",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "B profile after A edit",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "A edit leaves B unchanged",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "refresh rotation",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "refreshed JWT valid",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "optimistic profile race observed two HTTP requests blocked concurrently",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "optimistic profile race expected HTTP outcomes",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "bootstrap versus edit race observed two HTTP requests blocked concurrently",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "bootstrap versus edit race expected HTTP outcomes",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "same UID bootstrap retry race observed two HTTP requests blocked concurrently",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "same UID bootstrap retry race expected HTTP outcomes",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "profile after real HTTP races",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "HTTP races preserve final version and desired state",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "suspended valid JWT cannot mutate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "suspended status envelope",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "suspended no private payload",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "suspended recovery request",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "bootstrap cannot reactivate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "missing profile component detected",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "missing component recovered",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "password recovery email requested",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "recovery email verified",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "password reset through Auth",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "login with reset password",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "old password fails after reset",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "sign out",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "logout revokes refresh token",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "signed access JWT remains usable until expiry after logout",
+                      "passed":  true
+                  }
+              ]
+}

@@ -1,0 +1,7 @@
+﻿{
+    "protectedFiles":  34,
+    "changedFiles":  [
+                         "F:\\MeetoMXH\\supabase\\config.toml"
+                     ],
+    "expectedOnlyChange":  "supabase/config.toml: local auth callback allowlist; temporary TTL restored by expiry runner"
+}

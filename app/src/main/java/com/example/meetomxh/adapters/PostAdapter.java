@@ -76,7 +76,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
             // Xử lý avatar
             if (post.getUserAvatar() != null && !post.getUserAvatar().isEmpty()) {
                 Glide.with(binding.ivAvatar.getContext())
-                        .load(post.getUserAvatar())
+                        .applyDefaultRequestOptions(new com.bumptech.glide.request.RequestOptions().diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.NONE).skipMemoryCache(true)).load(post.getUserAvatar())
                         .placeholder(R.drawable.ic_home)
                         .error(R.drawable.ic_home)
                         .into(binding.ivAvatar);
@@ -88,7 +88,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
             if (post.getPostImage() != null && !post.getPostImage().isEmpty()) {
                 binding.ivPostImage.setVisibility(View.VISIBLE);
                 Glide.with(binding.ivPostImage.getContext())
-                        .load(post.getPostImage())
+                        .applyDefaultRequestOptions(new com.bumptech.glide.request.RequestOptions().diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.NONE).skipMemoryCache(true)).load(post.getPostImage())
                         .placeholder(R.drawable.ic_home)
                         .error(R.drawable.ic_home)
                         .into(binding.ivPostImage);

@@ -1,0 +1,2060 @@
+﻿{
+    "environment":  "LOCAL Docker Supabase, actual GoTrue JWT",
+    "passed":  511,
+    "failed":  0,
+    "tests":  [
+                  {
+                      "test":  "signup accepted",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "confirmation required before session",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "unverified login denied",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "signup email verified",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "password login",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "verified access token issued",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "bootstrap with valid JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "metadata did not auto-complete onboarding",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "onboarding with valid JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "signup accepted",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "confirmation required before session",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "unverified login denied",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "signup email verified",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "password login",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "verified access token issued",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "bootstrap with valid JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "metadata did not auto-complete onboarding",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "onboarding with valid JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "signup accepted",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "confirmation required before session",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "unverified login denied",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "signup email verified",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "password login",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "verified access token issued",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "bootstrap with valid JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "metadata did not auto-complete onboarding",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "onboarding with valid JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "signup accepted",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "confirmation required before session",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "unverified login denied",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "signup email verified",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "password login",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "verified access token issued",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "bootstrap with valid JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "metadata did not auto-complete onboarding",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "onboarding with valid JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "signup accepted",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "confirmation required before session",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "unverified login denied",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "signup email verified",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "password login",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "verified access token issued",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "bootstrap with valid JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "metadata did not auto-complete onboarding",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "private create",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "reverse private lookup",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "same canonical private conversation",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "self private denied [422]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "guessed conversation [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "nonmember raw conversations filtered",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "nonmember send [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "server sequence strictly increases",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "commit is not delivery",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "receiver not delivered until ACK",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "device delivery ACK",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "delivery status",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "delivery is not read",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "mark actual message read",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "read receipt visible to sender",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "read also implies delivery marker",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "reply same conversation",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "reply preview authorized",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "literal substring search preserves Android contract",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "case insensitive partial word matches",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "null search invalid [422]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "independent private conversation",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "cross-conversation reply [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "system message forgery [422]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "empty text [422]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "no direct conversations insert",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "no direct conversation_members insert",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "no direct messages insert",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "no direct message_hidden insert",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "no direct message_media insert",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "no raw request hash read",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "no raw global last-message pointer read",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "cannot set another user read marker",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "cannot edit sender/body directly",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "non-sender recall [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "hide root only for B",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "hide retry",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "hidden raw message never reappears",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "reply preview after own hide",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "hidden source has no reply ID/body leak",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "search obeys hidden preference",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "hidden original absent from search",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "owner can still read peer-hidden message",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "recall message",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "recall redacts body",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "recall retry",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "search recalled excluded",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "recalled absent from search",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "same UUID simultaneous real JWT requests overlap at DB lock",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "same UUID simultaneous status outcomes 200/200",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "same UUID same message and seq",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "retry after simulated lost ACK",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "lost ACK never allocates again",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "UUID payload mismatch [409]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "two senders unique sequence real JWT requests overlap at DB lock",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "two senders unique sequence status outcomes 200/200",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "two devices get adjacent unique seq",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "recall and read real JWT requests overlap at DB lock",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "recall and read status outcomes 200/200",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "out of order read markers real JWT requests overlap at DB lock",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "out of order read markers status outcomes 200/200",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "read markers monotonic",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "max read survives stale ACK",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send and block real JWT requests overlap at DB lock",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send and block status outcomes 200/200",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "blocked private history [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "blocked private lookup [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "unblock private peer",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "friend invitation prerequisite",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "friend accept prerequisite",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "friend invitation prerequisite",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "friend accept prerequisite",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "friend invitation prerequisite",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "friend accept prerequisite",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create group chat",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "group UUID retry",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "same group ID on retry",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "group UUID conflict [409]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "member cannot add [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "admin adds member",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "new member history boundary",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "new join does not read older messages",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "new member raw old message filtered",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "new member sees new message",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "only message after join visible",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "member leave",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "leave retry",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "left member history [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "rejoin new boundary",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "rejoin old access not restored",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "rejoin resets to new history",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "kick member",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "old JWT after kick denied [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "kicked sender cannot retry old UUID [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "promote second admin",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "active member roster",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "removed member omitted from roster",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "rename group version",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "stale rename rejected [409]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "two admins leave protects final admin real JWT requests overlap at DB lock",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "two admins leave protects final admin status outcomes 200/409",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "exactly one operative admin remains",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "friend invitation prerequisite",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "friend accept prerequisite",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "re-add race member",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "incomplete target cannot be promoted to admin [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "second operative admin fixture",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "incomplete other admin does not permit final operative admin leave [409]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "restore second member role fixture",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send and leave real JWT requests overlap at DB lock",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send and leave status outcomes 200/200",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send and join real JWT requests overlap at DB lock",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send and join status outcomes 404/200",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "leave after join race fixture",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "archive metadata",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "archive conversation",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "archived send denied [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "archived history still readable",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "restore conversation active",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "history keyset page",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "history keyset page",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "history keyset page",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "history keyset page",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "history keyset page",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "history keyset page",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message page no duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "history more than50 traversed",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "catch-up ascending sequence",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "catch-up strictly ascending",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "history cursor conflict [422]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "scoped FTS search",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "nonmember search [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "per-viewer inbox summary",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "inbox has visible last message and unread",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "hide last message",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "inbox recomputes per viewer after hide",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "hidden last not global pointer fallback",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message upload intent",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "pending intent cannot mint signed upload capability",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "message video intent",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "nonmember media intent [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "ordinary file not enabled [422]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "wrong owner chat upload denied",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "real chat PNG uploaded",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "real chat MP4 uploaded",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "chat verifier decoded both files",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "finalize chat image",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "finalize chat video",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "ready chat unattached not readable",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "other conversation for context validation",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "same actor sends to unrelated conversation while B global and other parent held",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "blocked parent send succeeds after row lock release",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "wrong conversation attachment [422]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send image video ordered",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "recipient downloads chat image",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "nonmember guessed object path denied",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "recipient hides chat media",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "hide revokes only caller media",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "sender recalls media",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "recall denies sender new GET",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "chat recall purges two objects",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "chat orphan intent",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "chat orphan uploaded",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "chat orphan cleaned",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "group media intent",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "group image upload real bytes",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "group finalize",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "group media receiver joins",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "group media message",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "active group member downloads media",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "remove group media receiver",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "kicked member old JWT media denied",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "media receiver rejoin",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "rejoin does not restore old attachment read",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "leave group media fixture",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "recall group media",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "B cannot bypass quota reserved by C pending video [429]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "inbox keyset window",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "inbox cursor never repeats an ID in stable window",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "inbox keyset window",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "inbox cursor never repeats an ID in stable window",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "inbox keyset window",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "inbox includes both own private conversations",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "set_conversation_state missing JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "set_conversation_state forged JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "set_conversation_state incomplete [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "set_conversation_state spoof actor [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "search_messages missing JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "search_messages forged JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "search_messages incomplete [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "search_messages spoof actor [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_conversation missing JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_conversation forged JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_conversation incomplete [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_conversation spoof actor [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_or_create_private missing JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_or_create_private forged JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_or_create_private incomplete [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_or_create_private spoof actor [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "hide_message_for_me missing JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "hide_message_for_me forged JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "hide_message_for_me incomplete [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "hide_message_for_me spoof actor [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "mark_read missing JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "mark_read forged JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "mark_read incomplete [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "mark_read spoof actor [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "leave_conversation missing JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "leave_conversation forged JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "leave_conversation incomplete [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "leave_conversation spoof actor [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "acknowledge_delivery missing JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "acknowledge_delivery forged JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "acknowledge_delivery incomplete [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "acknowledge_delivery spoof actor [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "manage_conversation_member missing JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "manage_conversation_member forged JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "manage_conversation_member incomplete [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "manage_conversation_member spoof actor [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "rename_conversation missing JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "rename_conversation forged JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "rename_conversation incomplete [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "rename_conversation spoof actor [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create_group_conversation missing JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create_group_conversation forged JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create_group_conversation incomplete [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create_group_conversation spoof actor [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_conversation_members missing JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_conversation_members forged JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_conversation_members incomplete [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_conversation_members spoof actor [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_read_receipts missing JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_read_receipts forged JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_read_receipts incomplete [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_read_receipts spoof actor [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send_message missing JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send_message forged JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send_message incomplete [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send_message spoof actor [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_inbox missing JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_inbox forged JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_inbox incomplete [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_inbox spoof actor [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "prepare_message_upload missing JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "prepare_message_upload forged JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "prepare_message_upload incomplete [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "prepare_message_upload spoof actor [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "recall_message missing JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "recall_message forged JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "recall_message incomplete [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "recall_message spoof actor [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_messages missing JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_messages forged JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_messages incomplete [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_messages spoof actor [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "set_conversation_state suspended real JWT [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "search_messages suspended real JWT [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_conversation suspended real JWT [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_or_create_private suspended real JWT [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "hide_message_for_me suspended real JWT [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "mark_read suspended real JWT [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "leave_conversation suspended real JWT [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "acknowledge_delivery suspended real JWT [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "manage_conversation_member suspended real JWT [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "rename_conversation suspended real JWT [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create_group_conversation suspended real JWT [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_conversation_members suspended real JWT [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_read_receipts suspended real JWT [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send_message suspended real JWT [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_inbox suspended real JWT [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "prepare_message_upload suspended real JWT [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "recall_message suspended real JWT [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_messages suspended real JWT [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "set_conversation_state deleting real JWT [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "search_messages deleting real JWT [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_conversation deleting real JWT [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_or_create_private deleting real JWT [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "hide_message_for_me deleting real JWT [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "mark_read deleting real JWT [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "leave_conversation deleting real JWT [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "acknowledge_delivery deleting real JWT [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "manage_conversation_member deleting real JWT [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "rename_conversation deleting real JWT [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create_group_conversation deleting real JWT [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_conversation_members deleting real JWT [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_read_receipts deleting real JWT [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send_message deleting real JWT [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_inbox deleting real JWT [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "prepare_message_upload deleting real JWT [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "recall_message deleting real JWT [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_messages deleting real JWT [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "set_conversation_state unverified real JWT [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "search_messages unverified real JWT [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_conversation unverified real JWT [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_or_create_private unverified real JWT [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "hide_message_for_me unverified real JWT [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "mark_read unverified real JWT [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "leave_conversation unverified real JWT [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "acknowledge_delivery unverified real JWT [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "manage_conversation_member unverified real JWT [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "rename_conversation unverified real JWT [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create_group_conversation unverified real JWT [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_conversation_members unverified real JWT [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_read_receipts unverified real JWT [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send_message unverified real JWT [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_inbox unverified real JWT [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "prepare_message_upload unverified real JWT [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "recall_message unverified real JWT [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_messages unverified real JWT [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "WS recipient refetch authorized message",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "reconnect catches up by sequence",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "real GoTrue refresh for WebSocket",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "reconciliation after out of order events",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "WS read receipt mutation",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "WS recall mutation",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "WS recall requery",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "block before outbox dispatch",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "WS stale subscriber refetch denied after block [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "unblock after WS test",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "WS add group subscriber",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "kick before dispatcher",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "kicked old JWT refetch denied [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "WS rejoin then leave",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "WS member leaves",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send text",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "WS state version",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "WS conversation archive event",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "restore group state after WS",
+                      "passed":  true
+                  }
+              ],
+    "fixtureUsers":  [
+                         "a7405d74-5831-48b6-86d5-0eafb7ca56ea",
+                         "7410568e-103f-45c8-9351-c6f7ebcf2130",
+                         "6456b8fd-95de-4b8e-834d-8c7e778ae4c8",
+                         "4cab1665-c745-44be-bcb4-e0621c87d082",
+                         "841984c1-9456-43cb-8ee0-09dcd76c4a02"
+                     ],
+    "concurrency":  "8 overlapping real JWT races plus independent-parent/global-lock probe",
+    "webSocketRequested":  true
+}

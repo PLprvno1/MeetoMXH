@@ -1,0 +1,26 @@
+{
+  "completedChecks": [
+    "anonymous protected activity routes to login",
+    "wrong password remains unauthenticated; retry button recovers",
+    "JWT B: own topic allow; wrong\/public\/publish deny; spoof\/DML denial"
+  ],
+  "storageResponses": [
+    {
+      "http": 400,
+      "storageStatusCode": 403
+    },
+    {
+      "http": 400,
+      "storageStatusCode": 403
+    },
+    {
+      "http": 200,
+      "storageStatusCode": 200
+    },
+    {
+      "http": 200,
+      "storageStatusCode": 200
+    }
+  ],
+  "mediaReady": false
+}

@@ -1,0 +1,9 @@
+﻿{
+    "pid":  7632,
+    "started":  "2026-11-02T15:02:38.5560748+07:00",
+    "durationMinutes":  60,
+    "approximateEnd":  "2026-11-02T16:02:38.5560748+07:00",
+    "bounded":  true,
+    "durableService":  false,
+    "log":  "handoff-dev-worker.log"
+}

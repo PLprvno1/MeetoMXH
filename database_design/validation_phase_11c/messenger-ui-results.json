@@ -1,0 +1,30 @@
+{
+  "passed": true,
+  "completedChecks": [
+    "UI logout\/login account A",
+    "UI logout\/login account B",
+    "profile relationship action rendered",
+    "message composer commits text",
+    "committed message rendered",
+    "UI logout\/login account A",
+    "profile relationship action rendered",
+    "committed message rendered",
+    "message action menu rendered",
+    "message composer commits text",
+    "committed message rendered",
+    "UI logout\/login account B",
+    "committed message rendered",
+    "UI logout\/login account A",
+    "B rendered A message and device read ACK advanced",
+    "A\/B profile-to-chat navigation, UI send\/receive and actual viewport ACK",
+    "UI logout\/login account B",
+    "committed message rendered",
+    "message action menu rendered",
+    "B hides A message through confirmation UI",
+    "UI logout\/login account A",
+    "committed message rendered",
+    "message action menu rendered",
+    "A recalls own reply through confirmation UI",
+    "reply linkage; B hide does not delete for A; sender recall creates server tombstone"
+  ]
+}

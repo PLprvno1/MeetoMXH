@@ -1,0 +1,24 @@
+﻿{
+    "containersRunning":  9,
+    "portableListenerAbsent":  true,
+    "protectedFilesUnchanged":  1191,
+    "phaseAOriginalMigrationsUnchanged":  3,
+    "sqlFixturesRolledBack":  true,
+    "replay":  "upToDate",
+    "jwtExpiry":  3600,
+    "utf8Artifacts":  30,
+    "manifestMigrations":  9,
+    "tests":  {
+                  "catalogue":  25,
+                  "phaseAHttp":  174,
+                  "phaseAExpiry":  7,
+                  "phaseASql":  87,
+                  "phaseB":  473
+              },
+    "powershellParsed":  11,
+    "scope":  "LOCAL ONLY",
+    "publicRpc":  31,
+    "applicationTables":  36,
+    "cloudDeployment":  false,
+    "credentialScan":  "no credential-shaped values"
+}

@@ -1,0 +1,1142 @@
+# TÀI LIỆU ĐẶC TẢ CẤU TRÚC HỆ THỐNG MEETO
+
+**Phiên bản:** 1.0  
+**Loại tài liệu:** System Specification / Functional Requirements  
+**Tên hệ thống:** Meeto  
+**Mục đích:** Cung cấp tài liệu nền để AI coding agent, lập trình viên hoặc người phân tích hệ thống có thể hiểu cấu trúc, phạm vi chức năng, vai trò, quyền hạn và quy tắc nghiệp vụ của Meeto trước khi phát triển hoặc sửa đổi mã nguồn.
+
+**Lưu ý quan trọng:** Tài liệu này mô tả cấu trúc nghiệp vụ đã phân tích và các chức năng dự kiến trong phạm vi sản phẩm. Không mặc định tất cả chức năng đã được triển khai hoàn chỉnh trong mã nguồn hiện tại. Agent phải kiểm tra source code để xác định trạng thái thực tế trước khi thay đổi.
+
+---
+
+# PHẦN I. TỔNG QUAN HỆ THỐNG
+
+## 1. Giới thiệu
+
+Meeto là một ứng dụng mạng xã hội cho phép người dùng xây dựng hồ sơ cá nhân, kết nối với người khác, đăng tải nội dung, tương tác trên bảng tin, đăng Tin (Stories), tham gia các nhóm cộng đồng, nhắn tin và nhận thông báo.
+
+Hệ thống có các vai trò người dùng khác nhau, bao gồm người dùng thông thường, thành viên nhóm, quản trị viên nhóm, người kiểm duyệt và quản trị viên hệ thống. Các vai trò phải được phân biệt rõ ràng để tránh cấp quyền vượt quá phạm vi nghiệp vụ.
+
+Meeto hướng tới việc cung cấp các chức năng mạng xã hội phổ biến, với cấu trúc dễ mở rộng, giao diện thống nhất và cơ chế quản lý dữ liệu có kiểm soát.
+
+## 2. Các mục tiêu chính
+
+- Cung cấp hệ thống tài khoản và hồ sơ cá nhân.
+- Cho phép người dùng tạo, xem và tương tác với bài viết.
+- Hỗ trợ Tin (Stories) có thời hạn hiển thị.
+- Hỗ trợ tìm kiếm người dùng, kết bạn và theo dõi.
+- Xây dựng không gian cộng đồng thông qua các nhóm.
+- Hỗ trợ nhắn tin riêng và trò chuyện nhóm theo phạm vi triển khai.
+- Cung cấp hệ thống thông báo về hoạt động xã hội.
+- Cung cấp chức năng quản trị và kiểm duyệt nội dung.
+- Đảm bảo quyền riêng tư, phân quyền và tính nhất quán của dữ liệu.
+
+## 3. Nguyên tắc thiết kế hệ thống
+
+### 3.1. Phân chia theo nhóm chức năng
+
+Toàn bộ hệ thống được chia thành 8 nhóm nghiệp vụ chính:
+
+1. Tài khoản và hồ sơ cá nhân.
+2. Bài viết và bảng tin.
+3. Tin (Stories).
+4. Bạn bè và theo dõi.
+5. Nhóm cộng đồng.
+6. Tin nhắn.
+7. Thông báo.
+8. Quản trị và kiểm duyệt.
+
+Mỗi nhóm phải có phạm vi rõ ràng, tránh trộn lẫn trách nhiệm của các nhóm khác nhau.
+
+### 3.2. Phân quyền theo vai trò
+
+Mọi chức năng cần kiểm tra người dùng hiện tại, vai trò và quyền truy cập trước khi thực hiện thao tác.
+
+Không được mặc định người dùng đã đăng nhập có quyền truy cập toàn bộ dữ liệu hoặc thực hiện mọi hành động.
+
+### 3.3. Bảo vệ dữ liệu
+
+- Dữ liệu riêng tư chỉ được truy cập bởi người có quyền.
+- Người dùng chỉ được sửa dữ liệu cá nhân thuộc quyền quản lý của mình.
+- Các thao tác quan trọng phải được xác thực và kiểm tra quyền.
+- Không xem việc ẩn nút trên giao diện là biện pháp bảo mật đầy đủ.
+- Backend và quy tắc bảo mật dữ liệu phải ngăn các thao tác trái phép.
+
+### 3.4. Phát triển dựa trên mã nguồn hiện có
+
+Khi tiếp tục dự án, coding agent phải đọc source code trước khi sửa, xác định chức năng nào đã có và giữ nguyên những phần đang hoạt động tốt nếu không có yêu cầu thay đổi.
+
+Không tự ý viết lại toàn bộ dự án chỉ để bổ sung một chức năng nhỏ.
+
+---
+
+# PHẦN II. TÁC NHÂN VÀ VAI TRÒ
+
+## 4. Khách (Guest)
+
+Là người chưa đăng nhập vào hệ thống.
+
+Chức năng có thể sử dụng:
+
+- Mở màn hình đăng nhập.
+- Mở màn hình đăng ký.
+- Thực hiện luồng khôi phục mật khẩu nếu được hỗ trợ.
+- Xem nội dung công khai nếu chính sách truy cập của ứng dụng cho phép.
+
+Không được thực hiện các thao tác yêu cầu tài khoản đã xác thực như đăng bài, gửi tin nhắn hoặc quản lý hồ sơ cá nhân.
+
+## 5. Người dùng (User)
+
+Là người đã đăng nhập và có danh tính hợp lệ.
+
+Các quyền chính:
+
+- Xem và chỉnh sửa hồ sơ cá nhân.
+- Tìm kiếm và xem hồ sơ người dùng khác theo quyền riêng tư.
+- Tạo và quản lý bài viết của mình.
+- Xem bảng tin và tương tác với bài viết.
+- Tạo và xem Tin.
+- Gửi và quản lý lời mời kết bạn.
+- Theo dõi hoặc bỏ theo dõi người khác nếu hệ thống hỗ trợ.
+- Tham gia và rời nhóm.
+- Nhắn tin với người dùng khác theo điều kiện truy cập.
+- Nhận và xem thông báo.
+- Báo cáo nội dung không phù hợp nếu chức năng báo cáo được cung cấp.
+
+Người dùng thông thường không có quyền quản trị toàn hệ thống hoặc quản lý nhóm mà họ không được phân quyền.
+
+## 6. Thành viên nhóm (Group Member)
+
+Là người dùng đã tham gia một nhóm cụ thể.
+
+Các quyền chính:
+
+- Xem thông tin nhóm.
+- Xem nội dung dành cho thành viên.
+- Đăng nội dung trong nhóm nếu chính sách nhóm cho phép.
+- Tương tác với nội dung nhóm theo quyền hiện tại.
+- Xem danh sách thành viên nếu được phép.
+- Rời nhóm.
+
+Thành viên nhóm không mặc định có quyền duyệt yêu cầu tham gia hoặc quản lý thành viên.
+
+## 7. Quản trị viên nhóm (Group Admin)
+
+Là người có quyền quản lý một hoặc nhiều nhóm cụ thể.
+
+Các quyền có thể bao gồm:
+
+- Xem và quản lý thông tin nhóm được giao.
+- Xem yêu cầu tham gia nhóm.
+- Chấp nhận hoặc từ chối yêu cầu tham gia.
+- Quản lý thành viên trong phạm vi được cấp quyền.
+- Quản lý nội dung nhóm theo chính sách sản phẩm.
+- Thực hiện các thao tác quản trị nhóm đã được xác định.
+
+Quản trị viên nhóm không mặc định có quyền quản trị toàn hệ thống hoặc quản lý các nhóm khác.
+
+## 8. Người kiểm duyệt (Moderator)
+
+Là người chịu trách nhiệm xem xét báo cáo và xử lý nội dung vi phạm trong phạm vi được phân quyền.
+
+Các quyền có thể bao gồm:
+
+- Xem danh sách báo cáo được giao.
+- Xem chi tiết báo cáo.
+- Xem nội dung liên quan đến báo cáo trong phạm vi cần thiết.
+- Đánh giá nội dung.
+- Thực hiện hành động kiểm duyệt được cho phép.
+- Cập nhật trạng thái xử lý báo cáo.
+
+Người kiểm duyệt không mặc định có quyền sửa đổi cấu hình hệ thống hoặc truy cập mọi dữ liệu riêng tư.
+
+## 9. Quản trị viên hệ thống (System Admin)
+
+Là người phụ trách các chức năng quản trị hệ thống đã được xác định.
+
+Các quyền cụ thể phải được quy định trong ma trận phân quyền và cơ chế bảo mật của hệ thống.
+
+Không được tự ý cấp quyền không giới hạn cho tài khoản quản trị nếu chưa có yêu cầu rõ ràng.
+
+---
+
+# PHẦN III. CHỨC NĂNG 01 — TÀI KHOẢN VÀ HỒ SƠ CÁ NHÂN
+
+## 10. Mục tiêu
+
+Quản lý danh tính người dùng, quá trình đăng nhập và thông tin hồ sơ cá nhân.
+
+## 11. Các chức năng con
+
+### 11.1. Đăng ký tài khoản
+
+- Hiển thị biểu mẫu đăng ký.
+- Thu thập thông tin cần thiết theo thiết kế thực tế.
+- Kiểm tra dữ liệu đầu vào.
+- Kiểm tra các trường bắt buộc.
+- Gửi yêu cầu tạo tài khoản đến dịch vụ xác thực.
+- Hiển thị kết quả đăng ký.
+- Xử lý lỗi khi tài khoản đã tồn tại hoặc dữ liệu không hợp lệ.
+
+Các trường đăng ký cụ thể phải được xác định từ giao diện và source hiện tại, không tự ý bổ sung trường bắt buộc.
+
+### 11.2. Đăng nhập
+
+- Nhập thông tin đăng nhập.
+- Xác thực thông tin tài khoản.
+- Xử lý trạng thái đang đăng nhập.
+- Hiển thị lỗi khi xác thực thất bại.
+- Điều hướng đến màn hình phù hợp khi đăng nhập thành công.
+- Khôi phục trạng thái đăng nhập theo cơ chế xác thực được cấu hình.
+
+### 11.3. Đăng xuất
+
+- Cho phép người dùng kết thúc phiên đăng nhập.
+- Cập nhật trạng thái xác thực ở ứng dụng.
+- Điều hướng về màn hình phù hợp.
+- Không để các màn hình riêng tư tiếp tục truy cập như thể người dùng vẫn đang đăng nhập.
+
+### 11.4. Khôi phục hoặc đặt lại mật khẩu
+
+- Cho phép người dùng bắt đầu quy trình khôi phục mật khẩu.
+- Sử dụng cơ chế của dịch vụ xác thực đã cấu hình.
+- Hiển thị thông báo phù hợp với kết quả xử lý.
+- Không lưu mật khẩu dạng văn bản thuần.
+- Không giả lập thao tác đổi mật khẩu nếu backend chưa hỗ trợ.
+
+### 11.5. Xem hồ sơ cá nhân
+
+Có thể bao gồm:
+
+- Ảnh đại diện.
+- Tên hiển thị.
+- Thông tin giới thiệu.
+- Các thông tin hồ sơ khác đã được thiết kế.
+- Các thông tin công khai theo quyền riêng tư.
+
+Các trường cụ thể phụ thuộc vào mô hình dữ liệu hiện có.
+
+### 11.6. Chỉnh sửa hồ sơ
+
+- Cập nhật thông tin được phép chỉnh sửa.
+- Kiểm tra dữ liệu đầu vào.
+- Lưu thay đổi.
+- Hiển thị trạng thái thành công hoặc lỗi.
+- Không cho phép người dùng sửa hồ sơ của tài khoản khác khi không có quyền.
+
+### 11.7. Ảnh đại diện
+
+Nếu tính năng ảnh đại diện được triển khai:
+
+- Cho phép chọn ảnh theo cơ chế của ứng dụng.
+- Tải ảnh lên dịch vụ lưu trữ.
+- Lưu URL hoặc tham chiếu ảnh vào hồ sơ.
+- Hiển thị ảnh sau khi cập nhật.
+- Xử lý lỗi tải ảnh lên.
+- Không hiển thị ảnh mới như đã lưu thành công khi thao tác tải lên thất bại.
+
+### 11.8. Xem hồ sơ người khác
+
+- Mở hồ sơ từ kết quả tìm kiếm, bài viết, nhóm hoặc cuộc trò chuyện.
+- Kiểm tra quyền xem thông tin.
+- Hiển thị thông tin theo chính sách riêng tư.
+- Không làm lộ các trường thông tin không được phép truy cập.
+
+## 12. Quy tắc nghiệp vụ
+
+- Các chức năng quản lý tài khoản phải kiểm tra trạng thái xác thực.
+- Người dùng chỉ được chỉnh sửa hồ sơ của mình, trừ trường hợp có quyền đặc biệt được quy định rõ.
+- Đăng xuất phải đồng bộ với trạng thái xác thực.
+- Lỗi từ dịch vụ xác thực phải được xử lý rõ ràng.
+- Không lưu thông tin bí mật không cần thiết vào cơ sở dữ liệu hồ sơ.
+- Không coi dữ liệu hồ sơ đang lưu tạm trên giao diện là dữ liệu đã được backend xác nhận.
+
+## 13. Dịch vụ liên quan
+
+- Firebase Authentication: xác thực tài khoản.
+- Cloud Firestore: lưu dữ liệu hồ sơ nếu kiến trúc hiện tại sử dụng Firestore.
+- ImgBB: lưu ảnh đại diện nếu được cấu hình cho chức năng này.
+
+---
+
+# PHẦN IV. CHỨC NĂNG 02 — BÀI VIẾT VÀ BẢNG TIN
+
+## 14. Mục tiêu
+
+Cho phép người dùng đăng tải nội dung, theo dõi hoạt động xã hội và tương tác với bài viết.
+
+## 15. Các chức năng con
+
+### 15.1. Tạo bài viết
+
+- Mở giao diện tạo bài viết.
+- Nhập nội dung văn bản.
+- Đính kèm ảnh nếu tính năng media được hỗ trợ.
+- Kiểm tra dữ liệu trước khi đăng.
+- Gửi dữ liệu đến backend.
+- Hiển thị trạng thái đang đăng.
+- Hiển thị bài viết sau khi đăng thành công.
+- Xử lý lỗi khi không thể đăng.
+
+### 15.2. Xem bảng tin
+
+- Hiển thị danh sách bài viết người dùng được phép xem.
+- Hiển thị thông tin người đăng.
+- Hiển thị nội dung và media.
+- Hiển thị thông tin tương tác cần thiết.
+- Hỗ trợ mở chi tiết bài viết.
+- Cập nhật dữ liệu theo cơ chế tải dữ liệu thực tế.
+
+Thứ tự bài viết và thuật toán xếp hạng cần dựa trên yêu cầu sản phẩm và source hiện tại, không tự ý tạo thuật toán phức tạp khi chưa được yêu cầu.
+
+### 15.3. Xem chi tiết bài viết
+
+- Mở một bài viết cụ thể.
+- Hiển thị nội dung đầy đủ theo quyền truy cập.
+- Hiển thị bình luận.
+- Hiển thị các thao tác tương tác được hỗ trợ.
+- Xử lý trường hợp bài viết không tồn tại, đã bị xóa hoặc không còn quyền xem.
+
+### 15.4. Thích hoặc bày tỏ cảm xúc
+
+- Thực hiện tương tác với bài viết.
+- Cập nhật trạng thái tương tác.
+- Hiển thị trạng thái hiện tại của người dùng.
+- Cập nhật số liệu tương tác theo dữ liệu thực tế.
+- Tránh tạo nhiều bản ghi tương tác trùng lặp cho cùng một hành động nếu thiết kế chỉ cho phép một trạng thái tương tác.
+
+Các loại cảm xúc cụ thể cần khớp với giao diện và mô hình dữ liệu hiện có.
+
+### 15.5. Bình luận
+
+- Thêm bình luận vào bài viết.
+- Hiển thị danh sách bình luận.
+- Hiển thị người bình luận và nội dung.
+- Cập nhật dữ liệu sau khi bình luận thành công.
+- Xử lý lỗi khi gửi bình luận.
+- Cho phép chỉnh sửa hoặc xóa bình luận chỉ khi các thao tác này được hỗ trợ và người dùng có quyền.
+
+### 15.6. Chia sẻ bài viết
+
+- Cho phép người dùng thực hiện hành động chia sẻ theo cơ chế sản phẩm.
+- Kiểm tra quyền truy cập bài viết.
+- Điều hướng hoặc tạo bản ghi chia sẻ theo thiết kế thực tế.
+
+Cần phân biệt rõ chia sẻ liên kết, chia sẻ nội bộ và đăng lại bài viết. Không tự ý coi các cơ chế này là một.
+
+### 15.7. Chỉnh sửa bài viết
+
+Nếu được triển khai:
+
+- Cho phép tác giả chỉnh sửa bài viết của mình.
+- Kiểm tra quyền sở hữu.
+- Kiểm tra nội dung đầu vào.
+- Lưu thay đổi.
+- Cập nhật giao diện theo dữ liệu đã lưu.
+
+### 15.8. Xóa bài viết
+
+- Cho phép tác giả xóa bài viết của mình.
+- Xác nhận hành động nếu thiết kế yêu cầu.
+- Kiểm tra quyền trước khi xóa.
+- Cập nhật bảng tin và màn hình chi tiết.
+- Xử lý dữ liệu liên quan theo quy tắc của hệ thống.
+
+### 15.9. Báo cáo bài viết
+
+- Cho phép người dùng gửi báo cáo về bài viết không phù hợp nếu tính năng báo cáo được cung cấp.
+- Ghi nhận bài viết và người gửi báo cáo.
+- Ghi nhận lý do hoặc thông tin cần thiết theo biểu mẫu thực tế.
+- Chuyển báo cáo đến luồng kiểm duyệt.
+- Không tự động kết luận bài viết vi phạm chỉ vì đã có báo cáo.
+
+## 16. Quy tắc nghiệp vụ
+
+- Chỉ người dùng đã xác thực mới được đăng bài và thực hiện tương tác yêu cầu tài khoản.
+- Người dùng chỉ được chỉnh sửa hoặc xóa nội dung thuộc quyền của mình, trừ vai trò kiểm duyệt được quy định.
+- Bài viết phải tuân thủ quyền riêng tư.
+- Bình luận và tương tác phải gắn với danh tính hợp lệ.
+- Nếu nội dung bị xóa hoặc hạn chế, các màn hình liên quan phải phản ánh trạng thái đó.
+- Không hiển thị số lượt thích, bình luận hoặc chia sẻ giả nếu hệ thống có dữ liệu thực.
+- Không coi báo cáo là hành động xóa nội dung.
+
+## 17. Dịch vụ liên quan
+
+- Firebase Authentication: xác định người thực hiện hành động.
+- Cloud Firestore: dữ liệu bài viết, bình luận và tương tác nếu được sử dụng.
+- ImgBB: lưu ảnh bài viết nếu được cấu hình.
+- Hệ thống thông báo: có thể tạo thông báo liên quan đến tương tác nếu loại thông báo đó được hỗ trợ.
+
+---
+
+# PHẦN V. CHỨC NĂNG 03 — TIN (STORIES)
+
+## 18. Mục tiêu
+
+Cho phép người dùng đăng nội dung ngắn hạn và xem Tin của những người mà họ có quyền truy cập.
+
+## 19. Các chức năng con
+
+### 19.1. Đăng Tin
+
+- Mở giao diện tạo Tin.
+- Chọn hoặc nhập nội dung theo các loại media được hỗ trợ.
+- Tải media lên dịch vụ lưu trữ nếu cần.
+- Tạo bản ghi Tin.
+- Ghi nhận thời điểm tạo và thời điểm hết hạn.
+- Hiển thị Tin sau khi đăng thành công.
+
+### 19.2. Xem danh sách Tin
+
+- Hiển thị các Tin còn hiệu lực mà người dùng được phép xem.
+- Phân biệt Tin của bản thân và Tin của người khác nếu giao diện yêu cầu.
+- Không hiển thị Tin đã hết hạn như Tin đang hoạt động.
+
+### 19.3. Xem một Tin
+
+- Mở Tin.
+- Hiển thị nội dung.
+- Theo dõi trạng thái hiệu lực.
+- Chuyển sang Tin tiếp theo nếu giao diện hỗ trợ.
+- Xử lý trường hợp Tin đã hết hạn trong lúc người dùng đang mở.
+
+### 19.4. Xóa Tin
+
+Nếu được hỗ trợ:
+
+- Chủ Tin được xóa Tin của mình.
+- Kiểm tra quyền sở hữu.
+- Cập nhật trạng thái sau khi xóa.
+- Không cho người dùng thông thường xóa Tin của người khác.
+
+## 20. Quy tắc nghiệp vụ
+
+- Tin có thời hạn hiển thị 24 giờ theo yêu cầu đã thống nhất.
+- Thời gian hết hạn phải được xác định nhất quán.
+- Tin hết hạn không tiếp tục xuất hiện trong danh sách Tin đang hoạt động.
+- Chỉ người dùng đã xác thực mới được đăng Tin.
+- Người xem phải đáp ứng điều kiện quyền riêng tư.
+- Xóa Tin và hết hạn Tin là hai trạng thái khác nhau về mặt nghiệp vụ.
+- Không chỉ ẩn Tin ở giao diện trong khi backend vẫn trả về Tin như đang hoạt động.
+
+## 21. Dịch vụ liên quan
+
+- Firebase Authentication.
+- Cloud Firestore.
+- ImgBB nếu được dùng để lưu media của Tin.
+
+---
+
+# PHẦN VI. CHỨC NĂNG 04 — BẠN BÈ VÀ THEO DÕI
+
+## 22. Mục tiêu
+
+Cho phép người dùng tìm kiếm người khác, gửi lời mời kết bạn và quản lý quan hệ kết nối.
+
+## 23. Các chức năng con
+
+### 23.1. Tìm kiếm người dùng
+
+- Nhập từ khóa tìm kiếm.
+- Tìm người dùng phù hợp theo cơ chế tìm kiếm thực tế.
+- Hiển thị kết quả.
+- Mở hồ sơ từ kết quả.
+- Không hiển thị thông tin không được phép công khai.
+
+### 23.2. Gửi lời mời kết bạn
+
+- Mở hồ sơ người dùng.
+- Gửi lời mời kết bạn.
+- Hiển thị trạng thái đang chờ.
+- Xử lý lỗi nếu lời mời không hợp lệ hoặc đã tồn tại.
+
+### 23.3. Nhận lời mời kết bạn
+
+- Hiển thị danh sách lời mời đến.
+- Mở thông tin người gửi.
+- Chấp nhận lời mời.
+- Từ chối lời mời.
+- Cập nhật trạng thái sau khi xử lý.
+
+### 23.4. Quản lý lời mời đã gửi
+
+Nếu được hỗ trợ:
+
+- Xem lời mời đã gửi.
+- Xem trạng thái hiện tại.
+- Hủy lời mời khi còn hiệu lực.
+
+### 23.5. Danh sách bạn bè
+
+- Hiển thị bạn bè của người dùng.
+- Mở hồ sơ bạn bè.
+- Tìm kiếm trong danh sách nếu giao diện hỗ trợ.
+- Hủy kết bạn nếu người dùng lựa chọn và hệ thống hỗ trợ.
+
+### 23.6. Theo dõi và bỏ theo dõi
+
+Nếu cơ chế theo dõi độc lập được triển khai:
+
+- Theo dõi người dùng.
+- Bỏ theo dõi.
+- Hiển thị trạng thái theo dõi.
+- Cập nhật dữ liệu theo trạng thái thực tế.
+
+Không mặc định rằng kết bạn và theo dõi là cùng một quan hệ.
+
+## 24. Quy tắc nghiệp vụ
+
+- Không cho phép gửi lời mời kết bạn cho chính mình.
+- Không tạo nhiều lời mời đang chờ trùng lặp giữa cùng một cặp tài khoản.
+- Chỉ người nhận hợp lệ mới được chấp nhận hoặc từ chối lời mời gửi đến mình.
+- Khi lời mời được chấp nhận, trạng thái quan hệ phải được cập nhật nhất quán.
+- Khi hủy kết bạn, hệ thống phải cập nhật quan hệ ở cả hai phía nếu mô hình dữ liệu sử dụng quan hệ hai chiều.
+- Danh sách bạn bè và trạng thái theo dõi phải tuân thủ quyền riêng tư.
+- Không tự ý đồng nhất follower/following với friends.
+
+## 25. Dịch vụ liên quan
+
+- Firebase Authentication.
+- Cloud Firestore.
+- Hệ thống thông báo nếu sản phẩm hỗ trợ thông báo về lời mời kết bạn.
+
+---
+
+# PHẦN VII. CHỨC NĂNG 05 — NHÓM CỘNG ĐỒNG
+
+## 26. Mục tiêu
+
+Cho phép người dùng tạo hoặc tham gia nhóm, chia sẻ nội dung trong nhóm và quản lý thành viên theo vai trò.
+
+## 27. Các chức năng con
+
+### 27.1. Tìm và xem nhóm
+
+- Xem danh sách nhóm có thể truy cập.
+- Tìm nhóm.
+- Mở trang chi tiết nhóm.
+- Xem mô tả và thông tin nhóm.
+- Xem nội dung nhóm theo quyền truy cập.
+
+### 27.2. Tạo nhóm
+
+Nếu được triển khai:
+
+- Nhập thông tin nhóm.
+- Kiểm tra dữ liệu.
+- Tạo nhóm.
+- Xác định người tạo có vai trò quản trị nhóm theo quy tắc sản phẩm.
+- Hiển thị nhóm sau khi tạo thành công.
+
+### 27.3. Tham gia nhóm
+
+- Gửi yêu cầu tham gia nếu nhóm yêu cầu phê duyệt.
+- Tham gia trực tiếp nếu chính sách nhóm cho phép.
+- Hiển thị trạng thái thành viên hoặc đang chờ.
+- Xử lý lỗi khi người dùng không đủ điều kiện tham gia.
+
+### 27.4. Rời nhóm
+
+- Cho phép thành viên rời nhóm theo quy tắc sản phẩm.
+- Cập nhật trạng thái thành viên.
+- Cập nhật quyền truy cập nội dung riêng của nhóm.
+- Xử lý trường hợp người rời nhóm đang giữ vai trò quản trị theo chính sách được xác định.
+
+### 27.5. Nội dung nhóm
+
+Nếu được hỗ trợ:
+
+- Xem bài viết trong nhóm.
+- Đăng nội dung trong nhóm.
+- Tương tác với nội dung.
+- Kiểm tra tư cách thành viên và quyền đăng.
+- Tuân thủ chính sách kiểm duyệt của nhóm.
+
+### 27.6. Quản lý yêu cầu tham gia
+
+Dành cho Quản trị viên nhóm:
+
+- Xem yêu cầu tham gia đang chờ.
+- Xem thông tin cần thiết của người gửi yêu cầu.
+- Chấp nhận yêu cầu.
+- Từ chối yêu cầu.
+- Cập nhật trạng thái yêu cầu.
+- Ngăn việc xử lý lại một yêu cầu đã được giải quyết nếu nghiệp vụ không cho phép.
+
+### 27.7. Quản lý thành viên
+
+Dành cho Quản trị viên nhóm:
+
+- Xem danh sách thành viên.
+- Thực hiện các thao tác quản lý thành viên được cấp quyền.
+- Kiểm tra vai trò trước khi thực hiện.
+- Cập nhật quyền truy cập khi thành viên bị loại hoặc rời nhóm.
+
+## 28. Quy tắc nghiệp vụ
+
+- Quyền tham gia phụ thuộc chế độ của nhóm.
+- Nhóm yêu cầu phê duyệt phải có trạng thái yêu cầu tham gia.
+- Chỉ Quản trị viên nhóm hoặc vai trò được ủy quyền mới được duyệt thành viên.
+- Thành viên không được thực hiện chức năng quản trị nhóm nếu không có quyền.
+- Quản trị viên nhóm chỉ quản lý nhóm được giao.
+- Người không còn là thành viên không được tiếp tục truy cập nội dung riêng của nhóm, trừ trường hợp chính sách cho phép.
+- Các thao tác quản lý nhóm phải kiểm tra đúng nhóm mục tiêu và đúng vai trò.
+
+## 29. Dịch vụ liên quan
+
+- Firebase Authentication.
+- Cloud Firestore.
+- Hệ thống thông báo nếu có thông báo về yêu cầu tham gia hoặc thay đổi trong nhóm.
+
+---
+
+# PHẦN VIII. CHỨC NĂNG 06 — TIN NHẮN
+
+## 30. Mục tiêu
+
+Cho phép người dùng trao đổi tin nhắn riêng và trò chuyện nhóm theo các tính năng được triển khai.
+
+## 31. Các chức năng con
+
+### 31.1. Danh sách cuộc trò chuyện
+
+- Hiển thị các cuộc trò chuyện mà người dùng tham gia.
+- Hiển thị thông tin nhận diện cuộc trò chuyện.
+- Hiển thị tin nhắn gần nhất nếu dữ liệu hỗ trợ.
+- Hiển thị trạng thái chưa đọc nếu tính năng được triển khai.
+- Mở một cuộc trò chuyện.
+
+### 31.2. Trò chuyện riêng
+
+- Tạo hoặc mở cuộc trò chuyện giữa hai người dùng.
+- Kiểm tra quyền nhắn tin theo chính sách hệ thống.
+- Hiển thị lịch sử tin nhắn mà người dùng được phép xem.
+
+### 31.3. Gửi tin nhắn văn bản
+
+- Nhập nội dung.
+- Kiểm tra nội dung đầu vào.
+- Gửi tin nhắn.
+- Ghi nhận người gửi và thời gian.
+- Hiển thị trạng thái gửi.
+- Xử lý lỗi khi gửi thất bại.
+
+### 31.4. Nhận tin nhắn
+
+- Tải tin nhắn từ nguồn dữ liệu.
+- Cập nhật giao diện theo cơ chế đồng bộ thực tế.
+- Sắp xếp tin nhắn nhất quán theo thời gian hoặc thứ tự được định nghĩa.
+- Xử lý trường hợp mất kết nối hoặc tải dữ liệu thất bại.
+
+### 31.5. Gửi hình ảnh hoặc tệp đính kèm
+
+Nếu được triển khai:
+
+- Chọn media.
+- Tải media lên dịch vụ lưu trữ.
+- Tạo tin nhắn chứa tham chiếu media.
+- Hiển thị nội dung sau khi gửi thành công.
+- Xử lý lỗi tải media hoặc gửi tin nhắn.
+
+Không mặc định tất cả loại tệp đều được hỗ trợ.
+
+### 31.6. Trò chuyện nhóm
+
+Nếu được triển khai:
+
+- Tạo hoặc mở cuộc trò chuyện nhóm.
+- Quản lý danh sách thành viên theo chính sách.
+- Gửi và nhận tin nhắn.
+- Kiểm tra quyền thành viên trước khi đọc hoặc gửi.
+
+### 31.7. Trạng thái đã đọc
+
+Nếu được triển khai:
+
+- Ghi nhận trạng thái đọc theo mô hình dữ liệu.
+- Cập nhật trạng thái khi người nhận đọc tin nhắn.
+- Hiển thị trạng thái phù hợp.
+- Không hiển thị trạng thái đã đọc nếu backend chưa xác nhận.
+
+### 31.8. Xóa và thu hồi tin nhắn
+
+Phải phân biệt rõ:
+
+- **Xóa tin nhắn:** có thể chỉ xóa khỏi giao diện hoặc lịch sử của người thực hiện, tùy quy tắc sản phẩm.
+- **Thu hồi tin nhắn:** có thể thay đổi khả năng hiển thị tin nhắn đối với các bên tham gia, tùy quy tắc sản phẩm.
+
+Không tự ý coi hai hành động là giống nhau.
+
+## 32. Quy tắc nghiệp vụ
+
+- Chỉ người dùng đã đăng nhập và có quyền tham gia cuộc trò chuyện mới được đọc/gửi tin nhắn.
+- Mỗi tin nhắn phải gắn với cuộc trò chuyện hợp lệ và người gửi.
+- Quyền xem lịch sử tin nhắn phải tuân thủ chính sách của hệ thống.
+- Thành viên không còn quyền truy cập cuộc trò chuyện không được tự động đọc nội dung riêng tư nếu chính sách không cho phép.
+- Không giả lập trạng thái gửi thành công.
+- Không bổ sung gọi thoại hoặc gọi video khi chưa được phê duyệt.
+- Các thao tác xóa và thu hồi phải có quy tắc nhất quán, được triển khai ở backend khi cần thiết.
+
+## 33. Dịch vụ liên quan
+
+- Firebase Authentication.
+- Cloud Firestore nếu được sử dụng cho dữ liệu cuộc trò chuyện và tin nhắn.
+- ImgBB nếu được dùng để lưu hình ảnh đính kèm.
+- Firebase Cloud Messaging nếu có thông báo đẩy về tin nhắn mới.
+
+---
+
+# PHẦN IX. CHỨC NĂNG 07 — THÔNG BÁO
+
+## 34. Mục tiêu
+
+Thông báo cho người dùng về các hoạt động liên quan đến tài khoản và tương tác xã hội.
+
+## 35. Các chức năng con
+
+### 35.1. Nhận thông báo
+
+Các loại thông báo có thể bao gồm:
+
+- Lời mời kết bạn mới.
+- Trạng thái lời mời kết bạn thay đổi.
+- Tương tác với bài viết nếu loại thông báo này được bật.
+- Hoạt động liên quan đến nhóm nếu được cấu hình.
+- Tin nhắn mới.
+- Các sự kiện khác đã được xác định trong sản phẩm.
+
+Không mặc định mọi sự kiện đều tạo thông báo.
+
+### 35.2. Danh sách thông báo
+
+- Hiển thị các thông báo thuộc về người dùng.
+- Hiển thị nội dung và thời điểm theo dữ liệu thực tế.
+- Phân biệt trạng thái đã đọc/chưa đọc nếu được hỗ trợ.
+- Xử lý danh sách rỗng và lỗi tải dữ liệu.
+
+### 35.3. Mở thông báo
+
+- Cho phép mở đối tượng liên quan nếu thông báo có đích điều hướng hợp lệ.
+- Kiểm tra lại quyền truy cập đối tượng.
+- Điều hướng đến đúng bài viết, hồ sơ, nhóm hoặc cuộc trò chuyện.
+- Xử lý trường hợp đối tượng đã bị xóa hoặc người dùng không còn quyền truy cập.
+
+### 35.4. Đánh dấu đã đọc
+
+Nếu được triển khai:
+
+- Đánh dấu một thông báo đã đọc.
+- Có thể đánh dấu nhiều thông báo nếu giao diện hỗ trợ.
+- Cập nhật trạng thái chưa đọc theo dữ liệu thực tế.
+
+## 36. Quy tắc nghiệp vụ
+
+- Thông báo phải thuộc về người nhận hợp lệ.
+- Không để thông báo làm lộ nội dung riêng tư ngoài quyền truy cập.
+- Không tạo thông báo trùng lặp không cần thiết cho cùng một sự kiện.
+- Mở thông báo phải kiểm tra quyền truy cập lại.
+- Thông báo trong ứng dụng và thông báo đẩy là hai khái niệm khác nhau.
+- Nếu dịch vụ thông báo đẩy chưa được cấu hình, ứng dụng không được giả định thông báo đẩy đã gửi thành công.
+
+## 37. Dịch vụ liên quan
+
+- Cloud Firestore nếu được dùng để lưu thông báo.
+- Firebase Cloud Messaging (FCM) nếu đã tích hợp thông báo đẩy.
+- Firebase Authentication để xác định tài khoản nhận.
+
+---
+
+# PHẦN X. CHỨC NĂNG 08 — QUẢN TRỊ VÀ KIỂM DUYỆT
+
+## 38. Mục tiêu
+
+Cung cấp các chức năng quản trị hệ thống và xử lý báo cáo nội dung với phân quyền rõ ràng.
+
+## 39. Các chức năng con
+
+### 39.1. Truy cập khu vực quản trị
+
+- Xác thực người dùng.
+- Kiểm tra vai trò.
+- Chỉ cho phép vai trò phù hợp truy cập khu vực quản trị.
+- Không chỉ dựa vào việc ẩn hoặc hiện menu ở giao diện.
+
+### 39.2. Xem báo cáo
+
+Dành cho Người kiểm duyệt hoặc vai trò được cấp quyền:
+
+- Xem danh sách báo cáo được phép truy cập.
+- Xem trạng thái xử lý.
+- Lọc hoặc tìm kiếm báo cáo nếu giao diện hỗ trợ.
+- Mở chi tiết báo cáo.
+
+### 39.3. Xem chi tiết báo cáo
+
+- Xem nội dung bị báo cáo.
+- Xem lý do báo cáo.
+- Xem thông tin ngữ cảnh cần thiết.
+- Kiểm tra quyền truy cập dữ liệu trước khi hiển thị.
+- Không cung cấp dữ liệu cá nhân không cần thiết cho người xử lý.
+
+### 39.4. Xử lý báo cáo
+
+Tùy quyền được cấp:
+
+- Đánh giá nội dung.
+- Cập nhật trạng thái báo cáo.
+- Thực hiện hành động xử lý nội dung được cho phép.
+- Ghi nhận kết quả xử lý.
+- Ngăn xử lý lặp hoặc cập nhật trạng thái không hợp lệ.
+
+### 39.5. Quản trị hệ thống
+
+Các chức năng quản trị cụ thể phải được xác nhận trước khi triển khai.
+
+Không tự ý bổ sung các chức năng như xóa tài khoản hàng loạt, truy cập tùy ý mọi dữ liệu riêng tư, thay đổi vai trò không giới hạn hoặc thao tác phá hủy dữ liệu khi chưa có yêu cầu rõ ràng.
+
+### 39.6. Quản lý nhóm
+
+Quản lý thành viên và nội dung trong nhóm thuộc phạm vi của Quản trị viên nhóm hoặc vai trò được ủy quyền. Không nhầm chức năng này với quản trị toàn hệ thống.
+
+## 40. Quy tắc nghiệp vụ
+
+- Quản trị viên hệ thống, Người kiểm duyệt và Quản trị viên nhóm là ba vai trò khác nhau.
+- Mỗi vai trò chỉ có quyền trong phạm vi đã xác định.
+- Báo cáo được gửi không có nghĩa nội dung đã được kết luận vi phạm.
+- Mọi hành động kiểm duyệt phải kiểm tra quyền và đối tượng mục tiêu.
+- Không cấp quyền quản trị toàn hệ thống chỉ vì người dùng là Quản trị viên nhóm.
+- Không cấp quyền xem mọi dữ liệu riêng tư cho Người kiểm duyệt nếu nghiệp vụ không yêu cầu.
+- Cần ghi nhận trạng thái xử lý để có thể theo dõi tiến trình.
+- Cơ chế bảo mật phải được thực thi ở backend hoặc tầng dữ liệu phù hợp.
+
+## 41. Dịch vụ liên quan
+
+- Firebase Authentication để xác thực danh tính.
+- Cloud Firestore nếu dữ liệu báo cáo và trạng thái xử lý được lưu ở đó.
+- Cơ chế phân quyền backend hoặc Security Rules tương ứng.
+
+---
+
+# PHẦN XI. DỊCH VỤ KỸ THUẬT BÊN NGOÀI
+
+## 42. Firebase Authentication
+
+Trách nhiệm:
+
+- Xác thực danh tính.
+- Hỗ trợ đăng ký và đăng nhập theo cấu hình.
+- Quản lý phiên đăng nhập.
+- Hỗ trợ đặt lại mật khẩu nếu luồng được bật.
+
+Không thay thế toàn bộ cơ sở dữ liệu nghiệp vụ của Meeto.
+
+## 43. Cloud Firestore
+
+Trách nhiệm dự kiến:
+
+- Lưu dữ liệu nghiệp vụ mà hệ thống lựa chọn quản lý trong Firestore.
+- Có thể bao gồm hồ sơ, bài viết, bình luận, tương tác, quan hệ bạn bè, nhóm, tin nhắn, thông báo và báo cáo.
+- Cung cấp cơ chế đọc/ghi dữ liệu theo kiến trúc thực tế.
+
+Lưu ý:
+
+- Agent phải kiểm tra collection, document và schema đang có trước khi sửa.
+- Không tự ý đổi cấu trúc dữ liệu làm mất tương thích với các màn hình hiện tại.
+- Security Rules phải phản ánh quyền truy cập thực tế.
+- Không coi kiểm tra quyền trên giao diện là đủ.
+
+## 44. Firebase Cloud Messaging (FCM)
+
+Trách nhiệm nếu đã tích hợp:
+
+- Gửi thông báo đẩy đến thiết bị.
+- Hỗ trợ thông báo về tin nhắn hoặc các hoạt động xã hội theo cấu hình.
+
+Cần kiểm tra token thiết bị, quyền nhận thông báo và luồng gửi thông báo trước khi khẳng định chức năng hoạt động.
+
+## 45. ImgBB
+
+Trách nhiệm nếu đã cấu hình:
+
+- Lưu trữ ảnh hoặc media được ứng dụng hỗ trợ.
+- Trả về URL hoặc tham chiếu để ứng dụng sử dụng.
+- Hỗ trợ quy trình tải ảnh và hiển thị ảnh từ xa.
+
+Lưu ý:
+
+- Phải xử lý lỗi tải lên.
+- Không ghi nhận tải lên thành công khi dịch vụ trả lỗi.
+- Không lưu API key bí mật trực tiếp vào mã nguồn công khai.
+- Chỉ lưu metadata cần thiết vào cơ sở dữ liệu.
+- Phải xác minh ImgBB đang được dùng cho những loại media nào; không mặc định mọi tệp đều được hỗ trợ.
+
+---
+
+# PHẦN XII. MA TRẬN QUYỀN KHÁI QUÁT
+
+## 46. Khách
+
+- Đăng ký và đăng nhập.
+- Khôi phục mật khẩu nếu có.
+- Xem nội dung công khai nếu chính sách cho phép.
+- Không được đăng bài, đăng Tin, nhắn tin hoặc thao tác riêng tư yêu cầu xác thực.
+
+## 47. Người dùng
+
+- Quản lý hồ sơ cá nhân.
+- Đăng bài và tương tác theo quyền.
+- Đăng và xem Tin theo quyền.
+- Gửi và quản lý lời mời kết bạn.
+- Theo dõi/bỏ theo dõi nếu có.
+- Tham gia và rời nhóm.
+- Nhắn tin theo điều kiện truy cập.
+- Xem thông báo của mình.
+- Báo cáo nội dung nếu có.
+- Không mặc định được quản trị hệ thống hoặc quản lý nhóm của người khác.
+
+## 48. Thành viên nhóm
+
+- Thực hiện các chức năng người dùng thông thường.
+- Xem và tương tác với nội dung nhóm theo chính sách.
+- Đăng nội dung trong nhóm nếu được phép.
+- Không mặc định được duyệt thành viên hoặc quản trị nhóm.
+
+## 49. Quản trị viên nhóm
+
+- Quản lý nhóm được giao.
+- Duyệt yêu cầu tham gia.
+- Quản lý thành viên và nội dung theo quyền.
+- Không mặc định có quyền quản trị toàn hệ thống.
+
+## 50. Người kiểm duyệt
+
+- Xem và xử lý báo cáo được giao.
+- Xử lý nội dung trong phạm vi được phân quyền.
+- Không mặc định có quyền sửa cấu hình hệ thống hoặc truy cập mọi dữ liệu riêng tư.
+
+## 51. Quản trị viên hệ thống
+
+- Sử dụng chức năng quản trị đã được phê duyệt.
+- Quyền cụ thể phải được quy định rõ.
+- Không tự ý mở rộng quyền vượt quá phạm vi sản phẩm.
+
+---
+
+# PHẦN XIII. CẤU TRÚC BỘ SƠ ĐỒ USE CASE
+
+## 52. Danh sách sơ đồ
+
+Bộ sơ đồ Use Case của Meeto gồm 9 sơ đồ độc lập:
+
+- **Sơ đồ 00:** Use Case tổng quan.
+- **Sơ đồ 01:** Tài khoản và hồ sơ cá nhân.
+- **Sơ đồ 02:** Bài viết và bảng tin.
+- **Sơ đồ 03:** Tin (Stories).
+- **Sơ đồ 04:** Bạn bè và theo dõi.
+- **Sơ đồ 05:** Nhóm cộng đồng.
+- **Sơ đồ 06:** Tin nhắn.
+- **Sơ đồ 07:** Thông báo.
+- **Sơ đồ 08:** Quản trị và kiểm duyệt.
+
+## 53. Quy tắc đối với sơ đồ tổng quan
+
+Sơ đồ tổng quan chỉ nên thể hiện:
+
+- Các tác nhân chính.
+- Ranh giới hệ thống Meeto.
+- Tám nhóm chức năng chính.
+- Mối liên hệ tổng quát giữa tác nhân và nhóm chức năng.
+
+Không đưa tất cả Use Case con vào sơ đồ tổng quan.
+
+Không nối Firebase, Firestore, FCM và ImgBB đến mọi chức năng trong sơ đồ tổng. Các dịch vụ kỹ thuật nên được thể hiện trong sơ đồ chi tiết tương ứng khi cần thiết.
+
+Mục tiêu của sơ đồ tổng là giúp người xem hiểu cấu trúc hệ thống trong vài giây, không phải mô tả mọi quy trình.
+
+## 54. Quy tắc đối với sơ đồ chi tiết
+
+Mỗi sơ đồ chi tiết chỉ tập trung vào một nhóm chức năng.
+
+Yêu cầu:
+
+- Tên Use Case ngắn gọn, rõ ràng và bằng tiếng Việt có dấu.
+- Chỉ đưa các tác nhân thực sự liên quan.
+- Chỉ nối tác nhân với Use Case mà họ có quyền thực hiện.
+- Không đưa tất cả dịch vụ kỹ thuật vào mọi sơ đồ.
+- Hạn chế các đường nối cắt nhau.
+- Dùng bố cục trái sang phải khi phù hợp.
+- Có thể dùng đường nối vuông góc trong PlantUML để cải thiện khả năng đọc.
+- Không thêm quan hệ UML chỉ nhằm làm sơ đồ có vẻ phức tạp hơn.
+
+## 55. Quy tắc sử dụng include và extend
+
+### <<include>>
+
+Dùng khi một Use Case luôn cần thực hiện hành vi của Use Case khác như một phần bắt buộc của luồng.
+
+Không dùng include chỉ vì hai chức năng có liên quan về chủ đề.
+
+### <<extend>>
+
+Dùng khi một Use Case bổ sung hành vi tùy chọn hoặc có điều kiện cho Use Case cơ sở.
+
+Không dùng extend để mô tả một bước bắt buộc trong mọi trường hợp.
+
+### Quy tắc chung
+
+- Kiểm tra đúng hướng mũi tên.
+- Chỉ thêm quan hệ khi có ý nghĩa nghiệp vụ rõ ràng.
+- Không dùng include/extend thay cho liên kết tác nhân–Use Case thông thường.
+- Nếu không cần quan hệ include/extend, chỉ thể hiện liên kết trực tiếp phù hợp.
+- Ưu tiên tính đúng đắn UML hơn số lượng đường nối.
+
+---
+
+# PHẦN XIV. PHẠM VI KHÔNG ĐƯỢC TỰ Ý MỞ RỘNG
+
+Agent không được tự ý coi các chức năng sau là yêu cầu bắt buộc khi chưa có phê duyệt:
+
+- Gọi thoại.
+- Gọi video.
+- Các tính năng quản trị nâng cao chưa được xác định.
+- Truy cập tùy ý dữ liệu riêng tư.
+- Quản trị toàn hệ thống thông qua vai trò Quản trị viên nhóm.
+- Các hành động kiểm duyệt vượt quyền.
+- Các loại media hoặc tệp chưa được hỗ trợ.
+- Các cơ chế chia sẻ hoặc thu hồi chưa được xác định.
+- Các thuật toán bảng tin phức tạp chưa được yêu cầu.
+- Các tính năng kiếm tiền, quảng cáo hoặc đăng ký trả phí chưa được xác nhận.
+
+Nếu agent nhận thấy một tính năng cần thiết để hoàn thành yêu cầu nhưng chưa được xác định, phải nêu rõ giả định và hỏi người dùng khi quyết định đó ảnh hưởng đáng kể đến kiến trúc hoặc nghiệp vụ.
+
+---
+
+# PHẦN XV. QUY TRÌNH BẮT BUỘC DÀNH CHO AI CODING AGENT
+
+## 56. Bước 1 — Đọc và khảo sát source code
+
+Trước khi sửa bất kỳ chức năng nào, agent phải:
+
+- Đọc cấu trúc thư mục dự án.
+- Xác định ngôn ngữ và framework.
+- Tìm entry point và các màn hình chính.
+- Kiểm tra các model dữ liệu.
+- Kiểm tra repository/service và tầng truy cập dữ liệu.
+- Kiểm tra luồng xác thực.
+- Kiểm tra cấu hình Firebase, Firestore, FCM hoặc ImgBB nếu có.
+- Xác định chức năng đã hoàn thành, đang làm dở, bị lỗi hoặc chưa triển khai.
+- Kiểm tra các phụ thuộc có thể ảnh hưởng đến chức năng cần sửa.
+
+Không được bắt đầu bằng cách viết lại toàn bộ hệ thống khi chưa khảo sát.
+
+## 57. Bước 2 — Đối chiếu tài liệu với source
+
+Phân loại từng chức năng:
+
+1. Đã triển khai và hoạt động.
+2. Đã có nhưng đang lỗi.
+3. Mới có giao diện, chưa có backend thực tế.
+4. Đang triển khai dở.
+5. Chưa có.
+6. Không còn phù hợp hoặc mâu thuẫn với yêu cầu mới.
+
+Không giả định chức năng tồn tại chỉ vì tài liệu có mô tả.
+
+## 58. Bước 3 — Lập kế hoạch triển khai
+
+- Chia công việc lớn thành các prompt hoặc giai đoạn nhỏ, tuần tự.
+- Mỗi giai đoạn cần có phạm vi rõ ràng.
+- Nêu file dự kiến thay đổi và mục đích.
+- Ưu tiên giải quyết đúng vấn đề được giao.
+- Giữ nguyên các chức năng đang hoạt động nếu không có lý do rõ ràng để thay đổi.
+- Xác định ảnh hưởng đến model, database, security rules và UI trước khi chỉnh sửa.
+- Nếu có rủi ro mất dữ liệu hoặc thay đổi kiến trúc lớn, phải báo cáo trước.
+
+## 59. Bước 4 — Triển khai
+
+- Tuân thủ cấu trúc hiện có nếu nó vẫn đáp ứng yêu cầu.
+- Kiểm tra quyền trước khi đọc/ghi dữ liệu.
+- Xử lý trạng thái loading.
+- Xử lý trạng thái rỗng.
+- Xử lý lỗi mạng và lỗi backend.
+- Hiển thị kết quả theo trạng thái thực tế.
+- Không thay dữ liệu thật bằng dữ liệu giả mà không thông báo.
+- Không để API key hoặc thông tin bí mật bị lộ.
+- Không tuyên bố chức năng đã hoàn thành khi mới chỉ xây dựng giao diện.
+
+## 60. Bước 5 — Kiểm thử
+
+Cần kiểm tra khi phù hợp:
+
+- Luồng thành công.
+- Luồng thất bại.
+- Người dùng chưa đăng nhập.
+- Người dùng đã đăng nhập.
+- Người dùng không có quyền.
+- Quản trị viên nhóm.
+- Người kiểm duyệt.
+- Quản trị viên hệ thống.
+- Dữ liệu rỗng.
+- Lỗi kết nối.
+- Backend từ chối yêu cầu.
+- Dữ liệu không tồn tại.
+- Trạng thái thay đổi sau khi xóa hoặc cập nhật.
+- Build hoặc test của dự án nếu môi trường cho phép.
+
+## 61. Bước 6 — Báo cáo kết quả
+
+Sau khi làm xong, agent phải nêu:
+
+- Những chức năng đã sửa hoặc bổ sung.
+- Những file đã thay đổi.
+- Thay đổi dữ liệu hoặc cấu hình nếu có.
+- Các bước kiểm thử đã thực hiện.
+- Kết quả kiểm thử thực tế.
+- Các việc còn dang dở.
+- Các cấu hình người dùng phải tự thực hiện.
+- Các vấn đề chưa thể xác minh.
+
+Không được nói build thành công nếu chưa chạy build hoặc không có bằng chứng.
+
+---
+
+# PHẦN XVI. TÓM TẮT HỆ THỐNG
+
+Meeto là ứng dụng mạng xã hội có 8 nhóm chức năng chính:
+
+1. Tài khoản và hồ sơ cá nhân.
+2. Bài viết và bảng tin.
+3. Tin (Stories) có thời hạn 24 giờ.
+4. Bạn bè và theo dõi.
+5. Nhóm cộng đồng với thành viên và quản trị viên nhóm.
+6. Tin nhắn riêng và nhóm theo phạm vi triển khai.
+7. Thông báo trong ứng dụng và thông báo đẩy nếu FCM đã được tích hợp.
+8. Quản trị và kiểm duyệt với phân quyền rõ ràng.
+
+Các dịch vụ kỹ thuật được nhắc đến:
+
+- Firebase Authentication: xác thực.
+- Cloud Firestore: lưu dữ liệu nghiệp vụ theo kiến trúc hiện tại.
+- Firebase Cloud Messaging: thông báo đẩy nếu đã tích hợp.
+- ImgBB: lưu trữ ảnh/media nếu được cấu hình.
+
+Bộ Use Case gồm:
+
+- Một sơ đồ tổng quan rút gọn.
+- Tám sơ đồ chi tiết theo từng nhóm chức năng.
+- Tổng cộng chín sơ đồ độc lập.
+
+**Các nguyên tắc quan trọng nhất dành cho mọi AI coding agent:**
+
+1. Đọc source trước khi sửa.
+2. Xác minh trạng thái thực tế của chức năng.
+3. Tuân thủ phân quyền và quyền riêng tư.
+4. Không tự ý thêm chức năng chưa được phê duyệt.
+5. Không viết lại toàn bộ dự án nếu không cần thiết.
+6. Chia nhiệm vụ lớn thành nhiều giai đoạn nhỏ.
+7. Không dùng dữ liệu giả để giả vờ tính năng đã hoạt động.
+8. Không làm sơ đồ tổng quan quá tải.
+9. Giữ tài liệu, mã nguồn và hành vi thực tế nhất quán.
+10. Báo cáo rõ ràng những gì đã làm và những gì chưa hoàn thành.
+
+**KẾT THÚC TÀI LIỆU ĐẶC TẢ HỆ THỐNG MEETO**

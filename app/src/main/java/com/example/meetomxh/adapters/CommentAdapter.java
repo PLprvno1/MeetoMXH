@@ -18,6 +18,7 @@ import java.util.List;
 public class CommentAdapter extends RecyclerView.Adapter<CommentAdapter.CommentViewHolder> {
 
     public interface OnCommentClickListener {
+        default void onCommentClick(Comment comment) {}
         void onDeleteCommentClick(Comment comment);
     }
 
@@ -65,12 +66,13 @@ public class CommentAdapter extends RecyclerView.Adapter<CommentAdapter.CommentV
         }
 
         public void bind(Comment comment, String currentUid, OnCommentClickListener listener) {
+            itemView.setOnClickListener(v -> listener.onCommentClick(comment));
             binding.tvCommentAuthor.setText(comment.getAuthorName() != null ? comment.getAuthorName() : "Thành viên Meeto");
             binding.tvCommentContent.setText(comment.getContent());
 
             if (comment.getAuthorAvatar() != null && !comment.getAuthorAvatar().isEmpty()) {
                 Glide.with(binding.ivCommentAvatar.getContext())
-                        .load(comment.getAuthorAvatar())
+                        .applyDefaultRequestOptions(new com.bumptech.glide.request.RequestOptions().diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.NONE).skipMemoryCache(true)).load(comment.getAuthorAvatar())
                         .placeholder(R.drawable.ic_home)
                         .error(R.drawable.ic_home)
                         .into(binding.ivCommentAvatar);

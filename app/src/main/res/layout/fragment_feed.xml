@@ -30,9 +30,10 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/feedStatus"
         tools:listitem="@layout/item_post" />
 
+    <TextView android:id="@+id/feedStatus" android:layout_width="0dp" android:layout_height="wrap_content" android:padding="8dp" android:background="@color/app_bg" android:visibility="gone" app:layout_constraintTop_toTopOf="parent" app:layout_constraintEnd_toEndOf="parent" app:layout_constraintStart_toStartOf="parent" android:accessibilityLiveRegion="polite" />
     <!-- Floating Action Button Messenger -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabChat"

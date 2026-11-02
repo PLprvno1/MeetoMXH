@@ -20,8 +20,8 @@ public class FeedViewModel extends ViewModel {
         return repository.getPosts();
     }
 
-    public void likePost(String postId) {
-        repository.toggleLikePost(postId);
+    public void likePost(String postId, FeedRepository.OnPostActionListener callback) {
+        repository.toggleLikePost(postId, callback);
     }
 
     public void sharePost(Post originalPost, String comment, FeedRepository.OnPostActionListener listener) {

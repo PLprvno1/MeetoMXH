@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Post {
+    public long version=1;
+    public String serverCreatedAt;
     private String postId;
     private String authorUid;
     private String userName;

@@ -1,0 +1,56 @@
+﻿MEETO — BÁO CÁO NHIỆM VỤ 09B: TRIỂN KHAI SUPABASE CLOUD
+Ngày 02/11/2026, Asia/Bangkok. Project Meeto, exact ref qjpohzpapiwdrxsionyr, eu-west-1 (Ireland), Free, mục tiêu development/demo, không production.
+
+TRẠNG THÁI CUỐI
+CLOUD PROJECT VERIFIED: YES
+MIGRATIONS APPLIED: 15/15
+APPLICATION TABLES VERIFIED: 36/36
+APPLICATION RPC VERIFIED: 49/49
+RLS SECURITY: PARTIAL
+AUTH CLOUD: PARTIAL
+STORAGE CLOUD: PARTIAL
+REALTIME PRIVATE-ONLY: FAIL
+CLOUD CHAT DISPATCHER: NOT DEPLOYED
+CLOUD MEDIA VERIFIER: NOT DEPLOYED
+ANDROID CLOUD INTEGRATION: NOT IN SCOPE
+REMOTE DESTRUCTIVE OPERATIONS: NO
+READY FOR TASK 10: CONDITIONAL
+READY FOR TASK 11: CONDITIONAL
+MEETO FULL CLOUD DEMO READY: NO
+
+1. MIGRATION VÀ DATABASE
+CLI 2.122.0 xác minh project exact ref ACTIVE_HEALTHY, DB PostgreSQL 17.11. Manifest kiểm tra PASS, đủ 15 checksum hợp lệ. Dry-run exact ref liệt kê đúng 15 migration, không seed/roles. Apply thành công bằng supabase db push --project-ref qjpohzpapiwdrxsionyr --skip-vault; ledger có đúng versions 20261101000100–20261101001500, không pending. Lần kết nối đầu bị pooler ngắt trước migration; lần chạy lại hoàn tất exit code 0. Catalog xác nhận ledger và schema sau apply; không có partial migration cần sửa.
+
+Versions: 00100 foundation; 00200 authorization; 00300 auth_profile; 00400 social; 00500 media; 00600 media_cleanup_safety; 00700 friend_request_receipts; 00800 media_quota_reservations; 00900 media_cleanup_fairness; 01000 messenger; 01100 chat_media_realtime; 01200 shared_media_quota; 01300 chat_lock_order; 01400 chat_search_contract; 01500 chat_upload_admin_safety.
+
+Kết quả catalog: 36 public tables, 79 FK, 104 CHECK, 110 indexes, RLS bật 36/36. Tồn tại 35 public policies. Có 49 application RPC trong allowlist/catalog (không tính platform function); tất cả 49 SECURITY INVOKER, search_path rỗng, EXECUTE authenticated có, anon không. rls_auto_enable() và event trigger ensure_rls có trước triển khai và vẫn được giữ; tổng public function có thêm platform function này. Có 89 private functions. Effective grants: anon không có SELECT/DML trên app tables; authenticated có SELECT an toàn trên 12 bảng, không có INSERT/UPDATE/DELETE trên public app tables. private không nằm trong exposed API schemas. Authenticated có EXECUTE trên 60 private implementation/helper functions phục vụ wrapper, anon và service_role không có EXECUTE/USAGE vào private. Không mở rộng helper grants cho worker.
+
+Default privileges public sau migration không cấp default table/function/sequence quyền cho anon/authenticated; service_role giữ quyền cần thiết. Managed storage có default ACL rộng của nền tảng, nên tiếp tục dựa vào RLS và policies Storage; chưa coi ACL catalog thay cho kiểm tra route thực.
+
+Cloud preflight ngay trước apply: chưa có ledger, public app tables, private schema, Auth users, buckets, objects hoặc Storage/Realtime app policies; không có data/schema Meeto cần adopt. Không tạo user/test content. Không có data app bị xóa/ghi đè. Không sửa migration đã checksum; không cần forward migration.
+
+2. AUTH
+Android Manifest đăng ký meeto://auth/callback qua AuthCallbackActivity. Cloud config diff xác nhận Site URL và Redirect URL đều là meeto://auth/callback (allowlist hiện chỉ có callback này). Email confirmation/signup đang bật, Anonymous Sign-ins tắt, Custom SMTP tắt theo Dashboard do chủ dự án cung cấp; config diff xác nhận remote email confirmation bật. Supabase default sender bị giới hạn; không cam kết xác minh/recovery cho mọi Gmail. Không có email test được chủ dự án cấp trong phạm vi cho phép, nên không tạo user/gửi thư và Auth signup/login/recovery HTTP/JWT test là BLOCKED, không tính PASS.
+
+Auth minimum password length được cập nhật duy nhất từ 6 lên 8 bằng config push tới exact project, dùng config tạm chỉ khai báo một thuộc tính. CLI xác nhận chỉ 1 property được push; các remote-only settings còn lại giữ nguyên. Không thay rate limit, JWT/session, SMTP hay security defaults. Không lấy/ghi secret.
+
+3. STORAGE
+Đã tạo/kiểm tra đúng ba bucket, tất cả public=false: profile-media 10 MiB PNG/JPEG/WebP; social-media và chat-media 50 MiB PNG/JPEG/WebP/MP4. Có 5 policies trên storage.objects: authenticated SELECT qua operation/asset ACL; authenticated INSERT đúng owner/path/intent; thêm restrictive upload-only policy cho cả ba bucket. Không có policy anon, không bật public bucket. Chưa upload, download, signed URL, Range, cross-user hoặc revoke test: không có test user và Cloud verifier chưa tồn tại. Không gắn media thành ready khi thiếu worker.
+
+4. REALTIME VÀ WORKERS
+Catalog có đúng policy meeto_c_receive: SELECT, authenticated, extension broadcast, topic user:<auth.uid()>, current active check; không có INSERT policy. Tuy nhiên Dashboard hiện tại do chủ dự án cung cấp cho thấy “Allow public access to channels = Enabled”. Agent không có quyền Dashboard để đổi; vì vậy mục tiêu private-only chưa đạt. Trước demo cần Dashboard → Realtime → Settings → tắt “Allow public access to channels” trong lúc không có client demo, rồi xác nhận lại. Chưa chạy JWT own/wrong-user/public-channel hay broadcast HTTP/WS smoke; policy catalog không phải kiểm tra channel runtime.
+
+Chat outbox/lease/retry và media contracts đã có trong database, nhưng Chat Dispatcher và Media Worker/Verifier chưa được deploy lên Cloud. Không có Edge Function/Cron/pg_net/Vault worker được tạo. Text RPC có thể được gọi, nhưng Broadcast invalidate delivery chưa được vận hành Cloud; media upload/finalize không thể hoàn tất an toàn nếu thiếu verifier full-decode. Không chạy worker local, không đổi media contract, không giả lập ready. Task 10 cần thiết kế quyền worker hẹp/forward migration nếu cần; authenticated hiện không có private schema access cho worker. Free Edge CPU/runtime chưa được chứng minh chạy FFmpeg/full media.
+
+5. SECURITY VÀ GIỚI HẠN KIỂM THỬ
+Catalog grants/RLS checks PASS; tổng RLS verdict PARTIAL vì chưa có hai tài khoản synthetic được phép để chạy JWT isolation matrix. Anonymous không có app table SELECT/policy; public RPC không execute được bởi anon; direct DML app table bị chặn theo effective grants. Chưa thử đọc/ghi bằng User A/B, Storage API hay Realtime token thật. Không ghi credential/key/token vào báo cáo. Config diff có hai secret paths bị API mask; không cố truy xuất.
+
+Project URL cho nhiệm vụ 11: https://qjpohzpapiwdrxsionyr.supabase.co. Android chỉ dùng public anon/publishable key theo hợp đồng Supabase; tuyệt đối không dùng service_role. Dùng HTTPS, callback meeto://auth/callback; Cloud Auth runtime/session refresh chưa functional-test. Cloud API exposed schemas vẫn có public, graphql_public; không push cấu hình local hàng loạt. Bảo toàn gói Free; không mua/nâng cấp dịch vụ, không triển khai hạ tầng ngoài Supabase. Free không có automatic backup/PITR theo khảo sát 09A; cần quy trình recovery trước khi có user data thật.
+
+6. HANDOFF
+Task 10: triển khai dispatcher/cleanup managed với least privilege, lease/retry/fencing và monitoring; lựa chọn runtime khả thi cho full image/video verifier. Không giả định Edge Free chạy được FFmpeg; cần quyết định runtime/chi phí nếu không đạt giới hạn.
+Task 11: sau khi Realtime public access tắt và worker/email test strategy được chốt, tích hợp Android Cloud URL/public key, test confirm/recovery/JWT/RLS/chat/media trên accounts synthetic được phép. Chưa build APK/AAB.
+Tasks 12–16: có thể tiếp tục tính năng theo backend hiện có sau worker, private-channel và data-retention gates; không auto migrate Firebase/ImgBB.
+
+Evidence thực hiện: Test-MigrationManifest.ps1; projects list; migration list, db query exact ref; db push dry-run/apply; config diff và scoped config push; catalog checks về ledger/constraints/RLS/grants/RPC, Storage buckets/policies và Realtime policy; Android manifest callback grep. Cloud mutations chỉ là 15 migration, ba private buckets/policies đi kèm SQL, và đổi password minimum 6→8. Không xóa dữ liệu, không reset/repair, không sửa migration bytes, không đăng ký dịch vụ hay expose credential. Báo cáo này không chứng nhận full Cloud demo readiness.
+

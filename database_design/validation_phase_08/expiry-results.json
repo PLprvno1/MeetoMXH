@@ -1,0 +1,7 @@
+{
+  "actualGoTrueTtl60": true,
+  "waitedPastServerTolerance": true,
+  "server401": true,
+  "automatic401Refresh": true,
+  "revokedRefreshClearsIdentityAndOutbox": true
+}

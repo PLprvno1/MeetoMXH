@@ -66,7 +66,7 @@ public class StoryAdapter extends RecyclerView.Adapter<StoryAdapter.StoryViewHol
 
                 if (story.getImageUrl() != null && !story.getImageUrl().isEmpty()) {
                     Glide.with(binding.ivStoryBg.getContext())
-                            .load(story.getImageUrl())
+                            .applyDefaultRequestOptions(new com.bumptech.glide.request.RequestOptions().diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.NONE).skipMemoryCache(true)).load(story.getImageUrl())
                             .placeholder(R.drawable.ic_home)
                             .into(binding.ivStoryBg);
                 } else {
@@ -75,7 +75,7 @@ public class StoryAdapter extends RecyclerView.Adapter<StoryAdapter.StoryViewHol
 
                 if (story.getAvatarUrl() != null && !story.getAvatarUrl().isEmpty()) {
                     Glide.with(binding.ivStoryAvatar.getContext())
-                            .load(story.getAvatarUrl())
+                            .applyDefaultRequestOptions(new com.bumptech.glide.request.RequestOptions().diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.NONE).skipMemoryCache(true)).load(story.getAvatarUrl())
                             .placeholder(R.drawable.ic_home)
                             .into(binding.ivStoryAvatar);
                 } else {

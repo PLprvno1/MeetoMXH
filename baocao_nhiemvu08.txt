@@ -1,0 +1,68 @@
+MEETO — BÁO CÁO NHIỆM VỤ08
+02/11/2026, Asia/Bangkok. Workspace F:\MeetoMXH.
+
+FIREBASE REMOVED FROM ANDROID: YES
+IMGBB REMOVED FROM ANDROID: YES
+ANDROID SUPABASE LOCAL TESTED: YES
+CLOUD DEPLOYED: NO
+PRODUCTION READY: NO
+
+1. Tổng quan
+Android Java/XML đã chuyển sang Supabase local A/B/C. APK chạy thực trên emulator, dùng GoTrue/RPC/private Storage/private Broadcast. Không Firebase/ImgBB fallback, không Cloud hoặc thao tác dữ liệu remote. Chứng nhận toàn bộ UI/thiết bị thật/staging/data migration còn PARTIAL; không tuyên bố production-ready.
+
+2. Files sửa
+Danh sách đầy đủ paths/hashes tại database_design/validation_phase_08/android-file-inventory.json và android-files.txt. Thay Auth/Profile/Post/Chat/Viewer/Main, các fragments/repositories/adapters/models, Manifest/network debug/Gradle; thêm Java clients, editors, user-post/details views, application/session lifecycle, tests. Xóa google-services.json root/app. Backup ngoài Android target, không trong APK.
+
+3. Clients mới
+SupabaseConfig/HttpClient/AuthClient/RpcClient/ProfileClient/CommentClient; SessionManager/EncryptedVault; RealtimeClient/Observer/EventDeduplicator; RequestIds/MessageOutbox/ServerTime/Dto/ErrorMapper/Api/Subscription; ChatControls/PostDetails/Forms. Keystore AES-GCM session, single-flight refresh/401 retry, epoch/cancellation, encrypted pending message payload+UUID.
+
+4. Auth/Profile
+Email password signup/login/verify PKCE/onboard, current DB state/version, self/public/private profile, avatar/cover verified assets, block/unblock. UI recovery email PKCE/reset/logout/new-password login PASS. Force-stop encrypted restore PASS. Actual JWT expiry/401 refresh/revoked refresh clear PASS. Phone OTP báo chưa hỗ trợ.
+
+5. Feed/Posts/Comments
+Feed/user-posts keyset; create/edit/delete audience/assets/version/idempotency; reactions/share-source ACL; comments roots/replies/edit/delete/tombstone. UI signup/profile/post/chat và feed row rendering đã kiểm; comment component UI test riêng. Không client counter/time/owner direct writes. Feed loading/error/retry thật, không dummy data.
+
+6. Friends
+Canonical requests/relations, received/sent/suggestions/search. Real app-client tests send/cancel/decline/accept/unfriend/block. Direction/request IDs từ server. UI/menu không được tính là đã automation đầy đủ chỉ vì RPC test pass.
+
+7. Storage
+Content URI → intent → user JWT POST → local worker verify → finalize → attach. Private authenticated loader/Range, cache off/account-scoped cleanup; PNG/JPEG/WebP và H264 native VideoView PASS. Ready-unattached/recall/unfriend/foreign private asset deny. Không public/signed URL cũ; không EXIF re-encode/AV/sandbox production/transcoding. Process death có thể cần chọn lại URI; chưa background transfer service.
+
+8. Messenger/Realtime
+Private/group/inbox/history/search/reply/recall/hide/delivery/read/admin RPC. Actual Android own-user private Broadcast; receive-only. UI send và device read ACK PASS. Persistent encrypted outbox retry. Mất ADB bridge thật → RPC fail → giữ outbox → bridge restore/WS rejoin → một committed retry/Broadcast PASS. History initial50 + disconnected55 + older115 unique PASS; fixed loaded-seq floor bảo vệ concurrent refresh. Search UI tối đa100 kết quả; offline history không có database plaintext.
+
+9. Emulator
+Pixel_4/API37 (Android17), existing image37.0 Google APIs Play Store x86_64; userdata riêng không đụng AVD data gốc. SDK F:\android\Sdk, JDK F:\android\jbr. Debug127.0.0.1 qua ADB reverse54321/54324; host vẫn loopback54321. UI screenshot và JSON/logs tại validation_phase_08. Có cả tap UI lẫn instrumentation gọi Java clients; coverage phân biệt trong SCREEN_MAPPING.md.
+
+10. Build/unit/lint
+Clean assembleDebug/assembleDebugAndroidTest/testDebugUnitTest/lintDebug PASS. 10 unit tests,0 fail. Lint0 errors,226 warnings, xem build-summary.json. 10 kịch bản instrumentation PASS (UI và Java-client coverage tách rõ), tổng hợp tại verification-summary.json. APK audit checksum cuối tại apk-security-scan.json; expiry chạy riêng vì restart local services.
+
+11. Firebase removal
+Bỏ Auth/Firestore/BOM và google-services plugin, hai config json. Target source scan0 references, runtime dependency graph0 Firebase, APK scan0 legacy markers. Không xóa Firebase remote data; không đọc local.properties bằng mã/script nhiệm vụ.
+
+12. ImgBB removal/security
+Target source/runtime/APK không ImgBB path/URL. APK đối chiếu local service-role/JWT secret trong memory: không thấy; chỉ public local anon được phép. Initial CLI start từng xuất credentials local ra terminal trong chuẩn bị; đã sửa lifecycle/init/worker capture raw status trong memory. Không production secret/Cloud access, không tuyên bố chưa có local diagnostic exposure.
+
+13. Dependencies
+AGP9.3.3/Java11 source, target37/min24; AndroidX/Material, OkHttp4.12, Glide4.16, Shimmer/Lottie. Resolved graph: validation_phase_08/gradle-runtime-dependencies.txt. Không Firebase/ImgBB SDK/plugin đích.
+
+14. Future/uncovered
+Stories/video-feed/notifications/push/saved/memories/marketplace hiển thị chưa hỗ trợ. Community Groups/moderation/account-delete chưa mở; group Messenger C có riêng. Dark mode local giữ. Chưa full UI automation mỗi reaction/friend/admin/menu, picker, background/rotation, real-device/CDN/cache/recovery mobile deployments.
+
+15. Lỗi sửa
+Compile Glide/binding/ImageView; lint Toast/network XML/app:tint; PKCE thiếu bootstrap và singleTask callback routing; destroyed-Activity Glide cleanup crash; concurrent history-window loss; older paging actual count; feed error bị empty banner ghi đè/overlay/loading và cursor chỉ cập nhật theo accepted session. PowerShell runner phải xét Gradle exit thay vì deprecation stderr. Có logs lỗi đầu riêng, không dùng chúng làm kết quả cuối.
+
+16. Workers
+Dev runner bounded host-side chạy verifier/cleanup/dispatcher thật; local service-role/operator chỉ memory host. FFmpeg9.0.2 tại Temp, không Edge daemon/durable cloud service. Handoff PID7632 chạy60 phút, dự kiến hết khoảng16:02 Asia/Bangkok02/11, chi tiết dev-worker-handoff.json. Worker tắt/hết hạn thì phải chạy lại; không fake ready hoặc realtime. TTL intent15 phút, polling/fault UX tuân backend.
+
+17. Cloud gates
+Owner-approved release config/signing/HTTPS/App Links/SMTP, staging RLS/storage/private-only Realtime, durable sandboxed workers/scheduler/alerts/dead-letter, quota/rate/load, backup/restore/retention/admin/account-delete, real-device lifecycle/cache/video, privacy review và rollback rehearsal. Lint warnings/strings/accessibility còn cần xử lý. Không có Cloud approval/deployment.
+
+18. Dữ liệu cũ
+Chưa đọc/export/migrate Firebase/ImgBB users/content thật. Cần owner inventory/export, UID→UUID mapping/re-auth, transformation relations/posts/comments/chat IDs/server time, verify media private assets/thay URL, ACL/count/orphan validation, staging rehearsal/freeze/backup/rollback. Không coi password Firebase là plaintext có thể lấy lại; không dual-write giả transaction.
+
+19. Runtime/hashes
+Supabase local9 running/healthy nơi có healthcheck, TTL3600, private_only=true; PG portable không chạy/listener55439 absent. Emulator giữ để review. Giữ synthetic accounts/content/media/volumes. 15 migrations/manifest và evidence/báo cáo cũ nguyên; config chỉ thêm allowlist callback meeto://auth/callback. Expiry restore đúng config bytes trước test. Runtime cuối/checksum tại handoff-checks.json; không reset/drop/repair ledger.
+
+20. Readiness
+Sẵn sàng review Android Supabase local và nhiệm vụ staging/real-device QA riêng. Production/data cutover và exhaustive UI certification chưa hoàn thành. Báo cáo đầy đủ/mapping/giới hạn: database_design/MEETO_ANDROID_SUPABASE_CUTOVER.md và validation_phase_08/README.md. Dừng local giữ dữ liệu bằng CLI stop; không --no-backup/db reset/delete volumes.

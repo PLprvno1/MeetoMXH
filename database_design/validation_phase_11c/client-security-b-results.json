@@ -1,0 +1,40 @@
+{
+  "checks": [
+    {
+      "check": "missing user JWT",
+      "pass": true
+    },
+    {
+      "check": "tampered signature JWT",
+      "pass": true
+    },
+    {
+      "check": "no actor argument contract",
+      "pass": true
+    },
+    {
+      "check": "direct post owner\/counter DML",
+      "pass": true
+    },
+    {
+      "check": "guessed conversation UUID",
+      "pass": true
+    },
+    {
+      "check": "own private join",
+      "pass": true
+    },
+    {
+      "check": "wrong user topic denied",
+      "pass": true
+    },
+    {
+      "check": "public channel denied",
+      "pass": true
+    },
+    {
+      "check": "client broadcast publish denied",
+      "pass": true
+    }
+  ]
+}

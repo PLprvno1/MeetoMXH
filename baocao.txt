@@ -1,0 +1,738 @@
+BÁO CÁO KHẢO SÁT HIỆN TRẠNG DỰ ÁN MEETO
+Ngày khảo sát: 01/11/2026, múi giờ Asia/Bangkok.
+Workspace: F:\MeetoMXH
+Phạm vi: khảo sát mã nguồn, tài liệu, cấu hình và kiểm tra build/test. Không triển khai chức năng, sửa lỗi, deploy hoặc thay đổi backend.
+
+QUY ƯỚC ĐỌC BÁO CÁO
+- Đường dẫn tương đối tính từ F:\MeetoMXH. Để bảng ngắn hơn, J = app/src/main/java/com/example/meetomxh; L = app/src/main/res/layout. Ví dụ J/repositories/ChatRepository.java là đường dẫn source thực tế.
+- Các mô tả schema là hợp đồng đọc/ghi suy ra từ source, KHÔNG xác nhận dữ liệu hay cấu hình đang tồn tại trên production.
+- A = triển khai và có kiểm thử thành công tương ứng; B = có đường đi UI đến dữ liệu và trở lại UI nhưng Chưa xác minh runtime; C = có code nhưng thiếu logic/backend/cấu hình; D = chỉ UI hoặc dữ liệu giả; E = chưa thấy triển khai sau khi kiểm kê source; F = lỗi xác định được từ mã nguồn hoặc công cụ kiểm tra; G = ngoài phạm vi/chưa phê duyệt.
+- F trong báo cáo không mặc nhiên có nghĩa đã tái hiện trên thiết bị. Mỗi lỗi ghi rõ bằng chứng tĩnh hay kiểm thử thực tế.
+- Không tính build thành công hoặc unit test helper thành công là bằng chứng nghiệp vụ Firebase hoạt động. Không có tính năng nghiệp vụ nào được nâng lên A chỉ nhờ build/test helper.
+- Không đọc dữ liệu người dùng từ backend, không tạo tài khoản, không gửi SMS/email/push, không upload media, không sửa/xóa dữ liệu thật.
+- Không có baocao.txt trước khảo sát. Tệp này được tạo mới. Các tác vụ Gradle được yêu cầu có sinh/cập nhật artifact trong app/build, build và cache .gradle; đây là đầu ra công cụ, không phải source/config được chỉnh sửa. Tệp báo cáo là tài liệu duy nhất được chủ động tạo/chỉnh sửa.
+
+PHẦN 1 — THÔNG TIN TỔNG QUAN PROJECT
+===================================
+1.1. Danh tính và công nghệ
+- Tên Gradle project: MeetoMXH; sản phẩm gọi là Meeto; duy nhất module :app. Bằng chứng: settings.gradle.kts, strings.xml.
+- Application ID và namespace cùng là com.example.meetomxh. versionCode=1, versionName=1.0. Bằng chứng: app/build.gradle.kts.
+- Source ứng dụng có 35 file Java trong main, 1 file unit test Java, 1 file instrumented test Java. Không thấy source Kotlin của ứng dụng. Build script dùng Kotlin DSL; dependency activity-ktx không có nghĩa ứng dụng viết Kotlin. compileDebugKotlin thực tế NO-SOURCE.
+- UI: Android Views/XML, ViewBinding=true; 24 layout XML, RecyclerView, Material3, Fragment, BottomSheet, Drawer. Không có Compose.
+- minSdk=24; targetSdk=37; compileSdk=release(37). Java source/target compatibility=11.
+- AGP=9.3.3 (gradle/libs.versions.toml); Wrapper Gradle=9.5.0 với SHA-256 được khai báo; Google Services plugin=4.4.0. Gradle configuration cache bật trong gradle.properties; JVM heap cấu hình 2048 MB.
+- Wrapper --version chạy thành công: launcher JVM Oracle Java 1.8.0_401; daemon yêu cầu Java 25 từ gradle/gradle-daemon-jvm.properties. Có JDK Eclipse Adoptium 25 trong cache người dùng; build thực tế chạy được. Phân biệt Java launcher, daemon và Java source target 11.
+- SDK local.properties trỏ F:\uddd; máy có platforms android-36, android-37.0, build-tools 36.0.0. Không thay cấu hình SDK/JDK/dependencies.
+
+1.2. Dependencies trực tiếp
+Version Catalog: activity-ktx 1.13.0, appcompat 1.8.0, constraintlayout 2.2.2, material 1.14.0; JUnit 4.13.2, AndroidX ext JUnit 1.3.0, Espresso 3.7.0.
+Khai báo trực tiếp ngoài catalog: Firebase BoM 32.7.0, firebase-auth, firebase-firestore; OkHttp 4.12.0; Glide 4.16.0; Facebook Shimmer 0.5.0; Lottie 6.4.0. Auth/Firestore version do BoM quyết định. Không thấy SDK Supabase: Storage được gọi bằng REST/OkHttp. Không thấy dependency trực tiếp Firebase Messaging/Storage/Functions, Room, Retrofit hay DI framework. Lottie có dependency nhưng không tìm thấy luồng animation ứng dụng gọi nó trong source đã khảo sát.
+
+1.3. Manifest và môi trường
+- app/src/main/AndroidManifest.xml: INTERNET và READ_EXTERNAL_STORAGE. Không khai báo POST_NOTIFICATIONS, FirebaseMessagingService, camera hoặc service riêng của ứng dụng.
+- Launcher: LoginActivity, exported=true với MAIN/LAUNCHER. Bảy Activity còn lại exported=false: Register, ForgotPassword, Main, Profile, Chat, ChatImageViewer, CreatePost.
+- allowBackup=true; backup_rules.xml/data_extraction_rules.xml phần cấu hình chủ yếu là mẫu/comment. Chưa đánh giá dữ liệu cache nào thực tế được backup trên từng Android version.
+- adb không có trên PATH nhưng F:\uddd\platform-tools\adb.exe hoạt động. adb devices -l: không có device/emulator đang kết nối. emulator -list-avds: có AVD Pixel_4; chưa khởi động AVD và chưa chạy app. Không có tài khoản thử nghiệm được cung cấp.
+- git không có trên PATH và không có ở đường dẫn C:\Program Files\Git\cmd\git.exe đã kiểm tra. git status --short không chạy được; không dùng kết quả Git để khẳng định trạng thái ban đầu của repository. Workspace có .git.
+
+1.4. Kết luận khái quát
+Đây là ứng dụng Android có nền tảng Auth/Firestore thật và phần chat riêng tương đối nhiều logic; có luồng đăng bài, bình luận, like, kết bạn được nối trong source. Chưa phải mạng xã hội hoàn chỉnh: Stories là mock; nhóm, thông báo và quản trị chưa có triển khai nghiệp vụ; chỉnh sửa hồ sơ chưa làm; privacy bài viết chỉ được lưu, không được áp dụng vào query feed. Media phụ thuộc Supabase chưa cấu hình local và chat ảnh có lỗi chuyển trạng thái. Build debug thành công, 15 unit test thành công; Lint còn 1 lỗi/248 cảnh báo. Chưa xác minh runtime tất cả nghiệp vụ.
+
+PHẦN 2 — CẤU TRÚC SOURCE CODE
+============================
+2.1. Cây thư mục tóm tắt
+F:\MeetoMXH
+  app/build.gradle.kts, app/google-services.json
+  app/src/main/AndroidManifest.xml
+  app/src/main/java/com/example/meetomxh/
+    LoginActivity, RegisterActivity, ForgotPasswordActivity, MainActivity
+    ProfileActivity, CreatePostActivity, ChatActivity, ChatImageViewerActivity
+    fragments/ FeedFragment, FriendsFragment, InboxFragment, ProfileFragment,
+               CommentsBottomSheetFragment
+    adapters/ FeedAdapter, PostAdapter, StoryAdapter, CommentAdapter,
+              FriendItemAdapter, InboxAdapter, ChatMessageAdapter, ChatSearchResultAdapter
+    models/ User, Post, Story, Comment, FriendItem, Chat, ChatMessage, Inbox
+    repositories/ FeedRepository, FriendRepository, ChatRepository, UserSearchQuery
+    storage/ SupabaseStorage
+    viewmodels/ FeedViewModel
+  app/src/main/res/ layout, drawable, values, values-night, menu, xml, mipmap, color
+  app/src/test/.../ExampleUnitTest.java
+  app/src/androidTest/.../ExampleInstrumentedTest.java
+  gradle/libs.versions.toml, wrapper/, gradle-daemon-jvm.properties
+  supabase/storage.sql; SUPABASE_STORAGE.md
+  build.gradle.kts, settings.gradle.kts, gradle.properties, local.properties
+  google-services.json (thêm một bản ở gốc)
+  chat-ui.xml (tệp ngoài Android resource source set)
+  ba tài liệu yêu cầu cùng các bản Copy/tương ứng
+
+2.2. Vai trò các lớp
+- MainActivity điều phối Toolbar, Drawer, BottomNavigation và FragmentTransaction.
+- Login/Register/ForgotPassword trực tiếp gọi FirebaseAuth; Register đồng thời upload và ghi Users. RegisterActivity 657 dòng, có cả wizard, validation, Auth, upload, Firestore.
+- ProfileActivity trực tiếp đọc Users, gọi FriendRepository và ChatRepository; ProfileFragment là màn Menu giản lược, không phải màn hồ sơ đầy đủ.
+- CreatePostActivity trực tiếp quản lý picker, upload Supabase và ghi Posts.
+- FeedFragment nhận sự kiện FeedAdapter; FeedViewModel chuyển tiếp FeedRepository; LiveData trả danh sách Post.
+- FeedRepository singleton mở listener Posts ngay trong constructor; xử lý like/share/delete và fallback mock.
+- FriendRepository singleton dùng get/batch, quản lý quan hệ đối xứng ở hai nhánh Users/{uid}/Friends; UserSearchQuery hỗ trợ chuẩn hóa prefix và kiểm tra response còn hiện hành.
+- FriendsFragment dùng Handler debounce, requestVersion và mode REQUESTS/ALL_FRIENDS/SUGGESTIONS. FriendItemAdapter gắn hành động theo trạng thái quan hệ.
+- ChatRepository truy cập Chats/Messages, tạo ID ổn định, transaction tạo chat/đọc/thu hồi/xóa phía mình, batch gửi tin và cập nhật summary.
+- ChatActivity 771 dòng: chat UI, listeners, read receipt, composer reply, upload, menu tin nhắn, tìm kiếm local, bàn phím/insets. Có dấu hiệu tập trung quá nhiều trách nhiệm, chưa có ViewModel cho chat.
+- InboxFragment nghe danh sách Chats, cache hồ sơ trong Map, render Inbox qua InboxAdapter.
+- CommentsBottomSheetFragment trực tiếp nghe/ghi/xóa Comments, cập nhật counter bài viết bằng batch.
+- SupabaseStorage helper static chứa OkHttpClient và RequestBody stream URI.
+- FeedAdapter thực tế đang dùng cho bảng tin; PostAdapter còn tồn tại nhưng tìm tham chiếu không thấy nơi khởi tạo trong main source. Không suy hành vi của PostAdapter là hành vi feed hiện hành.
+- Story/StoryAdapter chỉ model và hiển thị dữ liệu tạo trong FeedAdapter; không có StoryRepository/StoryActivity.
+- Inbox và FriendItem là model hàng hiển thị; không có bằng chứng chúng là collection độc lập. Chat/ChatMessage có fromSnapshot đọc có kiểm tra kiểu; User/Post/Comment dùng Firestore toObject.
+- Không có Service, Application subclass, Manager riêng, custom backend hay Cloud Functions source. Không có Hilt/Dagger/Koin hoặc DI container; các lớp tự lấy singleton Firebase/repository.
+
+2.3. Layout và thành phần tái sử dụng
+8 layout Activity: activity_login, activity_register, activity_forgot_password, activity_main, activity_profile, activity_create_post, activity_chat, activity_chat_image_viewer.
+4 layout Fragment: fragment_feed, fragment_friends, fragment_inbox, fragment_profile.
+9 item layout: item_create_post, item_post, item_story, item_story_list, item_friend, item_comment, item_inbox, item_chat_message, item_chat_search_result.
+3 layout phụ: nav_header, layout_feed_shimmer, layout_comments_bottom_sheet.
+Menu: bottom_nav_menu.xml, drawer_menu.xml. Không có navigation graph hoặc Compose navigation. Tabs bạn bè và email/phone là các button tự xử lý, không phải TabLayout.
+chat-ui.xml ở gốc không thuộc app/src/main/res/layout và không có bằng chứng được inflate trong ứng dụng. Không xem tệp đó là màn hình bổ sung.
+
+PHẦN 3 — KIẾN TRÚC VÀ LUỒNG HOẠT ĐỘNG
+======================================
+3.1. Kiến trúc thực tế
+Kiến trúc tự tổ chức, có MVVM cục bộ ở bảng tin; không phải toàn dự án tuân thủ MVVM hoặc Clean Architecture. Activity/Fragment ở Auth/Profile/CreatePost/Comments truy cập Firebase trực tiếp. Các feature khác dùng callback repository thay vì state holder thống nhất. Không thấy domain/use case layer, dependency inversion hay điều phối error/loading dùng chung.
+
+3.2. Khởi chạy, phiên đăng nhập và đăng ký
+Manifest -> LoginActivity.onCreate -> FirebaseAuth.getCurrentUser(). Nếu khác null thì vào MainActivity ngay; không kiểm tra emailVerified, profileCompleted, document Users hoặc trạng thái khóa. Nếu null thì inflate login; btnLogin -> handleLogin -> signInWithEmailAndPassword -> thành công clear task vào Main; lỗi bật lại nút và Toast. Auth SDK giữ phiên; không có AuthStateListener dùng chung.
+btnRegister -> RegisterActivity wizard 5 bước: (1) tên/ngày sinh/giới tính và kiểm tra tuổi 13 phía client; (2) chọn email hoặc SĐT Việt Nam +84; (3) mật khẩu >=8 và confirm; (4) email link verification hoặc Firebase Phone OTP; (5) avatar/cover/bio rồi ghi Users/{Firebase UID}. Bỏ qua bước hồ sơ vẫn ghi hồ sơ với chuỗi ảnh rỗng, profileCompleted=true. Không lưu plaintext password trong Users.
+Email: createUserWithEmailAndPassword -> sendEmailVerification -> reload và isEmailVerified -> bước 5. Phone: verifyPhoneNumber -> callbacks/code -> signInWithCredential -> bước 5. Mật khẩu ở bước 3 của phone không được gắn thành credential đăng nhập; LoginActivity chỉ đăng nhập email/password. Không có login OTP riêng. Đây là bất nhất xác định từ đường gọi, chưa tái hiện thiết bị.
+Auth account được tạo trước Users. Rời wizard/ứng dụng bị hủy/upload lỗi có thể để Auth account tồn tại nhưng thiếu hồ sơ; lần mở sau auto-login không quay lại wizard. currentStep, thông tin hồ sơ, URI và trạng thái OTP không được lưu bằng onSaveInstanceState/ViewModel.
+Đăng xuất từ Drawer hoặc ProfileFragment -> FirebaseAuth.signOut -> NEW_TASK|CLEAR_TASK -> LoginActivity. FeedRepository singleton/listener không được reset tại logout.
+Quên mật khẩu: login -> ForgotPasswordActivity -> kiểm tra email -> sendPasswordResetEmail -> hiển thị thông báo không tiết lộ account tồn tại; xử lý network/throttle/invalid user. Việc nhập mật khẩu mới thực hiện qua email action Firebase bên ngoài app; không có màn nhập mật khẩu mới trong Android source.
+
+3.3. Điều hướng
+MainActivity.loadFragment dùng replace và thường không addToBackStack. Feed/Bạn bè/Menu thay Fragment mới. Messenger và FAB feed -> InboxFragment, có back stack; Search Toolbar -> FriendsFragment với ARG_OPEN_SEARCH, có back stack. Chọn Video/Thông báo chỉ Toast nhưng trả true nên item có thể được chọn dù nội dung hiện tại không đổi. Drawer Bạn bè mở Friends nhưng không đồng bộ selected item ở BottomNavigation. Drawer Đã lưu/Kỷ niệm/Marketplace chỉ Toast.
+Feed author / Friend row / Chat avatar-title -> ProfileActivity với target_uid. ProfileActivity Message -> getOrCreatePrivateChat -> ChatActivity với chat_id và other_uid. Inbox row -> ChatActivity. Chat image -> ChatImageViewerActivity. Feed composer -> CreatePostActivity; btnComment -> CommentsBottomSheet; share/delete -> AlertDialog; more bài của mình -> PopupMenu chỉ có xóa.
+ProfileFragment.cardProfile và header Drawer có vẻ là lối vào hồ sơ nhưng không có listener tương ứng trong Java. ProfileActivity hỗ trợ SELF nhưng chưa có lối mở hồ sơ đầy đủ của chính mình từ Menu được nối rõ ràng. Main không có auth guard độc lập khi được restore.
+
+3.4. Dữ liệu bất đồng bộ và UI
+Feed: FeedAdapter click -> FeedFragment -> FeedViewModel -> FeedRepository -> Firestore listener Posts -> từng get Reactions/currentUid -> LiveData -> observe(getViewLifecycleOwner) -> adapter.setPosts. Query giới hạn 30, mới nhất trước. Mỗi snapshot cần thêm một lượt đọc reaction cho từng post. Không có cursor/load more. Callback của snapshot cũ có thể về sau snapshot mới, chưa có generation guard. Shimmer đóng theo timer 1.5 giây, không theo kết quả tải.
+Like: reaction.get -> batch set/delete reaction và increment likesCount; không phải transaction bao trọn read-modify-write; không callback success/failure về UI. Có nguy cơ đếm sai khi bấm nhanh/đa thiết bị.
+Comments: btnSend -> submitComment -> batch comment mới + increment count -> realtime listener -> CommentAdapter; xóa là batch delete + decrement. Composer bị xóa trước commit và không khôi phục khi lỗi.
+Create post: kiểm tra có text/media -> upload nếu có -> savePostToFirestore -> Toast/finish -> feed listener cập nhật. Nội dung/tên tác giả được lưu phi chuẩn hóa tại thời điểm đăng. Chọn audience chỉ ghi visibility.
+Share: dialog -> FeedViewModel.sharePost -> FeedRepository.sharePost -> lấy Users -> batch tạo post type=share và increment sharesCount gốc. Không có bước load originalPost hoặc nhánh render riêng trong FeedAdapter, nên chuỗi chia sẻ chưa đầy đủ.
+Friend: UI action -> FriendRepository -> batch ghi/xóa hai document -> callback -> refresh view. Danh sách và search là get một lần, không realtime. Search 350 ms, requestVersion chống response cũ; prefix tên chính xác phân biệt hoa/thường/dấu theo dữ liệu, không full-text.
+Chat: getOrCreatePrivateChat dùng SHA-256 của cặp UID sắp thứ tự, có length-prefix -> transaction kiểm tra Users đích và chat tồn tại -> mở Activity. onStart gắn messages listener và chat-state listener; onStop/onDestroy tháo. Messages ASC limitToLast(50), bỏ snapshot hasPendingWrites; text send batch tạo Messages và summary. Callback thành công mới xóa composer. Chỉ hiển thị Đã gửi/Đã xem cho outgoing mới nhất.
+Read: khi latest incoming đang có ViewHolder hiển thị -> markChatRead transaction -> map lastReadAtByUid và lastReadMessageIdByUid; adapter đối chiếu Timestamp với lastReadAt của bên kia. Không có delivery receipt riêng. Nếu incoming mới nhất ngoài cửa sổ 50 hoặc đã bị ẩn khỏi adapter thì không đánh dấu đọc được qua cơ chế hiện tại; cần kiểm thử tình huống này.
+Recall: transaction kiểm tra thành viên/sender -> isRecalled=true, text/imageUrl rỗng -> sửa summary nếu đúng tin cuối. Delete for me: arrayUnion(uid) vào deletedFor và summary hidden nếu tin cuối; adapter lọc theo UID. Không xóa object ảnh trên Supabase.
+Tìm tin nhắn chỉ tìm text trong 50 tin đã tải, debounce 180 ms, bỏ tin recalled/deleted; không truy vấn toàn bộ lịch sử. Reply lưu ID/sender và preview trung tính; nội dung quote được resolve từ danh sách đang tải để phản ánh thu hồi.
+
+3.5. Lifecycle, cache và đồng bộ
+- Feed LiveData dùng viewLifecycleOwner; Handler được remove khi onDestroyView. FeedRepository không có dispose/onCleared/auth reset, postsListener sống theo singleton, UID reaction được chụp lúc attach listener.
+- Inbox có generation guard và tháo listener onStop; Map hồ sơ trong bộ nhớ, clear khi destroy view. Hồ sơ cache không realtime.
+- Friends hủy Handler và tăng requestVersion khi destroy view. Callback action chỉ isAdded ở một số chỗ; refresh có kiểm tra binding.
+- Comments tháo listener onDestroyView nhưng callback chỉ isAdded, không luôn kiểm tra binding; ProfileFragment.loadUserProfile cũng có kiểu guard này. isAdded không bảo đảm view còn tồn tại -> nguy cơ NullPointerException, chưa tái hiện runtime.
+- Chat gỡ listeners và cancel upload Call ở destroy; Activity callbacks đa số kiểm tra binding/isDestroyed. Upload Profile/CreatePost không giữ Call để hủy và một số callback không guard lifecycle.
+- Có cache Map/LiveData và cơ chế cache do SDK Firestore/Glide quản lý; không có cấu hình persistence/offline policy tùy chỉnh, Room/SQLite hay cơ chế đồng bộ xung đột riêng. Chưa xác minh trải nghiệm offline thực tế; mock fallback không phải cache backend.
+- Batch giúp các write trong batch nguyên tử; không làm các read trước batch thành transaction. Không có outbox hoặc idempotency key cho mọi thao tác; retry upload/write có thể để file mồ côi hoặc tin trùng trong trường hợp mất ACK.
+
+PHẦN 4 — BACKEND VÀ DATABASE
+============================
+4.1. Dịch vụ và cấu hình
+Firebase Authentication + Cloud Firestore thực sự được gọi trong Java. Có google-services.json ở gốc và app; plugin xử lý cấu hình app trong build. Không sao chép giá trị cấu hình/API key/project identifier vào báo cáo. Không có bằng chứng Realtime Database, Room, SQLite hay Supabase Postgres làm database nghiệp vụ.
+Firebase provider đã bật, quota, email templates, SHA fingerprints/app verification Phone Auth, region và dữ liệu hiện hữu: Chưa xác minh, cần Console. Có code phone/email verification không đồng nghĩa provider hoạt động.
+local.properties hiện không có giá trị cho supabase.url và supabase.anonKey. BuildConfig fields nhận mặc định chuỗi rỗng theo app/build.gradle.kts. SupabaseStorage.upload sẽ báo thiếu cấu hình trước khi tạo request. Không tự điền credential.
+
+4.2. Schema collection xác định từ mã nguồn (phân biệt chữ hoa/thường)
+Collection | Mục đích/ID | Fields ghi hoặc đọc được xác nhận | File sử dụng | Đọc/ghi | Lưu ý
+Users/{uid} | Hồ sơ; ID bằng Firebase UID | uid, fullName, dateOfBirth, gender, email, phoneNumber, avatarUrl, coverUrl, bio, contactVerified, profileCompleted, createdAt, updatedAt | J/RegisterActivity.saveUserProfileToFirestore; J/models/User; J/ProfileActivity; J/fragments/ProfileFragment; FriendRepository, ChatActivity, InboxFragment, CreatePostActivity, CommentsBottomSheetFragment, FeedRepository | set toàn document khi hoàn tất đăng ký; get theo ID/prefix tên/limit | Không có update hồ sơ sau đăng ký. Ngày sinh chuỗi dd/MM/yyyy; timestamps kiểu long millis; contactVerified/profileCompleted do client set true. Email/SĐT chung document với field public; chưa biết rules bảo vệ ra sao.
+Users/{uid}/Friends/{otherUid} | Quan hệ đối xứng | friendId, status=PENDING_SENT/PENDING_RECEIVED/ACCEPTED, createdAt server Timestamp, updatedAt server Timestamp khi accept | J/repositories/FriendRepository.sendFriendRequest/acceptFriendRequest/removeFriendRelation/getFriendsList/getFriendsByStatus/attachRelationshipsAndReturn | batch set merge hai phía, delete hai phía, get theo status/ID | Document ID cố định chống tạo nhiều document cùng cặp nhưng không kiểm tra chuyển trạng thái; accept có thể tạo document chỉ có status/updatedAt vì merge, không đảm bảo tồn tại lời mời.
+Posts/{postId} | Bài thường/chia sẻ; auto ID | postId, authorUid, userName, userAvatar, content, postImage, imageUrls[], mediaType=image/video/chuỗi rỗng, likesCount, commentsCount, sharesCount, type=normal/share, originalPostId, visibility, createdAt, updatedAt | J/CreatePostActivity.savePostToFirestore; FeedRepository; J/models/Post; FeedAdapter | set khi tạo; query desc createdAt limit 30; increment counters; delete document | Share writer chỉ ghi một tập field, thiếu visibility/updatedAt/media; model có originalPost nhưng chưa có load source post. timeAgo/isLiked là state tính trên client, không có bằng chứng writer lưu hai field này.
+Posts/{postId}/Reactions/{uid} | Like duy nhất theo UID | uid, type=LIKE, createdAt server Timestamp | FeedRepository.toggleLikePost/listenToRealPosts | get theo UID; batch set/delete + increment counter | Chỉ LIKE, không reaction selector nhiều loại. Read trước batch có race.
+Posts/{postId}/Comments/{commentId} | Bình luận phẳng; auto ID | commentId, postId, authorUid, authorName, authorAvatar, content, createdAt long millis | J/fragments/CommentsBottomSheetFragment; J/models/Comment; CommentAdapter | listener orderBy createdAt tăng dần không limit; batch set/delete + counter | Không parentId/replies/edit; không cleanup cascade khi xóa post; tên/avatar phi chuẩn hóa.
+Chats/{chatId} | Chat riêng 2 người; ID SHA-256 deterministic | type=private, participants[2], createdAt, updatedAt, lastMessage, lastMessageAt, lastMessageSenderId, lastMessageId, lastMessageHiddenFor[], lastMessageType, lastReadAtByUid map<Timestamp>, lastReadMessageIdByUid map<string>, lastIncomingMessageAtByUid map<Timestamp>, lastIncomingMessageIdByUid map<string> | J/repositories/ChatRepository; J/models/Chat; InboxFragment, ChatActivity | transaction create/read marker/summary actions; batch update summary; list listener participants array-contains + updatedAt desc limit 50; doc listener | createdAt/updatedAt/read markers là server Timestamp. ID và membership do client kiểm tra; không thay cho rules. Một số fields được khởi tạo null/rỗng.
+Chats/{chatId}/Messages/{messageId} | Tin nhắn private; auto ID | senderId, receiverId, type=text/image, text hoặc imageUrl, createdAt server Timestamp; replyToMessageId, replyToSenderId, replyPreview tùy chọn; isRecalled, recalledAt tùy chọn; deletedFor[] tùy chọn | ChatRepository.sendTextMessage/sendImageMessage/recallMessage/deleteMessageForMe; J/models/ChatMessage; ChatMessageAdapter | listener ASC limitToLast 50; batch tạo message+summary; transaction update | messageId lấy từ snapshot ID, không cần writer lưu field. Không có deliveredAt, file attachments hay group message schema.
+
+Không thấy code gọi collection Stories, Groups, Notifications, Reports, Followers, Blocks hay Roles. Không biến các tên dự kiến trong tài liệu thành schema đã triển khai. Không có chứng cứ dữ liệu production thiếu các collection đó; kết luận chỉ áp dụng code trong workspace.
+
+4.3. Query/index/consistency
+- Feed desc createdAt limit 30; không filter visibility, friends hoặc author. Không load trang tiếp theo.
+- Search Users theo fullName >= query, <= query+\uf8ff, limit20; loại chính mình sau query. Gợi ý Users limit15, loại self nhưng không loại bạn bè/lời mời, chỉ attach trạng thái.
+- Friends queries theo status không giới hạn và N lượt get Users; attachRelationships đọc cả Friends để dựng map.
+- Comments listener không limit; không pagination.
+- Chat list whereArrayContains(participants, uid) + orderBy(updatedAt DESC), limit50. Code có thông báo lỗi index, nhưng không có firestore.indexes.json trong workspace; composite index tương ứng cần xác minh Console.
+- Messages orderBy(createdAt ASC).limitToLast(50), chưa có load older. Query dùng timestamp đúng kiểu; dữ liệu thiếu field orderBy có thể không xuất hiện, cần kiểm thử dữ liệu legacy.
+- Posts/User/Comments dùng đồng hồ thiết bị (long millis); Reactions/Friends/Chats/Messages dùng serverTimestamp. Không được đổi kiểu timestamp đồng loạt khi chưa lập kế hoạch tương thích model/query.
+- Chat/ChatMessage xử lý document không tồn tại bằng fromSnapshot=null và có kiểm tra kiểu; ProfileActivity có thông báo khi Users không tồn tại. Feed toObject và nhiều nơi getString không catch schema sai; mapping error có thể làm callback lỗi/crash. SearchUsers có catch riêng để bỏ hồ sơ malformed, chưa áp dụng thống nhất.
+
+4.4. Security Rules và authorization
+Không tìm thấy firestore.rules, storage.rules, firebase.json hoặc index manifest Firestore trong source workspace. Chưa có bằng chứng để xác minh Security Rules đang triển khai.
+Phạm vi từng quyền:
+- Hồ sơ: Register set Users/currentUid; đọc Users người khác để render profile/search/chat, không có policy field-level ở Android.
+- Sửa/xóa bài: không có edit; deletePost đọc authorUid rồi xóa nếu khớp; đây là client-side ownership check.
+- Bài private/friends: UI lưu visibility nhưng feed query không áp dụng. Chưa thể kết luận backend đang cho đọc trái phép; nếu rules lọc quyền nghiêm ngặt, query rộng có thể bị từ chối thay vì trả tập đã lọc. Feed lại chuyển lỗi đó thành mock.
+- Bình luận/reaction: UI ẩn xóa bình luận người khác; delete handler không tự đọc lại ownership. Quyền đọc phải phụ thuộc quyền post; backend chưa xác minh.
+- Stories/nhóm: chưa có code quyền hay schema; không có căn cứ xác nhận protection.
+- Friends: client ghi cả nhánh của người nhận, cần rules kiểm tra sender/receiver/trạng thái cũ và mới; không được cho mọi user tùy ý update nhánh người khác.
+- Chat: query giới hạn participants và helper kiểm tra private/2 người/membership; recall kiểm tra sender, deleteForMe kiểm tra thành viên; tất cả là client logic. Cần rules riêng cho read/write messages, immutable participants, sender/receiver, read markers chỉ của mình, deletedFor và recall. Không thể khẳng định an toàn từ code Android.
+- Notifications/Reports/Roles: không có implementation được thấy, chưa xác minh mọi quyền liên quan.
+- System Admin, Moderator, Group Admin chưa có field role/custom claims flow/màn quản trị trong source. Không coi bất kỳ user hiện tại là admin; không thể suy quyền Console từ Android source.
+
+4.5. Media, API và credential
+SupabaseStorage.upload(ContentResolver,Uri,folder,ownerId,listener): kiểm tra BuildConfig không rỗng, MIME image/* hoặc video/*; stream URI qua OkHttp POST /storage/v1/object/meeto-media/{path}; apikey và Authorization Bearer dùng anon key, x-upsert=false. Tên object UUID; folder/owner được sanitize. folder chats/{chatId} bị chuyển dấu '/' thành '_' vì safeSegment, thực tế thành chats_<chatId>/{uid}/UUID, không phải cây chats/{chatId}/{uid}/UUID. Chưa có cleanup file hay signed URL.
+Response: HTTP 2xx -> tự dựng public URL, không parse response body; lỗi -> mã HTTP, callback failure. connectTimeout30s/readTimeout60s/writeTimeout0 (không giới hạn write), không callTimeout tổng, không giới hạn kích thước file, không nén ảnh/video, không progress byte-level. URIRequestBody truyền stream nên không nạp toàn bộ video vào RAM.
+Dịch vụ phụ thuộc: avatar/cover trong đăng ký; post ảnh/video; chat ảnh. Không thấy ImgBB endpoint/key/uploader hiện hành. Không thấy Firebase Storage/Cloud Functions. Không xem mô tả ImgBB trong đặc tả là tích hợp thực tế.
+supabase/storage.sql: tạo bucket public meeto-media, policy INSERT cho anon và authenticated chỉ kiểm tra bucket_id. Không kiểm tra Firebase UID, owner/path, size hay MIME tại policy này. Firebase login không tự trở thành Supabase authenticated user vì request chỉ gửi anon key. Public URL dùng cả cho chat/media của bài private; ai có URL có thể đọc nếu bucket triển khai public như SQL, độc lập quyền Firestore. SQL là đề xuất local, chưa xác minh đã execute; không chạy SQL.
+Anon key là khóa phân phối phía client, không nên gọi nó là service-role secret. Dù đặt trong local.properties đã gitignore, BuildConfig vẫn đóng gói vào APK. Với policy anon rộng, lấy key từ APK có thể upload ngoài app; cần kiểm soát server/policy thay vì dựa vào giấu key. Không tìm thấy/không xuất giá trị secret vào báo cáo. google-services.json chứa cấu hình client Firebase, không tự đồng nghĩa credential quản trị.
+FCM: không có dependency messaging trực tiếp, service nhận push, onNewToken/getToken, notification channel/permission request hay sender Cloud Functions/Admin SDK. Không có hạ tầng nhận hoặc gửi push được xác nhận. Listener Firestore trong app và chấm unread Inbox không phải push notification.
+
+PHẦN 5 — DANH SÁCH MÀN HÌNH
+============================
+Trạng thái ở đây đánh giá đường đi trong code; mọi màn đều Chưa xác minh runtime.
+Màn | Class và XML | Điểm vào | Chức năng/thao tác | Nguồn dữ liệu | Trạng thái và vấn đề
+Đăng nhập | J/LoginActivity; L/activity_login.xml | Launcher, logout | Email/password; mở đăng ký/quên mật khẩu; auto-login | FirebaseAuth | B cho email/password; F với kỳ vọng login SĐT vì chỉ gọi signInWithEmailAndPassword; không guard verified/profile.
+Đăng ký bước 1 | J/RegisterActivity.processStep1; L/activity_register.xml/layoutStep1 | Login.btnRegister | Tên, DatePicker, giới tính tự chọn, tuổi >=13 | State Activity | Có validation client; chưa lưu state khi recreate.
+Đăng ký bước 2 | RegisterActivity.processStep2; cùng XML/layoutStep2 | Tiếp bước1 | Chọn tab Email/Phone và contact | State Activity | Định dạng email; phone chỉ check độ dài rồi thêm +84; không validation đầy đủ số.
+Đăng ký bước 3 | RegisterActivity.processStep3Submit; layoutStep3 | Tiếp bước2 | Mật khẩu, confirm, show/hide, strength | State -> FirebaseAuth | B email; C/F phone vì password thu thập không dùng cho credential phone.
+Đăng ký bước 4 | RegisterActivity email/phone methods; layoutStep4 | Tạo account/OTP callback | Check/resend verification email; verify/resend OTP, countdown | FirebaseAuth | B đường gọi verification; cấu hình provider và việc nhận thư/SMS chưa xác minh; back/cancel có thể bỏ lại account dở.
+Đăng ký bước 5 | RegisterActivity.completeUserProfile; layoutStep5 | Verified hoặc auto Phone Auth | Pick avatar/cover, nhập bio, hoàn tất/bỏ qua | Supabase -> Users | C: thiếu config media; F: chỉ chọn cover không avatar thì code lưu cover rỗng.
+Quên mật khẩu | J/ForgotPasswordActivity; L/activity_forgot_password.xml | Login.tvForgotPassword | Nhập email, submit/IME, loading/result/back | FirebaseAuth.sendPasswordResetEmail | B; không chạy gửi thư thật; không phải màn reset mật khẩu trực tiếp.
+Khung chính | J/MainActivity; L/activity_main.xml; menu/*.xml; L/nav_header.xml | Login/Register thành công/auto-login | Toolbar search/messenger, Drawer, BottomNavigation | FirebaseAuth logout, FragmentManager | B navigation đang nối; D video/notif/saved/memories/marketplace; header chưa bind profile/click.
+Bảng tin | J/fragments/FeedFragment; L/fragment_feed.xml + item_create_post/item_story_list/item_story/item_post | Main mặc định/Trang chủ | Tạo bài, author profile, like/comment/share/delete, FAB inbox | FeedViewModel/FeedRepository; mock stories/fallback posts | B phần đọc/ghi post; C feed privacy/pagination/share; D stories; shimmer giả thời gian.
+Tạo bài | J/CreatePostActivity; L/activity_create_post.xml | Feed composer/photo/avatar | Text, 1 ảnh hoặc video, audience cycle, remove media, submit/back | Users + Supabase + Posts | B text; C media do thiếu cấu hình; privacy mới lưu field; không multi-select; callback upload chưa quản lý lifecycle đầy đủ.
+Bình luận bottom sheet | J/fragments/CommentsBottomSheetFragment; L/layout_comments_bottom_sheet.xml + item_comment | Feed.btnComment | Xem/gửi/xóa comment của mình, close | Posts/{id}/Comments realtime + Users | B CRUD hiện có; chưa replies/edit; mất draft khi gửi lỗi; query không limit.
+Bạn bè/lời mời/gợi ý | J/fragments/FriendsFragment; L/fragment_friends.xml + item_friend | Bottom Bạn bè, Drawer Bạn bè | 3 tab button; add/accept/reject/cancel/unfriend; mở profile | FriendRepository; Users/Friends get | B các action; C gợi ý và duplicate transition protection; không realtime/pagination/tab đã gửi.
+Tìm người dùng | FriendsFragment với ARG_OPEN_SEARCH; cùng XML | Toolbar Search; hoặc nhập search ở Friends | Nhập/xóa query, debounce, kết quả, profile/action | Prefix query Users + current Friends | B; không full-text/không bỏ dấu/case-insensitive; limit20; state empty/error/loading có.
+Menu/hồ sơ tóm tắt | J/fragments/ProfileFragment; L/fragment_profile.xml | Bottom Menu | Tên/avatar, switch dark mode, shortcuts, logout | Users/currentUid get + AppCompatDelegate | B đọc profile/logout/theme; D shortcuts; card Xem trang cá nhân chưa có listener; nguy cơ callback sau destroy view.
+Hồ sơ chi tiết | J/ProfileActivity; L/activity_profile.xml | Author feed, Friend row, Chat avatar/title | Tên/avatar/cover/bio/gender/dob, quan hệ, Message/back; SELF edit button | Users/target_uid + FriendRepository + ChatRepository | B xem/kết bạn/chat; D edit Toast; không timeline profile/friends list riêng/privacy filtering; ngày sinh hiển thị người khác.
+Hộp thư | J/fragments/InboxFragment; L/fragment_inbox.xml + item_inbox | Toolbar Messenger/FAB feed | Danh sách, preview/time/unread, mở chat | Chats realtime + cached Users | B; limit50, cần composite index; không pagination; profile cache một lần.
+Chat riêng | J/ChatActivity; L/activity_chat.xml + item_chat_message/item_chat_search_result | Profile Message hoặc Inbox row | Text/IME/emoji text, reply/copy/recall/delete local, read receipts, search local, ảnh, back/profile | ChatRepository Firestore; Supabase upload | B text/actions/receipts; F gửi ảnh lần đầu do uploadingImage guard; C lịch sử/search chỉ 50; lỗi encoding ở một số repository messages.
+Xem ảnh chat | J/ChatImageViewerActivity; L/activity_chat_image_viewer.xml | Chat image tap | Full image/back | HTTPS URL qua Intent, Glide | B viewer nếu có tin ảnh sẵn; F Lint UseAppTint tại XML:22; chưa zoom/pan, tiếng Anh.
+
+Không có màn chi tiết bài viết độc lập hoặc click card dẫn vào bài theo ID; bottom sheet bình luận không thay thế đầy đủ màn chi tiết bài. Không có màn tạo/xem Stories, Groups, Notifications, Admin/Moderator. Chưa có onboarding/splash riêng, settings đầy đủ hoặc màn chỉnh sửa hồ sơ.
+Dialog/Menu có thật: DatePicker đăng ký; AlertDialog chia sẻ/xóa post; PopupMenu xóa bài của mình; menu long-press reply/copy/recall/delete trong chat và confirm action; comment BottomSheet. Không thấy Dialog cài đặt quyền riêng tư thực tế hay TabLayout.
+
+PHẦN 6 — MA TRẬN HOÀN THÀNH 8 NHÓM CHỨC NĂNG
+=============================================
+Cột: Mã | Chức năng | A-G | UI | Logic | Backend | Bằng chứng | Vấn đề.
+Viết tắt backend trong bảng: FS=Firestore, FA=FirebaseAuth, SS=Supabase Storage. “Không thấy” chỉ source workspace hiện tại. Tất cả B/C/D/F nghiệp vụ đều Chưa xác minh runtime; F có mô tả xác nhận bằng static analysis hoặc Lint, không phải thao tác backend thật.
+Đối với E: đã đối chiếu toàn bộ 35 Java main, manifest, layout/menu, collection/API call và dependency; không có đường đi UI -> event -> logic -> dữ liệu -> UI tương ứng. Đó là bằng chứng âm tính trong workspace, không phải kiểm kê mọi dịch vụ production.
+
+6.1. Tài khoản và hồ sơ cá nhân
+TK01 | Đăng ký email | B | Wizard1-5 | validate/create/verify/save | FA + Users | RegisterActivity.processStep3Submit/startEmailAccountCreation/saveUserProfileToFirestore | Không có test nghiệp vụ; nguy cơ account không có Users khi bỏ wizard.
+TK02 | Đăng ký SĐT OTP | C | Tab phone, OTP | verifyPhoneNumber/signInWithCredential/save | FA phone + Users | RegisterActivity.startPhoneAccountCreation/signInWithPhoneCredential | Chưa xác minh provider/SMS; thiếu login phone và state recovery.
+TK03 | Đăng nhập email/password | B | Login.btnLogin | handleLogin | FA | LoginActivity.handleLogin -> callback -> Main | Không kiểm tra verified/profile/locked.
+TK04 | Đăng nhập SĐT | F | Hint Email hoặc SĐT | Thực tế chỉ email password | FA email API | LoginActivity.handleLogin:67 gọi signInWithEmailAndPassword | Không có nhánh Phone Auth login; xác nhận từ source, chưa runtime.
+TK05 | Khôi phục phiên | C | Launcher auto-route | currentUser != null | FA local session | LoginActivity.onCreate | Thiếu kiểm tra verified, Users/profileCompleted và auth listener.
+TK06 | Đăng xuất | B | Drawer/Profile logout | signOut + clear task | FA | MainActivity drawer_logout; ProfileFragment.handleLogout | Feed singleton/listener và dữ liệu chưa reset.
+TK07 | Yêu cầu khôi phục mật khẩu | B | ForgotPassword form | validate/loading/error | FA.sendPasswordResetEmail | ForgotPasswordActivity.sendResetLink | Không gửi email khi audit; cấu hình action email chưa xác minh.
+TK08 | Đặt mật khẩu mới | C | Chuyển qua email | Firebase action ngoài app | FA email action | ForgotPasswordActivity, không có activity reset mới | Không có UI nhập mật khẩu mới trong app; action handler/Console chưa xác minh.
+TK09 | Email verification | B | Wizard step4 | send/reload/check/resend | FA | RegisterActivity.sendEmailVerificationLink/checkEmailVerificationStatus | Không enforce lúc login/auto-login; chưa thử nhận thư.
+TK10 | Xem hồ sơ tóm tắt của mình | B | Bottom Menu | read Users | FS Users | ProfileFragment.loadUserProfile | Không profile timeline, callback guard chưa đủ.
+TK11 | Mở hồ sơ đầy đủ của mình | C | cardProfile có chữ Xem trang cá nhân | ProfileActivity hỗ trợ SELF nhưng card chưa nối | FS Users | ProfileFragment.setup UI; ProfileActivity target_uid fallback | Thiếu event từ card Menu; không nên tính UI label là navigation hoàn chỉnh.
+TK12 | Chỉnh sửa thông tin hồ sơ | D | btnEditProfile | Toast | Không write update | ProfileActivity.updateActionButtonsUI | Chưa có form/save.
+TK13 | Upload avatar khi đăng ký | C | Pick avatar step5 | SS upload rồi save Users | SS + FS | RegisterActivity.completeUserProfile/uploadImageToSupabase | Thiếu config Supabase local; chưa test upload.
+TK14 | Thay avatar sau đăng ký | E | Không form | Không | Không write | ProfileActivity chỉ Toast edit; search upload calls | Chưa triển khai.
+TK15 | Upload cover khi đăng ký | F | Pick cover step5 | Chỉ xử lý cover bên trong nhánh avatar != null | SS + FS có code | RegisterActivity.completeUserProfile | Chỉ chọn cover thì else lưu avatar/cover rỗng; xác nhận static; thêm blocker config.
+TK16 | Thay cover sau đăng ký | E | Không | Không | Không | Toàn bộ upload call sites | Chưa triển khai.
+TK17 | Xem hồ sơ người khác | B | ProfileActivity | get target_uid/load action | FS Users/Friends | FeedFragment.onAuthorClick; FriendsFragment.onItemClick; ChatActivity.openOtherProfile | Không kiểm tra privacy/block, hiển thị dob/gender.
+TK18 | Tìm kiếm người dùng | B | Toolbar/Friends search | debounce/version/prefix | FS Users | FriendsFragment.searchUsers -> FriendRepository.searchUsers | Prefix phân biệt hoa/dấu; limit20 không load tiếp.
+TK19 | Cài đặt quyền riêng tư hồ sơ | E | Không | Không | Không schema privacy profile | User, ProfileActivity, toàn bộ Java/layout | Quyền đọc backend chưa xác minh.
+TK20 | Chặn người dùng | E | Không | Không | Không Blocks | Toàn bộ UI/collection calls | Chưa triển khai.
+TK21 | Bỏ chặn người dùng | E | Không | Không | Không Blocks | Toàn bộ UI/collection calls | Chưa triển khai.
+
+6.2. Bài viết và bảng tin
+BV01 | Đăng văn bản | B | Feed composer/CreatePost | validation/save/callback | FS Posts | FeedFragment.onCreatePostClick -> CreatePostActivity.submitPost/savePostToFirestore | Chưa runtime; tên tác giả có thể chưa tải xong.
+BV02 | Đăng một ảnh | C | Picker/preview | upload -> save | SS + Posts | CreatePostActivity.setupUI/submitPost | Thiếu config media; chưa upload thật.
+BV03 | Đăng nhiều ảnh | E | Không multi-picker | imageUrls chỉ chứa tối đa1 URL | Không flow nhiều file | CreatePostActivity.savePostToFirestore | Mảng field không chứng minh multi-image feature.
+BV04 | Đăng video | C | OPEN_DOCUMENT video/* | upload/mediaType video | SS + Posts | CreatePostActivity; FeedAdapter.PostViewHolder.bind VideoView | Thiếu config; chưa player lifecycle/error đầy đủ.
+BV05 | Xem bảng tin | B | RecyclerView feed | VM/listener/render | FS Posts desc limit30 | FeedFragment -> FeedViewModel -> FeedRepository.listenToRealPosts | Có mock fallback che lỗi/rỗng; không privacy/pagination.
+BV06 | Chi tiết bài viết | E | Không màn/click mở post | Không load by post ID cho màn detail | Không flow detail | Manifest, FeedAdapter, FeedFragment | Comments BottomSheet không phải chi tiết đầy đủ.
+BV07 | Thích/bỏ thích | B | btnLike | get reaction -> batch increment | Posts/Reactions | FeedViewModel.likePost -> FeedRepository.toggleLikePost -> listener -> UI | Race read-before-batch, không error callback; chưa runtime counters.
+BV08 | Cảm xúc nhiều loại | E | Chỉ icon Like | Chỉ type LIKE | Không chọn type khác | FeedAdapter; FeedRepository.toggleLikePost | Chưa có reaction picker.
+BV09 | Xem bình luận | B | BottomSheet | listener/list render | Posts/Comments | CommentsBottomSheetFragment.listenToComments | Không limit; lỗi chỉ Toast.
+BV10 | Thêm bình luận | B | Composer/send | batch add + count | Posts/Comments | CommentsBottomSheetFragment.submitComment -> listener -> adapter | Xóa draft trước thành công.
+BV11 | Xóa bình luận của mình | B | Delete hiện khi UID khớp | batch delete/decrement | Posts/Comments | CommentAdapter.bind -> onDeleteCommentClick | Ownership ở UI; repeat delete có thể giảm count nhiều lần; rules chưa biết.
+BV12 | Chỉnh sửa bình luận | E | Không | Không | Không update content | CommentAdapter/BottomSheet | Chưa triển khai.
+BV13 | Trả lời bình luận | E | Không | Không parent/reply logic | Không parentId | Comment model và BottomSheet | Chưa triển khai.
+BV14 | Chia sẻ nội bộ bài viết | C | Share dialog | tạo share record + tăng count | FS Posts | FeedFragment.onShareClick -> FeedRepository.sharePost | Không load/render originalPost; thiếu visibility; lỗi get Users không có failure callback.
+BV15 | Chia sẻ liên kết ra ngoài | E | Không ACTION_SEND bài viết | Không permalink/deep link | Không | FeedFragment/Manifest | Không được đồng nhất share nội bộ với share link.
+BV16 | Sửa bài viết | E | More chỉ xóa | Không edit flow | Không update content | FeedAdapter.ibMore; FeedRepository | Chưa triển khai.
+BV17 | Xóa bài của mình | B | More + confirm | check authorUid rồi delete | Posts.delete | FeedFragment.onDeletePostClick -> FeedViewModel.deletePost -> FeedRepository.deletePost | Không xóa subcollections/media/share references; get failure chưa callback.
+BV18 | Lưu bài viết | D | Drawer Đã lưu/shortcut | Toast | Không saved collection | MainActivity.drawer_saved; ProfileFragment.cardSavedShortcut | Không save/unsave bài cụ thể.
+BV19 | Bỏ lưu bài | E | Không | Không | Không | Toàn bộ source | Chưa triển khai.
+BV20 | Ẩn bài viết khỏi feed | E | Không | Không hidden-user/post filter | Không | FeedAdapter more, FeedRepository query | Chưa triển khai.
+BV21 | Báo cáo bài viết | E | Không form/menu | Không | Không Reports | FeedAdapter more chỉ delete; toàn bộ collection calls | Chưa triển khai.
+BV22 | Chọn audience khi tạo | B | Public/friends/private cycle | Ghi visibility | Posts.visibility | CreatePostActivity.setupUI/savePostToFirestore | Chỉ xác nhận ghi lựa chọn, chưa đảm bảo enforcement.
+BV23 | Thực thi quyền riêng tư bài viết | C | Audience UI đã có | Feed không filter | Rules chưa có bằng chứng | FeedRepository.listenToRealPosts:56; mục4.4 | Không kết luận leak thực tế khi chưa biết rules; query có thể bị denied.
+BV24 | Thứ tự bài mới nhất | B | Feed | orderBy DESC + sort | Posts.createdAt | FeedRepository.listenToRealPosts | Dùng giờ thiết bị; chưa runtime dữ liệu legacy.
+BV25 | Bài phổ biến/xếp hạng | E | Không toggle | Không ranking | Không query ranking | FeedRepository | Chỉ có mới nhất; thuật toán phức tạp chưa phê duyệt.
+BV26 | Phân trang feed | E | Không load more | limit30 cố định | Không cursor | FeedRepository, FeedFragment | Người dùng không xem bài ngoài cửa sổ30.
+
+6.3. Stories
+ST01 | Đăng Tin ảnh | D | Card Tạo tin | Không click handler | Không Stories writer | FeedAdapter.initDummyStories; StoryAdapter.bind | Chỉ UI.
+ST02 | Đăng Tin video | E | Không composer | Không | Không | Story/StoryAdapter và toàn bộ source | Video post không phải video Story.
+ST03 | Danh sách Tin | D | Stories horizontal RecyclerView | initDummyStories | URL mẫu hardcode | FeedAdapter constructor/StoriesViewHolder | Không dữ liệu người dùng/backend/cache.
+ST04 | Xem chi tiết một Tin | E | Không viewer | Không click Story | Không | StoryAdapter.bind không listener | Chưa triển khai.
+ST05 | Chuyển Tin tiếp/trước | E | Không viewer | Không | Không | Toàn bộ màn hình | Chưa triển khai.
+ST06 | Xóa Tin của mình | E | Không | Không | Không | Toàn bộ source | Chưa triển khai.
+ST07 | Ghi nhận lượt xem | E | Không | Không | Không views schema | Story model chỉ dữ liệu card | Chưa triển khai.
+ST08 | Xem danh sách người xem | E | Không | Không | Không | Toàn bộ source | Chưa triển khai.
+ST09 | Trả lời Tin | E | Không | Không | Không | Toàn bộ source | Chat reply không phải Story reply.
+ST10 | Cảm xúc Tin | E | Không | Không | Không | Toàn bộ source | Chưa triển khai.
+ST11 | Hạn 24 giờ trên UI | E | Không expiry UI | Không timestamp/expiry | Không | Story.java | Model không createdAt/expiresAt.
+ST12 | Lọc Tin hết hạn tại query | E | Không query | Không filter expiry | Không Stories query | Toàn bộ collection calls | Chưa triển khai.
+ST13 | Cleanup Tin hết hạn | E | Không | Không scheduler/job | Không Functions/TTL config | Toàn bộ workspace backend config | Không tự suy TTL đã bật ở Console.
+ST14 | Quyền xem Tin | E | Không | Không privacy logic | Rules chưa biết | Toàn bộ Stories source hiện chỉ mock | Chưa triển khai client.
+
+6.4. Bạn bè và theo dõi
+BB01 | Tìm người để kết bạn | B | Friends search/Toolbar | Prefix + attach relation | Users/Friends | FriendsFragment.searchUsers; FriendRepository.searchUsers | Limit20, không search nâng cao.
+BB02 | Gửi lời mời | B | Add ở row/Profile | batch set hai phía | Users/Friends | FriendRepository.sendFriendRequest -> callback refresh | Chặn self nhưng không check existing/target profile trong method.
+BB03 | Xem lời mời đến | B | Tab Requests | get status và fetch Users | Friends PENDING_RECEIVED | FriendsFragment.loadDataForMode -> getReceivedFriendRequests | Không realtime/phân trang.
+BB04 | Chấp nhận lời mời | B | Accept | merge ACCEPTED hai phía | Users/Friends | FriendRepository.acceptFriendRequest | Không xác minh lời mời đang tồn tại; cần transaction/rules.
+BB05 | Từ chối lời mời | B | Secondary reject | delete hai phía | Users/Friends | FriendsFragment.onSecondaryActionClick -> removeFriendRelation | Chưa runtime; dùng chung delete với unfriend/cancel.
+BB06 | Hủy lời mời đã gửi | B | Row/Profile PENDING_SENT | delete hai phía | Users/Friends | FriendsFragment.onPrimaryActionClick; ProfileActivity | Có flow cancel từ người đích dù thiếu tab sent.
+BB07 | Danh sách lời mời đã gửi | C | Không tab sent | getSentFriendRequests có code | Friends PENDING_SENT | FriendRepository.getSentFriendRequests; không thấy UI gọi | Code có tồn tại chưa tương đương màn usable.
+BB08 | Danh sách bạn bè của mình | B | All Friends | query ACCEPTED/fetch User | Users/Friends | FriendsFragment.loadDataForMode -> getFriendsList | Không limit và N+1 reads.
+BB09 | Danh sách bạn bè của người khác | C | Chưa có màn dẫn đến | getFriendsList(userId) có tham số | Users/Friends | FriendRepository.getFriendsList; ProfileActivity không gọi | Chưa nối UI/permission policy.
+BB10 | Hủy kết bạn | B | ACCEPTED row/Profile | delete quan hệ | Users/Friends | removeFriendRelation callbacks | Chưa xác minh runtime.
+BB11 | Gợi ý bạn bè | C | Suggestions tab | Users limit15 + attach status | Users/Friends | FriendRepository.getSuggestedFriends | Không loại ACCEPTED/pending, không ranking; comment khác behavior thực tế.
+BB12 | Chống lời mời trùng | C | UI theo status | Document ID cố định | batch merge | sendFriendRequest/acceptFriendRequest | Không nhiều document cùng cặp nhưng ghi đè trạng thái/cross-request vẫn có thể xảy ra.
+BB13 | Follow | E | Không | Không | Không Followers | Toàn bộ source/model/collection | Chưa triển khai.
+BB14 | Unfollow | E | Không | Không | Không Followers | Toàn bộ source | Chưa triển khai.
+
+6.5. Nhóm cộng đồng
+NH01 | Tìm nhóm | E | Không | Không | Không Groups query | Toàn bộ main/UI/collection calls | Chưa triển khai.
+NH02 | Xem thông tin nhóm | E | Không | Không | Không | Không Group Activity/Fragment/model | Chưa triển khai.
+NH03 | Tạo nhóm | E | Không | Không | Không | Toàn bộ source | Chưa triển khai.
+NH04 | Chế độ nhóm công khai | E | Không | Không | Không group privacy | Toàn bộ source | Chưa triển khai.
+NH05 | Chế độ nhóm riêng tư | E | Không | Không | Không group privacy | Toàn bộ source | Chưa triển khai.
+NH06 | Tham gia nhóm công khai | E | Không | Không | Không Members | Toàn bộ source | Chưa triển khai.
+NH07 | Yêu cầu vào nhóm riêng tư | E | Không | Không | Không join requests | Toàn bộ source | Chưa triển khai.
+NH08 | Duyệt yêu cầu vào nhóm | E | Không | Không | Không | Toàn bộ source | Chưa có Group Admin.
+NH09 | Từ chối yêu cầu vào nhóm | E | Không | Không | Không | Toàn bộ source | Chưa triển khai.
+NH10 | Rời nhóm | E | Không | Không | Không | Toàn bộ source | Chưa triển khai.
+NH11 | Xem/quản lý thành viên | E | Không | Không | Không | Toàn bộ source | Chưa triển khai.
+NH12 | Loại thành viên | E | Không | Không | Không | Toàn bộ source | Chưa triển khai.
+NH13 | Phân vai trò nhóm | E | Không | Không | Không roles | User model/collection inventory | Chưa có Group Admin/Member contract.
+NH14 | Sửa thông tin nhóm | E | Không | Không | Không | Toàn bộ source | Chưa triển khai.
+NH15 | Cài đặt nhóm | E | Không | Không | Không | Toàn bộ source | Chưa triển khai.
+NH16 | Xóa nhóm | E | Không | Không | Không | Toàn bộ source | Chưa triển khai.
+NH17 | Xem bài viết nhóm | E | Không | Không groupId/filter | Không group posts | Post/CreatePost/FeedRepository | Feed chung không thay thế feed nhóm.
+NH18 | Đăng bài nhóm | E | Không | Không | Không | CreatePostActivity chỉ Posts chung | Chưa triển khai.
+NH19 | Sửa bài nhóm | E | Không | Không | Không | Toàn bộ source | Chưa triển khai.
+NH20 | Xóa bài nhóm | E | Không | Không group moderation | Không | Toàn bộ source | Delete bài cá nhân không thay thế quyền nhóm.
+NH21 | Bình luận bài nhóm | E | Không | Không group membership check | Không flow group | Toàn bộ source | Chưa triển khai.
+NH22 | Báo cáo/kiểm duyệt nhóm | E | Không | Không | Không Reports/role | Toàn bộ source | Không đồng nhất Group Admin và System Admin.
+
+6.6. Tin nhắn
+TN01 | Danh sách cuộc trò chuyện | B | Inbox | scoped listener + render | Chats participants query | InboxFragment.onStart -> ChatRepository.listenToCurrentUserChats | Limit50, composite index chưa xác minh Console.
+TN02 | Mở/tạo chat riêng | B | Profile Message/Inbox | deterministic ID + transaction | Users + Chats | ProfileActivity.openChatWithTarget -> getOrCreatePrivateChat | Có unit test ID, chưa test tạo chat backend.
+TN03 | Gửi văn bản | B | Composer/IME/send | validate/batch/callback | Messages + chat summary | ChatActivity.sendCurrentMessage -> sendTextMessage | Chưa runtime; không delivery receipt.
+TN04 | Nhận tin realtime | B | Message rows | membership check/listener | Messages ASC last50 | ChatRepository.listenToMessages -> ChatActivity callback -> adapter | Bỏ pending writes; không load tin cũ.
+TN05 | Emoji trong văn bản | B | Bàn phím hệ thống | Lưu chuỗi text Unicode | Messages.text | sendCurrentMessage/sendTextMessage | Không có emoji picker/sticker riêng; chưa test Unicode thiết bị.
+TN06 | Emoji picker/sticker | E | Không | Không | Không | activity_chat.xml/ChatActivity | Không suy emoji text là picker.
+TN07 | Upload và gửi ảnh chat | F | Attach image/status | upload thành công không reset uploadingImage trước gọi sendUploadedImageMessage | SS -> Messages có repository code | ChatActivity.startOrRetryImageSend/sendUploadedImageMessage:~518-548 | uploadingImage=true khiến guard return; ngoài ra SS config rỗng. Xác nhận static, chưa runtime.
+TN08 | Nhận/hiển thị ảnh chat có sẵn | B | Image bubble + viewer | render URL/image click | Messages.imageUrl + HTTP Glide | ChatMessageAdapter.bind -> ChatImageViewerActivity | Có thể đọc ảnh đã tồn tại; không chứng minh luồng gửi mới hoạt động.
+TN09 | Gửi file đính kèm chung | E | Picker chỉ ImageOnly | Không file flow | Không file metadata schema | ChatActivity picker/ChatRepository | Không gửi PDF/audio/video chat.
+TN10 | Tạo chat nhóm | E | Không | Chỉ private, participants2 | Không group chat contract | ChatRepository PRIVATE_TYPE/requireMembership | Chưa triển khai.
+TN11 | Quản lý chat nhóm | E | Không | Không | Không | Toàn bộ chat source | Chưa triển khai.
+TN12 | Trạng thái đang gửi/đã gửi | B | Spinner/send + receipt | callback batch và server snapshot | FS metadata/summary | ChatActivity.updateSendingState; ChatMessageAdapter | Đã gửi là commit thành công, không phải đã nhận trên thiết bị kia.
+TN13 | Ghi nhận đã đọc | B | Tin đến hiển thị | visible holder -> transaction marker | Chats read maps | ChatActivity.maybeMarkLatestIncomingRead -> markChatRead | Chỉ latest incoming; ngoài cửa sổ/ẩn cần test.
+TN14 | Hiển thị đã xem | B | Receipt outgoing cuối | so createdAt với otherReadAt | Chats.lastReadAtByUid | ChatMessageAdapter.setOtherParticipantLastReadAt/bind | Unit test unread helper không xác nhận UI/multi-device runtime.
+TN15 | Thu hồi | B | Long-press + confirm | sender/membership transaction, neutralize content | Messages + summary | ChatActivity.performMessageAction -> ChatRepository.recallMessage | Không xóa file SS; URL cũ có thể vẫn truy cập được.
+TN16 | Xóa phía mình | B | Long-press + confirm | deletedFor arrayUnion + adapter filter | Messages/summary | ChatRepository.deleteMessageForMe; ChatMessageAdapter.submitList | Là ẩn theo UID, không xóa nội dung khỏi backend.
+TN17 | Tìm kiếm tin đã tải | B | Search chat/results | local contains, debounce/version | Dữ liệu cửa sổ50 FS | ChatActivity.scheduleLocalMessageSearch; ChatMessageAdapter.searchLoadedTextMessages | Text only; bỏ recalled/deleted, không search lịch sử đầy đủ.
+TN18 | Tìm toàn bộ lịch sử | E | Không pagination/search server | Không | Không index search | listenToMessages limitToLast50; search local | Chưa triển khai.
+TN19 | Trả lời tin nhắn | B | Long-press Reply/composer/quote tap | persist refs; resolve quote từ source đang tải | Message reply fields | ChatActivity.setReplyTarget; sendTextMessage; ChatMessageAdapter.bind | Tin gốc ngoài50 dùng fallback, không fetch older.
+TN20 | Sao chép văn bản | B | Long-press Copy | ClipboardManager | Local, không cần backend | ChatActivity.copyMessage | Không copy recalled/image; chưa runtime clipboard.
+TN21 | Authorization cuộc trò chuyện | C | UI chặn thiếu user/member | Check member ở repository | Rules chưa có bằng chứng | ChatRepository.requireMembership/listenToMessages/sendTextMessage | Cần backend rules, không thể chỉ tin client.
+TN22 | Chống tạo trùng chat riêng | B | Cùng flow Message | stable pair SHA256 + transaction | Chats deterministic ID | createPrivateChatId/getOrCreatePrivateChat | Helper unit tests qua; concurrent transaction runtime chưa test.
+TN23 | Phân trang tin nhắn cũ | E | Không load older | last50 cố định | Không cursor | ChatRepository.DEFAULT_MESSAGE_LIMIT; ChatActivity | Chưa triển khai.
+
+6.7. Thông báo
+TB01 | Màn danh sách thông báo | D | Bottom Notifications | Toast đang phát triển | Không Notifications | MainActivity.nav_notifications | Không Fragment/danh sách thật.
+TB02 | Lưu thông báo trong ứng dụng | E | Không | Không | Không Notifications schema | Toàn bộ collection calls | Chưa triển khai.
+TB03 | Thông báo lời mời kết bạn | E | Không event notification | Chỉ ghi Friends | Không notification writer | FriendRepository | Tab lời mời không phải hệ thống thông báo.
+TB04 | Thông báo like/share bài viết | E | Không | Chỉ cập nhật Posts/Reactions | Không writer/sender | FeedRepository | Chưa triển khai.
+TB05 | Thông báo bình luận/trả lời | E | Không | Chỉ Comments batch | Không notification writer | CommentsBottomSheetFragment | Chưa triển khai.
+TB06 | Thông báo hoạt động nhóm | E | Không | Không nhóm | Không | Toàn bộ source | Chưa triển khai.
+TB07 | Thông báo tin nhắn mới | C | Unread dot trong Inbox | Chat.isUnreadFor | Chats read/incoming maps | InboxFragment.renderChats; InboxAdapter | Có chỉ báo nội bộ khi tải Inbox; không notification record/banner/push.
+TB08 | Trạng thái đã đọc thông báo | E | Không | Không | Không notification read field | Toàn bộ source | Chat read markers khác notification read.
+TB09 | Mở đối tượng từ thông báo/deep link | E | Không | Không Intent notification routing | Không deep link Manifest | Manifest/MainActivity | Chưa triển khai, notification click chưa có permission recheck.
+TB10 | FCM token | E | Không permission/setup | Không getToken/onNewToken | Không token store | Dependencies, Manifest, toàn bộ Java | Chưa tích hợp.
+TB11 | Nhận push foreground | E | Không banner/channel | Không FirebaseMessagingService | Không FCM receiver flow | Manifest/dependencies | Chưa triển khai.
+TB12 | Nhận push background | E | Không | Không channel/permission/action | Không FCM config flow | Manifest/Java | Chưa triển khai.
+TB13 | Nguồn phát/gửi push | E | Không | Không Admin SDK/Functions/API sender | Không server source | Toàn bộ backend workspace | Không có bằng chứng hạ tầng gửi thật; không gửi thử push.
+
+6.8. Quản trị và kiểm duyệt
+QT01 | Người dùng gửi báo cáo vi phạm | E | Không | Không | Không Reports | Feed/Profile/Menu + collection inventory | Chưa triển khai.
+QT02 | Truy cập khu vực quản trị | E | Không màn/menu | Không role guard | Không claims/roles flow | MainActivity/Manifest/User | Chưa triển khai.
+QT03 | Danh sách báo cáo | E | Không | Không | Không Reports query | Toàn bộ source | Chưa triển khai.
+QT04 | Chi tiết báo cáo | E | Không | Không | Không | Toàn bộ source | Chưa triển khai.
+QT05 | Xử lý/cập nhật trạng thái báo cáo | E | Không | Không transition/audit | Không writer | Toàn bộ source | Chưa triển khai.
+QT06 | Ẩn nội dung vi phạm | E | Không moderator UI | Không moderation flag | Không | FeedRepository/Models | Xóa bài cá nhân không phải kiểm duyệt.
+QT07 | Gỡ nội dung vi phạm | E | Không | Không moderator delete | Không privileged endpoint | Toàn bộ source | Chưa triển khai.
+QT08 | Cảnh cáo người vi phạm | E | Không | Không | Không warning schema | Toàn bộ source | Chưa triển khai.
+QT09 | Khóa tài khoản | E | Không | Không disabled/lock check | Không Admin API | User/Login/Register/Console chưa truy cập | Chưa triển khai Android/backend workspace.
+QT10 | Mở khóa tài khoản | E | Không | Không | Không | Toàn bộ source | Chưa triển khai.
+QT11 | Quản lý nhóm toàn hệ thống | E | Không | Không | Không Groups/Admin flow | Toàn bộ source | Chưa triển khai.
+QT12 | Quản trị nhóm bởi Group Admin | E | Không | Không | Không per-group roles | Toàn bộ source | Không đồng nhất với System Admin.
+QT13 | Thống kê toàn hệ thống | E | Không | Không aggregates | Không stats endpoint | Toàn bộ source | Chỉ xuất hiện rõ trong bộ sơ đồ mở rộng.
+QT14 | Kháng nghị | E | Không | Không | Không appeals | Toàn bộ source | Chỉ xuất hiện rõ trong bộ sơ đồ mở rộng.
+QT15 | Phân quyền System Admin | E | Không | Không | Không claims/role pipeline | User model/Manifest/repositories | Chưa biết Console custom claims; không coi đã tồn tại.
+QT16 | Phân quyền Moderator | E | Không | Không report assignment | Không | Toàn bộ source | Chưa triển khai.
+QT17 | Phân quyền Group Admin | E | Không | Không membership/role group | Không | Toàn bộ source | Chưa triển khai.
+QT18 | Audit log kiểm duyệt | E | Không | Không | Không audit schema | Toàn bộ source | Chưa triển khai.
+QT19 | Thay cấu hình hệ thống/quản trị vai trò không giới hạn | G | Không | Không | Không | Đặc tả phần XIV; Visual slide10 | Không tự mở rộng phạm vi.
+QT20 | Gọi thoại/video, monetization | G | Không | Không | Không | Đặc tả phần XIV; Visual slide10 | Ngoài phạm vi đã xác định.
+
+PHẦN 7 — CHỨC NĂNG NGOÀI ĐẶC TẢ
+================================
+Đối chiếu với ba tài liệu; không gọi một tính năng “ngoài đặc tả” nếu đã có trong Visual mở rộng.
+- Dark mode: ProfileFragment.setupDarkModeSwitch/setDarkMode -> AppCompatDelegate.setDefaultNightMode; có themes/colors values-night. B ở mức code có luồng local. Không lưu lựa chọn vào SharedPreferences/DataStore, chưa thấy khôi phục lựa chọn sau process death. Không có UI Follow System dù helper comment đề cập.
+- Video trong bài viết: CreatePost chọn image/video, Supabase lưu và FeedAdapter VideoView tự loop. Tài liệu chủ yếu nêu post text/ảnh và media theo phạm vi; đây là khả năng cụ thể bổ sung trong source, chưa xác minh runtime, thiếu cấu hình upload.
+- Chat reply trích dẫn và copy clipboard: không được liệt kê cụ thể như use case độc lập trong hai sơ đồ; có implementation thật trong ChatActivity/ChatRepository/ChatMessageAdapter. Phân biệt với replies bình luận/Stories (chưa làm).
+- Photo Picker cho chat, xem ảnh toàn màn, xử lý IME/insets và debounce search là tiện ích UX thực tế; viewer chưa có zoom.
+- Shimmer 1.5 giây, like icon scale animation là hiệu ứng đã gọi; Lottie mới chỉ có dependency.
+- Drawer Video, Marketplace, Kỷ niệm, Đã lưu và Profile shortcuts có mặt UI nhưng chỉ Toast; D, không phải các module đã hoàn tất. Đã lưu có trong Visual nhưng Marketplace/Kỷ niệm/Video tab là mục mở rộng giao diện chưa có nghiệp vụ.
+- Cache hồ sơ Inbox trong Map, LiveData feed, SDK image/document cache là cơ chế kỹ thuật; chưa có sản phẩm offline hoàn chỉnh.
+- Wizard đăng ký 5 bước, kiểm tra tuổi13, strength password, verification email/phone là chi tiết luồng nhiều hơn sơ đồ; không có server validation tuổi được xác nhận.
+- Tìm kiếm người dùng và tin nhắn đã có trong Visual nên không tính là feature ngoài cả ba tài liệu. Trong source chỉ prefix user và text local50, không có advanced search.
+
+PHẦN 8 — TÌNH TRẠNG UI/UX
+==========================
+Đánh giá bằng XML và handlers; chưa quan sát trực tiếp trên thiết bị. Không khẳng định độ mượt, màu sắc hiển thị, vị trí cắt/che hoặc khả năng responsive đã đạt.
+- Phong cách: brand blue, card bo góc, avatar tròn, feed RecyclerView, Stories ngang, 5 item BottomNavigation, Drawer và Messenger gợi trải nghiệm Facebook. Có Material3 DayNight, colors/theme tài nguyên sáng/tối tương ứng.
+- Nhất quán: đa số text Việt, nhưng chat upload/search/viewer có English; ChatRepository chứa chuỗi mojibake như “khÃ´ng”, đây là nội dung hỏng ngay trong UTF-8 source, không chỉ lỗi terminal. strings.xml chỉ có app_name; nhiều chuỗi trong Java/XML hardcode. Lint đếm HardcodedText123, SetTextI18n73.
+- Navigation: nhiều điểm vào chỉ Toast, card hồ sơ Menu chưa có event; lựa chọn BottomNavigation Video/Thông báo có thể đổi selected item mà không đổi Fragment; Drawer/Search/Inbox không cập nhật selected bottom item tương ứng. Back stack theo luồng chưa thống nhất.
+- Loading/empty/error: ForgotPassword có loading/result/error khá rõ; Friends và Inbox có empty/loading/error và Friends xử lý response cũ. Feed shimmer timer cố định, backend rỗng/lỗi đều thành mock; người dùng không biết dữ liệu thật hay mất quyền/mạng. Like không báo lỗi write. Comments lỗi chỉ Toast, draft bị xóa sớm. Profile chi tiết không có state tải/lỗi/empty thống nhất.
+- Form: ForgotPassword hỗ trợ IME và ẩn keyboard, chặn submit trùng khi loading; Register có show/hide/strength/DatePicker/countdown; Login đơn giản, thông báo “Email hoặc SĐT” không khớp API; một số phone check chỉ độ dài. Password bị trim lúc đăng ký/login; cần thống nhất chính sách đầu vào thay vì tự thay đổi trong audit.
+- Media: post hiện 1 media; video VideoView autoplay/loop khi prepared, chưa có hook onViewRecycled/onViewDetachedFromWindow để dừng khi cuộn hoặc error UI rõ; có nguy cơ phát đồng thời và tốn data/battery. Ảnh có placeholder, không gallery nhiều ảnh/crop/nén. Chat viewer fitCenter/back, không zoom/pan/download.
+- Nội dung dài: TextView wrap, chat bubble có giới hạn chiều rộng, không có See more/expand post được thấy. Cần kiểm tra font scale, emoji, URL dài, nội dung rất dài và multiline composer thực tế.
+- Responsive: có ConstraintLayout, weight, scroll container, WindowInsets ở Main/Register/CreatePost/Chat; không có bộ layout-sw600dp/land riêng. Có kích thước cố định như Drawer300dp, bubble max width và toolbar/icon dưới48dp; cần kiểm tra màn nhỏ/landscape/foldable/large font. Không kết luận lỗi clipping chắc chắn chỉ từ XML.
+- Accessibility: nhiều icon tương tác contentDescription=@null, tìm kiếm toolbar36dp và một số nút44dp; viewer và chat có mô tả một số icon nhưng không đồng nhất. Lint thêm TextFields/Autofill/SmallSp/RTL warnings. Cần screen reader/touch target thực tế.
+- Dark mode: palette theo resources nhưng like text màu hardcode và viewer nền tối cố định; chưa kiểm tra contrast. Toggle có thể recreate Activity trong khi wizard/draft/chat không có state holder riêng.
+- Tái sử dụng: item_post và item_comment, Story list, shimmer dùng lại; PostAdapter trùng một phần FeedAdapter nhưng không có bằng chứng được sử dụng; các xử lý time/error/loading/profile avatar lặp nhiều nơi.
+- Tác động rõ tới trải nghiệm xã hội: tạo/xem Tin không hoạt động; hồ sơ không chỉnh sửa; share không hiển thị gốc; không xem bài/lịch sử ngoài cửa sổ; thông báo/nhóm chưa có; audience có UI nhưng không có enforcement client; mock che mất lỗi thật.
+
+PHẦN 9 — LỖI, RỦI RO VÀ TECHNICAL DEBT
+=======================================
+Mức độ dựa trên tác động; phân biệt “xác định tĩnh”, “công cụ xác nhận” và “nguy cơ/chưa xác minh”. Không xác nhận khai thác lỗ hổng production khi chưa có rules hoặc thử nghiệm được phép.
+
+R01 | High | Không có bằng chứng Security Rules Firestore.
+Bằng chứng: không tìm thấy .rules/firebase.json/firestore.indexes.json; mọi quyền trong Android chỉ kiểm tra client.
+Tác động: chưa có cơ sở chứng nhận quyền đọc/ghi profile/posts/comments/reactions/friends/chats; nếu rules rộng có thể truy cập trái phép; nếu rules chặt query hiện tại có thể fail.
+Đề xuất: xuất rules/index hiện triển khai, review với permission matrix, test allow/deny bằng emulator. Nếu phát hiện đọc/ghi chéo trái phép thực tế thì nâng Critical. Chưa xác minh backend.
+
+R02 | High | Audience bài viết không được áp dụng khi đọc feed.
+Bằng chứng: CreatePostActivity ghi visibility nhưng FeedRepository.listenToRealPosts:56-59 chỉ orderBy/limit; FeedAdapter không lọc audience; share writer thiếu visibility.
+Tác động: không đáp ứng private/friends end-to-end; leak phụ thuộc rules, hoặc feed denied rồi bị che bằng mock.
+Đề xuất: xác nhận policy audience rồi đồng bộ schema/query/rules/share. Không coi lưu field là bảo vệ.
+
+R03 | High | Policy Supabase public và anon INSERT quá rộng nếu triển khai như file SQL.
+Bằng chứng: supabase/storage.sql policy chỉ bucket_id; SupabaseStorage dùng anon key, public object URL cho cả chat/bài private.
+Tác động: upload ngoài app, chi phí/lạm dụng và media riêng tư tiếp tục đọc được bằng URL. Chưa xác minh deployed policy; không gán khẳng định production đang mở.
+Đề xuất: thiết kế server upload hoặc xác thực tương thích, scope ownership/size/type/rate limit, xem xét private bucket/signed URL theo audience; xác minh chính sách đã triển khai trước khi mở public traffic.
+
+R04 | High | Thiếu Supabase cấu hình local, chặn mọi upload ở build hiện tại.
+Bằng chứng: kiểm tra tên thuộc tính local.properties không có supabase.url/supabase.anonKey; buildConfig mặc định rỗng; SupabaseStorage.upload:44-47 return failure.
+Tác động: ảnh/video post, ảnh profile và ảnh chat không upload được. Build vẫn thành công vì field cho phép rỗng.
+Đề xuất: người dùng cấp cấu hình môi trường kiểm thử ngoài source; xác minh bucket/policy có kiểm soát. Không điền key trong audit.
+
+R05 | High | Chat ảnh bị mắc trạng thái sau upload thành công (xác định tĩnh).
+Bằng chứng: ChatActivity.startOrRetryImageSend đặt uploadingImage=true; callback onSuccess chỉ set uploadedImageUrl rồi gọi sendUploadedImageMessage; method này return ngay nếu uploadingImage=true.
+Tác động: không gọi ChatRepository.sendImageMessage sau upload lần đầu, nút attach vẫn disabled, metadata không được gửi; có thể để object mồ côi. Hiện lỗi config xảy ra trước lỗi này.
+Đề xuất: tách trạng thái upload/send hoặc chuyển trạng thái đúng trước gọi metadata; sau đó test success/failure/retry/cancel/recreate. Chưa sửa, chưa xác minh runtime.
+
+R06 | High | Login phone không có dù UI/đăng ký hỗ trợ phone (xác định tĩnh).
+Bằng chứng: LoginActivity.handleLogin chỉ signInWithEmailAndPassword; Register PhoneAuth signInWithCredential; password step3 phone không link credential.
+Tác động: account phone không có lối login lại phù hợp trong app sau logout; mật khẩu người dùng tưởng có hiệu lực thực tế không được dùng với phone credential.
+Đề xuất: thống nhất sản phẩm email-only hay phone OTP và làm luồng re-login thích hợp, không giả lập phone/password.
+
+R07 | High | Bỏ dở đăng ký bỏ qua verification/profile khi auto-login.
+Bằng chứng: Auth account tạo trước Users ở Register; LoginActivity.onCreate chỉ currentUser; MainActivity không kiểm tra profileCompleted/emailVerified.
+Tác động: vào Main thiếu hồ sơ/verification, dữ liệu author trống/default; gửi lại đăng ký có thể collision; state wizard mất khi recreate.
+Đề xuất: thống nhất state machine onboarding và resume/recovery, guard rõ theo server/Auth state; test cancel/mất mạng/process death.
+
+R08 | Medium | Chỉ chọn cover bị bỏ mất (xác định tĩnh).
+Bằng chứng: RegisterActivity.completeUserProfile nhánh selectedCoverUri chỉ nằm trong if selectedAvatarUri != null; else saveUserProfileToFirestore(uid,"","").
+Tác động: UI preview cover không tương ứng dữ liệu được lưu.
+Đề xuất: xử lý avatar/cover độc lập, giữ trạng thái lỗi theo từng upload; test avatar-only/cover-only/both/skip.
+
+R09 | High | Feed giả lập khi lỗi hoặc rỗng (xác định tĩnh).
+Bằng chứng: FeedRepository.listenToRealPosts gọi loadFallbackPosts khi error hoặc snapshots rỗng; fallback dùng IDs p1-p3 và UID mẫu, các nút vẫn gắn hành động thật.
+Tác động: che denied/network/empty; người dùng tương tác vào ID không có thật, khó nghiệm thu; không phải offline cache.
+Đề xuất: tách demo mode khỏi production, render empty/error có nhãn/retry, chỉ cho thao tác trên bản ghi thật.
+
+R10 | High | Race like và counter không idempotent.
+Bằng chứng: FeedRepository.toggleLikePost get trước runBatch; hai lần cùng đọc chưa like đều set cùng reaction UID và increment+1.
+Tác động: likesCount lệch số reaction/âm khi unlike trùng; không có failure callback cho UI. Comments.delete cũng decrement không kiểm tra tồn tại trong transaction.
+Đề xuất: transaction cho transition/counter hoặc trusted backend aggregator; kiểm thử simultaneous click/two devices/retry và denied write.
+
+R11 | High | Quan hệ bạn bè chuyển trạng thái không được kiểm soát trong repository.
+Bằng chứng: sendFriendRequest batch merge không đọc trạng thái cũ; acceptFriendRequest merge ACCEPTED không xác nhận PENDING_RECEIVED; cả hai ghi nhánh user khác.
+Tác động: ghi đè accepted bằng pending, cross requests, trạng thái không hợp lệ nếu client hoặc rules không ngăn. Không khẳng định bypass rules thực tế.
+Đề xuất: transaction/state transition và rules đối xứng; test self/duplicate/cross-request/stale UI/nonexistent user/unauthorized accept.
+
+R12 | Medium | Share chưa render bài gốc (xác định tĩnh).
+Bằng chứng: sharePost ghi originalPostId, model có originalPost nhưng không nơi fetch gốc và FeedAdapter.bind không xử lý type=share.
+Tác động: feed chỉ hiện lời bình share, không hiện nội dung gốc; share rỗng khó hiểu; quyền private/delete gốc chưa giải quyết.
+Đề xuất: chốt share reference/snapshot policy, fetch/render gốc theo quyền và xử lý gốc bị xóa/đổi quyền; không tự sao chép nội dung private.
+
+R13 | Medium | Xóa không cleanup dữ liệu phụ/media.
+Bằng chứng: FeedRepository.deletePost chỉ delete document parent; Comments/Reactions không có cleanup code; SupabaseStorage chỉ upload, không delete; recall clear URL không xóa object.
+Tác động: subcollection/file mồ côi, tốn storage, URL ảnh thu hồi có thể tiếp tục dùng; share trỏ bài đã mất.
+Đề xuất: định nghĩa retention/cleanup tin cậy và quyền xóa; cân nhắc xử lý backend; không chạy cleanup trong audit.
+
+R14 | Medium | Feed singleton giữ listener và UID xuyên phiên.
+Bằng chứng: FeedRepository constructor listenToRealPosts, currentUid chụp trước listener; không dispose/reset trong FeedViewModel/logout.
+Tác động: extra reads khi không xem feed, reaction/state user cũ có thể còn trong singleton sau đổi account, nguy cơ dữ liệu cũ hiển thị.
+Đề xuất: lifecycle/auth scope rõ, remove listener và clear state khi logout; test account switch.
+
+R15 | Medium | Query fan-out/không limit/pagination thiếu.
+Bằng chứng: feed <=30 post nhưng từng post get reaction ở mọi snapshot; Comments listener không limit; Friends queries và attachRelationships đọc toàn bộ, fetchUsersAndBuildItems N get; chat chỉ cửa sổ50.
+Tác động: chi phí backend tăng theo hoạt động; list lớn tải chậm; không truy cập lịch sử ngoài cửa sổ.
+Đề xuất: đo reads, cursor pagination, tách state interaction hiệu quả; giới hạn/listen scope theo màn. Không cần ranking feed phức tạp.
+
+R16 | Medium | Callback/lifecycle và state recreate chưa vững.
+Bằng chứng: ProfileFragment.loadUserProfile/Comments callback dùng isAdded nhưng truy cập binding có thể null; Register/CreatePost upload Call không được cancel; Register.currentStep và Chat state không onSaveInstanceState/ViewModel; Feed callbacks không generation guard.
+Tác động: nguy cơ crash khi rời màn/rotate, mất draft/wizard, snapshot cũ ghi đè mới, giữ Activity đến khi request xong. Đây là nguy cơ, chưa tái hiện crash.
+Đề xuất: view lifecycle/binding guards, cancelable tasks/state holder tại từng feature; test rotate/back/stop/recreate/mạng chậm.
+
+R17 | Medium | Media upload chưa có bảo vệ tài nguyên/timeout tổng.
+Bằng chứng: SupabaseStorage.writeTimeout(0), contentLength=-1, không max size/compression/callTimeout; CreatePost không giữ Call.
+Tác động: video lớn/chậm kéo dài, chi phí bandwidth/storage, không có rollback khi FS fail. Filename owner là client input không chứng minh ownership.
+Đề xuất: giới hạn trên server và UX, timeout/cancel/progress thích hợp, cleanup/idempotency.
+
+R18 | Medium | Khả năng lộ thông tin hồ sơ chưa phân vùng.
+Bằng chứng: Users cùng lưu email/phone/dateOfBirth với fullName/avatar; search/profile/chat đọc document Users; ProfileActivity hiển thị DOB/gender người khác.
+Tác động: đọc document có thể đưa field riêng tư về thiết bị dù UI không hiện; phụ thuộc rules/privacy đã phê duyệt. Chưa xác nhận leak runtime.
+Đề xuất: chốt public/private profile fields, tách dữ liệu khi cần, rules tương ứng; không dựa vào ẩn TextView.
+
+R19 | Medium | Video playback chưa có lifecycle quản lý rõ.
+Bằng chứng: FeedAdapter.VideoView setOnPrepared auto-start loop; không override recycle/detach/onStop pause.
+Tác động: nguy cơ âm thanh/phát nhiều video và tốn pin/data khi cuộn hoặc rời màn; chưa đo runtime.
+Đề xuất: playback ownership theo visibility/lifecycle, error/loading/mute/controls; test recycled rows.
+
+R20 | Medium | Lint thất bại (công cụ xác nhận).
+Bằng chứng: L/activity_chat_image_viewer.xml:22 android:tint trên ImageButton; UseAppTint; lintDebug failed, 1 error/248 warnings.
+Tác động: quality gate chưa qua dù assembleDebug qua.
+Đề xuất: nhiệm vụ sửa riêng thay attribute theo compatibility, xử lý warnings ưu tiên; audit không sửa hoặc tạo baseline để che lỗi. File kiểm tra sau Lint vẫn giữ android:tint.
+
+R21 | Medium | Thiếu composite index khai báo/versioning.
+Bằng chứng: ChatRepository.listenToCurrentUserChats query participants+updatedAt và chatListError nhận lỗi index; không có index JSON.
+Tác động: Inbox có thể không tải ở môi trường chưa tạo index. Chưa xác minh index trên Console.
+Đề xuất: xác nhận và quản lý index trong repository ở nhiệm vụ sau, deploy chỉ khi được phép.
+
+R22 | Low | Hardcode/encoding/accessibility và code lặp.
+Bằng chứng: strings.xml chỉ app_name; ChatRepository có mojibake; nhiều icon @null; FeedAdapter/PostAdapter trùng render; NotifyDataSetChanged warnings6; Register657/Chat771 dòng.
+Tác động: bảo trì, dịch thuật, theme/screen reader khó; chuỗi lỗi khó hiểu.
+Đề xuất: chuẩn hóa string UTF-8/resources từng nhóm, UI components/helper có mục tiêu; tách trách nhiệm dần, không viết lại toàn app.
+
+R23 | Low | Backup rules là mẫu và release chưa có tối ưu.
+Bằng chứng: allowBackup=true, XML chưa exclude cụ thể; build release optimization.enable=false.
+Tác động: chính sách backup/cache chưa được quyết định, APK release có thể lớn; chưa chứng minh credential bị backup hoặc R8 là yêu cầu bắt buộc.
+Đề xuất: review backup threat model và release signing/optimization ở giai đoạn phát hành; không thay cấu hình trong audit.
+
+Không ghi nhận Critical đã được xác minh bằng khai thác thực tế. R01-R03 là các hạng mục cần xác minh bảo mật trước khi đánh giá sẵn sàng phát hành.
+
+PHẦN 10 — KẾT QUẢ BUILD VÀ TEST
+================================
+10.1. Lệnh thực sự đã chạy và kết quả
+1) Get-Content -Encoding UTF8, rg --files, rg -n, Get-ChildItem, đọc XML bằng .NET: kiểm kê source/config/resources, grep toàn bộ collection/Intent/listener; thành công. Lần đầu PowerShell Get-Content dùng encoding mặc định hiển thị mojibake; đã đọc lại UTF-8 để phân biệt lỗi terminal với lỗi chuỗi thực trong source.
+2) Đọc đặc tả UTF-8; dùng System.IO.Compression.ZipFile mở hai PPTX và XML XPath local-name=t cho từng slide: thành công, không giải nén/ghi tài liệu trung gian.
+3) git status --short: không chạy được vì git không trên PATH; không có kết quả Git status đáng tin để dẫn. Không sửa .git. Để kiểm chứng source/config, đã đọc Git index v2 bằng .NET, tính SHA-1 blob và chuẩn hóa LF theo .gitattributes: 132 tệp source/config được đối chiếu, 0 khác biệt với index. Không chạy lệnh Git ghi dữ liệu.
+4) .\gradlew.bat --version: exit0, Gradle9.5.0, launcher Java8, daemon compatibility Java25, Windows11 amd64.
+5) .\gradlew.bat --offline --no-daemon :app:assembleDebug :app:testDebugUnitTest :app:lintDebug
+   Kết quả toàn lệnh exit1 sau 1m12s vì :app:lintDebug. 51 actionable tasks:34 executed,17 up-to-date. Gradle cấu hình project/dependency và compile được offline; không chạy Gradle Sync qua IDE.
+   :app:assembleDebug THÀNH CÔNG. APK app/build/outputs/apk/debug/app-debug.apk, kích thước ghi nhận 15.433.576 byte.
+   :app:testDebugUnitTest THÀNH CÔNG. XML app/build/test-results/testDebugUnitTest/TEST-com.example.meetomxh.ExampleUnitTest.xml: tests15, failures0, errors0, skipped0.
+   :app:lintDebug THẤT BẠI:1 error,248 warnings. Error UseAppTint ở app/src/main/res/layout/activity_chat_image_viewer.xml:22. Không chạy lintFix hoặc updateLintBaseline. Output có dòng “This issue has been automatically fixed” nhưng kiểm tra tệp thực sau tác vụ vẫn có android:tint, không có thay đổi sửa source được thực hiện trong audit.
+6) F:\uddd\platform-tools\adb.exe devices -l: danh sách trống, không có thiết bị kết nối.
+7) F:\uddd\emulator\emulator.exe -list-avds: có Pixel_4. Không khởi chạy AVD, cài APK, đăng nhập hoặc chạy instrumented tests.
+8) Kiểm tra local.properties chỉ xuất tên thuộc tính và boolean configured; cả supabase.url/supabase.anonKey đều False. Không in credential.
+
+10.2. Nội dung và giới hạn unit tests
+15 @Test trong ExampleUnitTest.java bao gồm: cộng số mẫu; private chat ID ổn định hai thứ tự; khác cặp khác ID; reject self; reject UID rỗng; normalize search; upper bound prefix; bỏ response search cũ; deletedFor theo UID; text recall trung tính; validation URL Supabase; search text không lấy hidden/recalled/image; unread theo participant/read marker; outgoing mới không xóa incoming unread cũ; legacy unread fallback.
+Các helper được test thành công nhưng không gọi Firebase backend/Supabase thực, không kiểm thử UI Activity, lifecycle, rules, composite index, FCM, concurrency write hoặc tính đúng của upload-state machine. Có instrumented test duy nhất useAppContext kiểm tra package nhưng chưa chạy. Không có Espresso scenario cho nghiệp vụ được xác nhận.
+
+10.3. Lint evidence và artifact
+Report: app/build/reports/lint-results-debug.html, .xml, .sarif và .txt; bản text nội bộ tại app/build/intermediates/lint_intermediate_text_report/debug/lintReportDebug/lint-results-debug.txt.
+Đếm issue từ XML: HardcodedText123; SetTextI18n73; Overdraw15; UseTomlInstead7; UnusedResources6; Autofill6; NotifyDataSetChanged6; UseCompoundDrawables3; DefaultLocale2; SmallSp2; RtlSymmetry1; UseAppTint1(error); GradleDependency1; ScopedStorage1; TextFields1; UselessParent1. Tổng249 issue =1 error+248 warnings.
+Không coi gợi ý version mới từ Lint là xác nhận phiên bản mới nhất thị trường. Không nâng dependencies trong audit.
+
+10.4. Chưa xác minh
+Chưa xác minh runtime: đăng ký/email/SMS, login thật/session/logout account switch, reset email action, profile, post/media/like/comments/share, friendship concurrent, chat hai thiết bị/read/recall/delete/image, empty/error/offline, rule deny/allow, playback, responsive/accessibility/dark contrast. Thiết bị chưa chạy và chưa có test accounts được cung cấp. Chưa truy cập Console Firebase/Supabase, không biết rules/index/policy/provider/bucket hiện triển khai. Không có test push thật. Không deploy/migration/upload production.
+Tác vụ build/test sinh artifact và cache theo Gradle; không tính chúng là tài liệu chỉnh sửa thủ công. Không có sửa source, manifest, Gradle config, local.properties, JSON hay SQL/rules.
+
+PHẦN 11 — ĐỐI CHIẾU VỚI TÀI LIỆU
+=================================
+11.1. Tài liệu đã đọc
+- # TÀI LIỆU ĐẶC TẢ CẤU TRÚC HỆ THỐNG - Copy.txt: có và đọc UTF-8; đặc tả v1.0 gồm 8 nhóm,6 vai trò và giới hạn phạm vi. Bản không Copy cũng có trong workspace; không lấy tên file làm bằng chứng tiến độ.
+- Meeto_Use_Case_Chuc_Nang.pptx: có, đọc text đủ9 slide (tổng quan +8 nhóm). Các dấu * là phụ thuộc phạm vi triển khai, không chứng minh đã hoàn tất.
+- Meeto_Use_Case_Visual_Vietnamese - Copy.pptx: có, đọc text đủ10 slide (9 sơ đồ + ghi chú UML). Các label/actor được đọc từ XML trong PPTX; chưa render từng slide để kiểm chứng hướng mọi đường UML/visual. Không cần suy quan hệ include/extend từ text.
+Không có tài liệu nào bị bỏ qua vì không tồn tại. Chỉ dùng chúng làm yêu cầu định hướng, đối chiếu với code cụ thể ở phần6.
+
+11.2. So sánh từng nhóm
+Nhóm | Đặc tả + Use Case cơ bản | Source đã có | Có một phần | Chưa có
+Tài khoản/hồ sơ | Đăng ký/login/logout/reset/xem/sửa/avatar/xem người khác | Auth email, verification, phone signup code, logout, reset request, đọc Users | Session guard, upload profile, điều hướng SELF, phone lifecycle/login | Sửa hồ sơ; đổi avatar/cover sau đăng ký; profile privacy/block (Visual mở rộng).
+Bài viết/feed | Tạo/xem/detail/like/comment/share/edit/delete/report | Tạo text, query feed, like, comments add/delete, xóa post | Ảnh/video cấu hình thiếu; share không render gốc; privacy chỉ ghi field; data fallback | Detail/edit/report/reply comment/save/hidden/full pagination/ranking.
+Stories | Tạo/list/view/expiry24h/delete | UI card và model mock | Không có end-to-end backend nào | Toàn bộ nghiệp vụ tạo/view/expiry/privacy/delete, các tương tác mở rộng.
+Bạn bè/follow | Search/send/received/sent/friends/follow | Search prefix, gửi/accept/reject/cancel/unfriend/list | Sent requests method chưa gọi; gợi ý không lọc; transition duplicate protection chưa đủ | Follow/unfollow; pagination/realtime riêng.
+Nhóm | Search/view/create/join/leave/content/member/admin | Không có luồng nghiệp vụ | Không có | Toàn bộ nhóm, membership, group roles, group posts/moderation.
+Tin nhắn | List/private/text/receive/media/group/read/delete/recall | List/private/text, reply/copy, read state, deleteForMe, recall, local search | Send ảnh lỗi, media config thiếu, rules chưa biết, cửa sổ50 | Group chat, general files, full history search/pagination.
+Thông báo | Receive/list/open/read/FCM | Unread chat marker trong Inbox (không phải hệ thống notification) | Bottom item Toast, không có module dữ liệu | Notifications collection/UI/deeplink/token/receive/send push.
+Quản trị/kiểm duyệt | Role guard/reports/detail/process và quản trị theo phê duyệt | Không có | Không có | Report flow, System Admin/Moderator/Group Admin, audit, moderation actions.
+
+11.3. Nội dung xuất hiện rõ trong Visual mở rộng so với bộ Use Case cơ bản
+Slide2: ảnh bìa, profile privacy, block, user search; source có cover trong đăng ký và search, còn privacy/block chưa có.
+Slide3: reply comment, save/hidden, audience ba mức, popular/new posts; source chỉ audience writer/new-first; các phần còn lại chưa làm hoặc chỉ mục Saved Toast.
+Slide4: Story video, next story, viewer list, reply/reaction; source chưa có.
+Slide5: unfriend và suggestions được nêu cụ thể; source có unfriend, suggestions còn đơn giản.
+Slide6: public/private join, role/settings/delete group và edit/delete/report group posts; source chưa có.
+Slide7: emoji, attachments, group management, sent/read, recall/delete-for-me, search; source có Unicode text, read/sent/recall/delete/search local; không emoji picker/general files/group.
+Slide8: phân loại thông báo và background FCM rõ; source chưa có tương ứng.
+Slide9: khóa/mở khóa, warning, moderation hide/remove, appeals, global statistics; chưa có source. Đặc tả có “quản trị theo quyền được phê duyệt”, không tự xem mọi quyền mở rộng này đã được duyệt chi tiết.
+Đây là phân biệt độ chi tiết tài liệu, không kết luận các mục chỉ có ở Visual đều bắt buộc triển khai ngay.
+
+11.4. Mâu thuẫn và phạm vi cần làm rõ
+- Tài liệu gọi ImgBB cho media, source thực dùng Supabase và không có ImgBB uploader hiện hành. Đây là khác biệt công nghệ cần cập nhật tài liệu; không tự đổi nhà cung cấp.
+- Tài liệu yêu cầu một pending request/cặp và trạng thái được xử lý bởi người nhận, source mới dùng document cố định và batch merge, chưa bảo vệ đầy đủ transition.
+- Privacy/friends/private có trên Visual, source writer có field nhưng feed query không thực thi; cần đồng bộ permission spec/rules/query.
+- Login UI đề cập SĐT nhưng implementation email-only; signup phone yêu cầu password mà không dùng credential password, cần chốt luồng sản phẩm.
+- Spec cấp cao nói account chỉ sửa hồ sơ của mình; source chưa có edit nên không thể chấm feature hoàn tất từ câu đó.
+- Spec nói Stories24h; source model không timestamp và dữ liệu mock, không có expiry trên UI/query/backend.
+- Visual slide1 vẽ các dịch vụ ngoài ở overview trong khi đặc tả phần53 ưu tiên overview không nối mọi dịch vụ đến mọi nhóm; chỉ ghi nhận cần thống nhất tài liệu mô hình hóa, không coi đó là lỗi runtime.
+- Visual slide10 nêu không gọi thoại/video, không tự thêm cấu hình hệ thống hay quản lý vai trò System Admin; đặc tả phầnXIV cũng cấm tự mở rộng. “Video bài viết” khác “gọi video”.
+- Quy tắc share khi gốc đổi privacy/xóa, thời hạn recall, quan hệ block với chat, scope admin và retention media chưa đủ cụ thể để tự triển khai.
+
+PHẦN 12 — ĐỀ XUẤT LỘ TRÌNH PHÁT TRIỂN
+======================================
+Chỉ đề xuất; không có thay đổi được thực hiện theo lộ trình này. Tiếp tục từng phần trên Java/XML hiện có, không viết lại toàn bộ ứng dụng.
+
+Giai đoạn 1: Tái lập môi trường kiểm thử và chốt quyền dữ liệu.
+Mục tiêu: có Firebase/Supabase test environment, rules/index/policy được quản lý, tài khoản test, quy tắc audience/profile/chat/friend rõ. Sửa lỗi Lint trong nhiệm vụ riêng được giao.
+Phụ thuộc: chủ dự án cung cấp/xác nhận Console cấu hình và ranh giới dữ liệu; môi trường AVD/device an toàn.
+Rủi ro: áp rules chặt có thể làm query rộng hiện tại fail; dùng public bucket cho private media cần quyết định kiến trúc có giới hạn.
+Tiêu chí hoàn thành: build/unit/Lint pass; test allow/deny cho own/other/guest; kiểm tra index Inbox; media test không dùng dữ liệu production; không chứa credential quản trị trong APK.
+
+Giai đoạn 2: Ổn định account/onboarding và media cơ bản.
+Mục tiêu: resume wizard, guard verified/profile, thống nhất phone login, xử lý cover-only, upload state chat và lifecycle/cancel/error/retry. Nối card hồ sơ và làm edit tối thiểu theo field được duyệt.
+Phụ thuộc: giai đoạn1, quyết định email-only hoặc OTP login, cấu hình Storage phù hợp.
+Rủi ro: account Auth cũ thiếu Users; media upload thành công/FS fail để orphan; process recreation.
+Tiêu chí hoàn thành: test email/phone nếu được chọn; back/cancel/relaunch; avatar-only/cover-only/both/skip; gửi ảnh chat đến người nhận sau upload, fail/retry/cancel; không mất draft/lưu sai hồ sơ.
+
+Giai đoạn 3: Hoàn thiện lõi bài viết, bạn bè và chat hiện có.
+Mục tiêu: tách mock/demo khỏi feed thật; privacy query/rules; transaction like/friend/counters; share render gốc đúng quyền; chi tiết bài; pagination feed/comments/chat; errors/empty state rõ và listeners scoped.
+Phụ thuộc: rules/privacy/spec share đã chốt; schema timestamps giữ tương thích.
+Rủi ro: dữ liệu legacy/counter lệch, query/index mới, fan-out reads và cleanup nội dung.
+Tiêu chí hoàn thành: test post public/friends/private với3 account; like/unlike concurrent; request duplicate/cross-request; share gốc xóa/đổi quyền; xem >30 posts/>50 messages, recall/delete/read không sai người; không mock khi network denied.
+
+Giai đoạn 4: Triển khai Stories rồi notification theo phạm vi vừa phải.
+Mục tiêu: Stories ảnh trước, expiry24h trong query/UI và quyền đọc; sau đó notification records/deeplink/read + FCM token/receiver/sender đáng tin.
+Phụ thuộc: media privacy, backend authorization, schema/event contracts; chốt gửi thông báo từ backend để client không tùy ý giả mạo event.
+Rủi ro: timezone/device clock, expired content vẫn truy cập URL, FCM duplication/token refresh/background permission, event fan-out cost.
+Tiêu chí hoàn thành: expired Stories không ở active query/UI; owner delete; người không quyền không đọc; notifications đúng recipient; click recheck quyền; foreground/background test trên test account, không gửi production.
+
+Giai đoạn 5: Nhóm cộng đồng và moderation tối thiểu.
+Mục tiêu: nhóm public/private, membership/join approvals, Group Admin scope; group posts; report intake và Moderator workflow; System Admin chỉ các quyền được duyệt.
+Phụ thuộc: role/permission matrix thống nhất; lõi post/privacy/notification ổn định; chốt yêu cầu mở rộng Visual.
+Rủi ro: nâng quyền ngoài nhóm, private data exposure, xử lý report trùng/cạnh tranh, account lock phải có backend đáng tin.
+Tiêu chí hoàn thành: matrix allow/deny cho User/Member/Group Admin/Moderator/System Admin; join/leave làm thay đổi quyền; report có trạng thái/audit; không mặc định Group Admin có quyền toàn hệ thống.
+Chat nhóm/file chung/appeals/global statistics chỉ xếp vào giai đoạn riêng sau khi xác nhận ưu tiên và hợp đồng dữ liệu, không gộp mọi mục vào một lần làm lớn.
+
+PHẦN 13 — CÁC CẤU HÌNH CẦN NGƯỜI DÙNG XÁC NHẬN
+================================================
+Các mục này là đầu vào cho giai đoạn phát triển sau, không phải yêu cầu dừng khảo sát để xin phép:
+1. Firebase app/project nào dành cho test và production? Hai google-services.json có chủ đích gì? Không cần gửi key/private credential vào báo cáo.
+2. Rules Firestore/index đang deploy là gì, có emulator/staging không? Đặc biệt Users public/private fields, Posts audience, Friends cross-user writes, chat participant/sender/read markers/recall/deletedFor.
+3. Firebase Email/Password và Phone provider đã bật chưa; SHA/app verification, SMS quota, email templates/action links và authorized domains cấu hình thế nào? Có chấp nhận phone login không hay chuẩn hóa email-only?
+4. Supabase có tiếp tục là provider media chính thay ImgBB? Bucket/policy hiện triển khai ra sao; public chat/private post media có được chấp nhận không? Cần URL/anon key môi trường test tại local config và giới hạn upload phía server; tuyệt đối không dùng service-role key trong Android.
+5. Ai cung cấp tài khoản thử nghiệm được phép dùng, devices/AVD, dữ liệu test và phạm vi thao tác đọc/ghi được phép? Có thể tạo test account ở staging hay dùng account sẵn? Audit chưa làm việc đó.
+6. Profile có field nào công khai, DOB/gender/email/phone ai được xem? User có thể bỏ qua verification/profile không, và cách phục hồi account dở dang?
+7. Quy tắc share gốc đổi quyền/xóa, counter, xóa nội dung phụ/media và retention; thời hạn/giới hạn recall; block ảnh hưởng thế nào đến friends/chat/feed?
+8. Có FCM sender bên ngoài repository không? Nếu có cần source/config event, token lifecycle, credentials server được giữ phía server; code Android hiện chưa có receive/send flow.
+9. Xác nhận phạm vi Visual mở rộng: reply comment/save/hide, Story video, general files/group chat, moderation warnings/lock/appeals/statistics; xác nhận thứ tự ưu tiên. System Admin/Moderator/Group Admin phải có permission matrix riêng.
+10. Signing release, backup policy, App Check/rate limiting/monitoring/backend billing budget có được thiết lập ngoài repo không? Chưa xác minh; không suy đang bật/tắt chỉ từ absence source.
+
+PHẦN 14 — KẾT LUẬN VÀ BÀN GIAO CHO AI ĐIỀU PHỐI
+================================================
+Meeto có mã Android Java/XML build được, có ViewBinding/Material DayNight, Firebase Auth/Firestore thật, MVVM cục bộ ở feed, repository bạn bè/chat và Supabase REST upload helper. Source đã nối email signup/login/reset request, đọc profile, tạo post text, feed realtime, like/comment/delete, friendship actions, private text chat, read markers, recall/delete-for-me/reply/copy/local search. Đây là bằng chứng triển khai trong source; chưa có kiểm chứng nghiệp vụ runtime trên tài khoản thật/test.
+Stories hiện chỉ mock; edit profile, post detail/edit/report, follow, nhóm cộng đồng, notification/FCM và admin/moderation còn thiếu. Share mới tạo record nhưng không render bài gốc. Media chưa cấu hình local và chat ảnh có lỗi guard; phone login không khớp signup/UI. Privacy bài viết mới là field, chưa có query enforcement; Firestore rules deployed chưa thể xác minh. Supabase SQL đề xuất public bucket và anon upload cần review trước khi dùng với nội dung riêng tư.
+Ưu tiên trước: quy tắc quyền/backend test environment; khắc phục riêng các lỗi đã xác định và quality gate; account onboarding/login; media; rồi feed/interaction/friend/chat consistency. Build debug thành công;15 unit tests passed; Lint1 error/248 warnings. Không có device kết nối, không chạy app/instrumented/backend integration test.
+Các phần có thể tiếp tục phát triển theo hướng ít xáo trộn: giữ Java/XML/Firestore contracts hiện có, dùng FeedViewModel/Repository như điểm nối hiện hành; giữ ID chat deterministic và transactions đã có; giữ requestVersion/debounce Friends và listener cleanup Chat/Inbox. Không đổi tên collection/chữ hoa-thường hoặc kiểu timestamp tùy tiện. “Có thể tiếp tục” không phải chứng nhận an toàn production; rules vẫn là điều kiện phải xác minh.
+5 bước công việc tiếp theo đề xuất cho AI điều phối:
+1) Thu thập rules/index/policy và account test, chốt audience/public profile/phone login, dựng test scope.
+2) Giao nhiệm vụ sửa Lint, chat-image state, cover-only và onboarding/session guard; thêm test hành vi có mục tiêu khi sửa.
+3) Cấu hình media test đúng quyền và kiểm thử hai thiết bị cho upload/chat/read/recall/delete với lỗi mạng/lifecycle.
+4) Hoàn thiện feed thật/privacy/share/transactions/friend transitions và pagination trước khi thêm feature rộng.
+5) Lập các nhiệm vụ độc lập Stories -> notifications -> groups/moderation theo phạm vi phê duyệt, có acceptance criteria và backend allow/deny tests.
+
+Bàn giao: baocao.txt là UTF-8, văn bản thuần, đủ14 phần và 153 dòng ma trận chức năng. Không chứa API key/token/password hoặc dữ liệu user thật. Không sửa Java/XML/Manifest/Gradle/local.properties/JSON/SQL/rules, không nâng dependency, không deploy/migration hoặc chỉnh backend. Build/test tạo output/cache tự động như phần10; không sửa lỗi trong giai đoạn khảo sát.
+
+
+PHẦN 16 — THIẾT KẾ KIẾN TRÚC SUPABASE
+=====================================
+Nhiệm vụ03, ngày01/11/2026, Asia/Bangkok. Đây là bản PHÂN TÍCH/THIẾT KẾ, chưa triển khai. Giữ nguyên nội dung khảo sát phần1-14 phía trên. Chưa có phần15 trong báo cáo được cung cấp, không tự tạo lịch sử nhiệm vụ02.
+
+16.1. Hiện trạng và mục tiêu
+Hiện tại source vẫn dùng Firebase Authentication + Cloud Firestore + Supabase Storage REST/OkHttp. Trong lần đọc cấu hình này, local.properties đã có hai thuộc tính supabase.url/supabase.anonKey có giá trị; chỉ ghi nhận tên/boolean, không tiết lộ giá trị, không sửa file và không kiểm thử kết nối. Nhận định “thiếu cấu hình” ở báo cáo01 là ảnh chụp thời điểm khảo sát cũ, không áp làm sự thật cấu hình hiện tại.
+Đích được chủ dự án yêu cầu: Supabase Auth, PostgreSQL, Storage, Realtime và Edge Functions/RPC; không tiếp tục phụ thuộc Firebase sau chuyển đổi, kể cả FCM nếu chọn push không Firebase. Nhiệm vụ này không xóa Firebase, không sửa Android, không kết nối/chỉnh sửa dự án Supabase thật.
+
+16.2. Kiến trúc đề xuất
+- auth.users là identity authority; profiles.id UUID PK/FK; profile_private tách DOB/gender, contact/password/session thuộc Auth, không lưu plaintext password.
+- PostgreSQL chuẩn hóa friends/request, post/media/reactions/comments, conversation/membership/message/read marker; không chuyển1 collection thành1 table máy móc.
+- Mọi write liên-user/counter/role/membership/message/recall qua server transaction/RPC; client không gọi nhiều REST request để giả transaction.
+-36 bảng:13 CURRENT,6 REQUIRED,16 FUTURE,1 OPTIONAL. CURRENT chỉ có logic/dữ liệu tương ứng trong source, không xác nhận bảng/data Supabase đã tồn tại.
+-4 bucket private dự kiến: profile-media, social-media, chat-media, group-media. Registry ownership/purpose/state và ACL theo parent; authenticated GET/proxy, không mặc định public URL hoặc signed URL dài hạn.
+- Realtime private Broadcast invalidation qua user topic và comment topic đã authorization, không gửi message body/URL/request_hash; refetch dữ liệu qua RLS. Notification row, realtime socket và background push là3 thành phần khác nhau.
+- Push không FCM: UnifiedPush với distributor đã xác minh không FCM/OEM adapters hoặc MVP không background push; chưa chọn/triển khai provider, không hứa realtime socket đánh thức Android.
+
+16.3. Danh sách bảng và phân loại
+CURRENT (13): profiles; friend_requests; friendships; posts; post_reactions; comments; conversations; conversation_members; messages; message_hidden; media_assets; post_media; message_media.
+REQUIRED (6): profile_private; user_settings; account_status; user_blocks; event_outbox; migration_id_map.
+FUTURE (16): user_follows; groups; group_members; group_join_requests; saved_posts; hidden_posts; stories; story_views; story_reactions; notifications; device_subscriptions; system_roles; reports; moderation_actions; moderation_audit; appeals.
+OPTIONAL (1): comment_reactions.
+Auth/Storage/Realtime managed tables không tính vào36; migration_id_map là bảng vận hành tạm sau này, không là runtime Android API.
+
+Bao phủ8 nhóm: tài khoản/hồ sơ; bài viết/feed; Stories; friends/follow; community groups; private/group chat; notification; moderation/admin. Các feature FUTURE/OPTIONAL không được coi là đã triển khai hoặc phải bật ngay.
+
+16.4. Khác biệt quan trọng với Firestore
+- Firebase UID string -> Supabase Auth UUID qua migration_id_map, không cast/hash identity tùy tiện.
+- Hai Friends documents -> canonical friendship1 row + directed request có unique pending pair/transaction.
+- Post imageUrl -> registry + ordered media links; share reference original không sao chép nội dung/private media.
+- Comment parent cùng post/composite FK, reply message cùng conversation/composite FK; parent reference không chỉ ID tự do.
+- Chat2 người -> conversation + membership chuẩn hóa hỗ trợ group, join-history boundary; read markers theo seq thay maps/time thiết bị.
+- Message request UUID/hash chống gửi trùng sau timeout; same UUID khác payload409; counter do actual row transition trong cùng transaction, không read-client/increment tách rời.
+- Server TIMESTAMPTZ thay long millis và Firestore Timestamp; cursor(seq hoặc created_at,id); không dùng offset lớn.
+- DB RLS/Storage ACL thay kiểm tra UI; account_status block suspended/deleting kể cả JWT còn hạn.
+- Outbox bền cho notifications/cleanup/push; external delivery at-least-once, không tuyên bố exactly-once.
+
+16.5. Bảo mật và giới hạn còn lại
+- Public audience mặc định là user đã đăng nhập/verified/active, không guest Internet; cần phê duyệt.
+- System Admin, Moderator, Group Admin tách scope; Android không có quyền đổi role/status/assignment/counter.
+- SQL mới không tự retire policy cũ permissive. File supabase/storage.sql vẫn giữ nguyên, bucket public và anon INSERT cũ phải được inventory/xử lý ở cutover được duyệt.
+- URLs public/signed cũ và bytes đã tải không tự mất quyền sau block/recall; cần retire object cũ/CDN policy, không chỉ đổi URL database.
+- Broadcast có cache quyền kết nối: comment generic activity timing có thể còn tới reauth sau revoke; không private body. Nếu yêu cầu che cả metadata timing thì cần per-user watcher routing hoặc polling được thiết kế tiếp.
+- Supabase Realtime không thay push nền Android. Provider không FCM có yêu cầu distributor/OEM/thiết bị và vận hành.
+- Xóa account khi còn private chat/admin nhóm cuối, history member mới/rejoin, retention/archives, role evidence scopes là quyết định nghiệp vụ cần duyệt.
+- Chưa có RPC mutation bodies/Edge workers/jobs/client adapters trong nhiệm vụ thiết kế. SQL draft có deny-by-default và guard, chưa là migration chạy ứng dụng.
+
+16.6. File thiết kế bàn giao (thư mục F:\MeetoMXH\database_design)
+1. MEETO_DATABASE_ARCHITECTURE.md — kiến trúc,8 nhóm, quyết định, transaction contracts, performance/tradeoffs.
+2. MEETO_SCHEMA_DICTIONARY.md —36 bảng, cột/kiểu/default/PK/FK/unique/check/index/RLS/CRUD/migration/delete/extension.
+3. MEETO_ERD.md — Mermaid37 entities gồm auth.users managed,83 quan hệ FK chính, không vẽ FK polymorphic giả.
+4. MEETO_RLS_DESIGN.md — actor/table matrix SELECT/INSERT/UPDATE/DELETE, helper/RPC security, allow/deny acceptance.
+5. MEETO_STORAGE_REALTIME.md —4 private bucket, lifecycle/limits/revoke, realtime/reconnect và push không FCM.
+6. MEETO_FIREBASE_MIGRATION.md — field/UID mapping, Auth strategy, source inventory chưa xác minh, quarantine/cutover/rollback.
+7. MEETO_IMPLEMENTATION_ROADMAP.md — foundation/parity/migration/Stories/notification/groups/moderation theo phase.
+8. MEETO_SCHEMA_DRAFT.sql — DDL36 tables, FK/constraints/50 indexes; guard chặn execute và ROLLBACK.
+9. MEETO_RLS_DRAFT.sql —21 authorization helpers, grants/RLS/Storage/Realtime draft; guard chặn execute và ROLLBACK.
+10. MEETO_DESIGN_REVIEW.md —18 tabletop scenarios, self-review/risks/gates và các quyết định cần duyệt.
+
+16.7. Kiểm tra thực sự và giới hạn
+Đã static cross-check:36 bảng tên duy nhất, FK public references tới bảng có declaration,50 explicit indexes không trùng tên,36 bảng RLS ON/revoke,34 SELECT policy +2 bảng server-only,21 helper quyền private, request_hash/endpoint không được column SELECT, guard/ROLLBACK hai SQL. Rà soát18 tình huống bằng lý luận thiết kế, không dùng fake data tuyên bố backend pass.
+Chưa chạy SQL/PostgreSQL parser/pgTAP/EXPLAIN/concurrency/RLS/Storage/Realtime/push runtime test. Không có psql/postgres/docker trên PATH kiểm tra. Không chạy lại Gradle vì không đổi Android; kết quả build15 test/Lint cũ không chứng nhận Supabase mới.
+Chưa tạo bảng, bucket, data, publication, policy, Auth user hay function trên Supabase. Không deploy/migration/SQL thật, không dùng secret key để thay đổi dữ liệu. Source/config cũ được đối chiếu hash cuối nhiệm vụ; nội dung báo cáo trước phần16 được giữ nguyên.
+
+16.8. Quyết định cần duyệt và bước tiếp
+Cần duyệt: public guest policy; email/phone và Auth re-enrollment/import; block trong nhóm chung; lịch sử/rejoin chat; retention/xóa account/private chat; authenticated media/proxy và xử lý legacy public URLs; push không FCM; role scope/appeals/quota; staging/rollback/RPO.
+Đề xuất: review kiến trúc -> chốt quyết định -> tạo migration riêng có test ở staging -> Auth/media foundation -> parity core transaction/RLS -> migration rehearsal/cutover có kiểm soát -> feature FUTURE theo phase. Không triển khai các bước đó ở nhiệm vụ03.
+
+Xác minh bàn giao cuối nhiệm vụ03:10 tệp thiết kế UTF-8 không rỗng;130 tệp source/config đối chiếu SHA-256 với đầu nhiệm vụ không thay đổi;107.595 byte báo cáo cũ giữ nguyên hash, phần16 xuất hiện đúng1 lần. Không có giá trị URL/key từ local.properties bị đưa vào bàn giao. Delimiter/quote/parentheses SQL/function body đã kiểm tra tĩnh, không thay cho PostgreSQL parser/runtime test.

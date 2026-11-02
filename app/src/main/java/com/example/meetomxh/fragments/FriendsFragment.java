@@ -25,7 +25,7 @@ import com.example.meetomxh.models.FriendItem;
 import com.example.meetomxh.models.User;
 import com.example.meetomxh.repositories.FriendRepository;
 import com.example.meetomxh.repositories.UserSearchQuery;
-import com.google.firebase.auth.FirebaseAuth;
+import com.example.meetomxh.supabase.SessionManager;
 
 import java.util.Collections;
 import java.util.List;
@@ -175,10 +175,10 @@ public class FriendsFragment extends Fragment implements FriendItemAdapter.OnFri
         if (mode == Mode.REQUESTS) {
             friendRepository.getReceivedFriendRequests(listener);
         } else if (mode == Mode.ALL_FRIENDS) {
-            if (FirebaseAuth.getInstance().getCurrentUser() == null) {
+            if (SessionManager.getInstance().getCurrentUser() == null) {
                 showError("Bạn cần đăng nhập để xem bạn bè.");
             } else {
-                friendRepository.getFriendsList(FirebaseAuth.getInstance().getCurrentUser().getUid(), listener);
+                friendRepository.getFriendsList(SessionManager.getInstance().getCurrentUser().getUid(), listener);
             }
         } else {
             friendRepository.getSuggestedFriends(listener);

@@ -1,0 +1,39 @@
+{
+    "captured_at":  "2026-11-02T12:56:27.364436+00:00",
+    "chat_events_last_30_minutes":  [
+                                        {
+                                            "events":  52,
+                                            "max_attempts":  1,
+                                            "state":  "done"
+                                        }
+                                    ],
+    "ledger_versions":  18,
+    "recent_chat_cron_runs":  [
+                                  {
+                                      "end_time":  "2026-11-02T12:56:00.019598+00:00",
+                                      "start_time":  "2026-11-02T12:56:00.016468+00:00",
+                                      "status":  "succeeded"
+                                  },
+                                  {
+                                      "end_time":  "2026-11-02T12:55:00.036108+00:00",
+                                      "start_time":  "2026-11-02T12:55:00.033059+00:00",
+                                      "status":  "succeeded"
+                                  },
+                                  {
+                                      "end_time":  "2026-11-02T12:54:00.036345+00:00",
+                                      "start_time":  "2026-11-02T12:54:00.0169+00:00",
+                                      "status":  "succeeded"
+                                  },
+                                  {
+                                      "end_time":  "2026-11-02T12:53:00.115972+00:00",
+                                      "start_time":  "2026-11-02T12:53:00.09317+00:00",
+                                      "status":  "succeeded"
+                                  },
+                                  {
+                                      "end_time":  "2026-11-02T12:52:00.077278+00:00",
+                                      "start_time":  "2026-11-02T12:52:00.073392+00:00",
+                                      "status":  "succeeded"
+                                  }
+                              ],
+    "server_version":  "17.11"
+}

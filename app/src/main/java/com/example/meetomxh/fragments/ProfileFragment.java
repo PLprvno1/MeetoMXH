@@ -17,15 +17,15 @@ import com.bumptech.glide.Glide;
 import com.example.meetomxh.LoginActivity;
 import com.example.meetomxh.R;
 import com.example.meetomxh.databinding.FragmentProfileBinding;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.FirebaseFirestore;
+import com.example.meetomxh.supabase.SessionManager;
+import com.example.meetomxh.supabase.SessionUser;
+import com.example.meetomxh.supabase.*;
 
 public class ProfileFragment extends Fragment {
 
     private FragmentProfileBinding binding;
-    private FirebaseAuth mAuth;
-    private FirebaseFirestore db;
+    private SessionManager mAuth;
+
 
     @Nullable
     @Override
@@ -38,10 +38,11 @@ public class ProfileFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        mAuth = FirebaseAuth.getInstance();
-        db = FirebaseFirestore.getInstance();
+        mAuth = SessionManager.getInstance();
 
-        loadUserProfile();
+
+        binding.cardProfile.setOnClickListener(v -> startActivity(new Intent(requireContext(),
+                com.example.meetomxh.ProfileActivity.class).putExtra("target_uid", mAuth.uid())));
         setupDarkModeSwitch();
 
         // Xử lý nút Đăng xuất
@@ -49,11 +50,11 @@ public class ProfileFragment extends Fragment {
 
         // Xử lý các shortcut
         binding.cardFriendsShortcut.setOnClickListener(v ->
-                Toast.makeText(requireContext(), "Mở danh sách Bạn bè", Toast.LENGTH_SHORT).show()
+                getParentFragmentManager().beginTransaction().replace(com.example.meetomxh.R.id.fragment_container,new FriendsFragment()).addToBackStack("friends").commit()
         );
 
         binding.cardSavedShortcut.setOnClickListener(v ->
-                Toast.makeText(requireContext(), "Mở mục Đã lưu", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "Đã lưu chưa được hỗ trợ trên Supabase", Toast.LENGTH_SHORT).show()
         );
     }
 
@@ -71,6 +72,11 @@ public class ProfileFragment extends Fragment {
         });
     }
 
+    @Override public void onResume() {
+        super.onResume();
+        if (binding != null && mAuth != null) loadUserProfile();
+    }
+
     /**
      * Hàm hỗ trợ chuyển đổi chế độ giao diện Sáng / Tối / Theo hệ thống
      * @param mode AppCompatDelegate.MODE_NIGHT_YES, MODE_NIGHT_NO, hoặc MODE_NIGHT_FOLLOW_SYSTEM
@@ -79,43 +85,7 @@ public class ProfileFragment extends Fragment {
         AppCompatDelegate.setDefaultNightMode(mode);
     }
 
-    private void loadUserProfile() {
-        FirebaseUser currentUser = mAuth.getCurrentUser();
-        if (currentUser == null) {
-            return;
-        }
-
-        String userId = currentUser.getUid();
-
-        // Query Firestore collection Users
-        db.collection("Users").document(userId)
-                .get()
-                .addOnSuccessListener(documentSnapshot -> {
-                    if (isAdded() && documentSnapshot.exists()) {
-                        String fullName = documentSnapshot.getString("fullName");
-                        String avatarUrl = documentSnapshot.getString("avatarUrl");
-
-                        if (fullName != null && !fullName.isEmpty()) {
-                            binding.tvFullName.setText(fullName);
-                        } else if (currentUser.getEmail() != null) {
-                            binding.tvFullName.setText(currentUser.getEmail());
-                        }
-
-                        if (avatarUrl != null && !avatarUrl.isEmpty()) {
-                            Glide.with(requireContext())
-                                    .load(avatarUrl)
-                                    .placeholder(R.drawable.ic_home)
-                                    .error(R.drawable.ic_home)
-                                    .into(binding.ivAvatar);
-                        }
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    if (isAdded()) {
-                        Toast.makeText(requireContext(), "Không thể tải thông tin người dùng: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    }
-                });
-    }
+    private void loadUserProfile() {if(mAuth.getCurrentUser()==null)return;ProfileClient.get(mAuth.uid(),new Api.Callback<com.example.meetomxh.models.User>(){public void success(com.example.meetomxh.models.User user){if(binding==null||!isAdded())return;binding.tvFullName.setText(user.getFullName());Glide.with(requireContext()).applyDefaultRequestOptions(new com.bumptech.glide.request.RequestOptions().diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.NONE).skipMemoryCache(true)).load(user.getAvatarUrl()).placeholder(R.drawable.ic_home).into(binding.ivAvatar);binding.ivAvatar.setOnClickListener(v->startActivity(new Intent(requireContext(),com.example.meetomxh.ProfileActivity.class).putExtra("target_uid",mAuth.uid())));}public void error(String e){if(isAdded())Toast.makeText(requireContext(),e,Toast.LENGTH_LONG).show();}});}
 
     private void handleLogout() {
         mAuth.signOut();

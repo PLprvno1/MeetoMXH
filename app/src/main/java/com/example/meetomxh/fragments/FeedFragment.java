@@ -60,19 +60,11 @@ public class FeedFragment extends Fragment implements FeedAdapter.OnPostClickLis
         // Observe danh sách bài đăng từ ViewModel
         viewModel.getPosts().observe(getViewLifecycleOwner(), posts -> {
             if (posts != null) {
-                adapter.setPosts(posts);
+                adapter.setPosts(posts);binding.layoutShimmer.getRoot().stopShimmer();binding.layoutShimmer.getRoot().setVisibility(View.GONE);binding.rvFeed.setVisibility(View.VISIBLE);binding.feedStatus.setText(posts.isEmpty()?"Chưa có bài viết · chạm để tải lại":"");binding.feedStatus.setVisibility(posts.isEmpty()?View.VISIBLE:View.GONE);
             }
         });
 
-        // Giả lập thời gian tải dữ liệu 1.5 giây với Shimmer
-        handler.postDelayed(() -> {
-            if (binding != null) {
-                binding.layoutShimmer.getRoot().stopShimmer();
-                binding.layoutShimmer.getRoot().setVisibility(View.GONE);
-                binding.rvFeed.setVisibility(View.VISIBLE);
-            }
-        }, 1500);
-
+        FeedRepository.getInstance().loadingState.observe(getViewLifecycleOwner(),busy->{if(binding==null)return;if(Boolean.TRUE.equals(busy)&&(viewModel.getPosts().getValue()==null||viewModel.getPosts().getValue().isEmpty())){binding.layoutShimmer.getRoot().setVisibility(View.VISIBLE);binding.layoutShimmer.getRoot().startShimmer();binding.feedStatus.setVisibility(View.GONE);}else if(!Boolean.TRUE.equals(busy)){binding.layoutShimmer.getRoot().stopShimmer();binding.layoutShimmer.getRoot().setVisibility(View.GONE);}});FeedRepository.getInstance().error.observe(getViewLifecycleOwner(),e->{if(binding!=null&&e!=null){binding.feedStatus.setText(e+" · chạm để thử lại");binding.feedStatus.setVisibility(View.VISIBLE);}});binding.feedStatus.setOnClickListener(v->FeedRepository.getInstance().refresh());binding.rvFeed.addOnScrollListener(new androidx.recyclerview.widget.RecyclerView.OnScrollListener(){public void onScrolled(androidx.recyclerview.widget.RecyclerView r,int dx,int dy){if(dy>0&&!r.canScrollVertically(1))FeedRepository.getInstance().loadMore();}});
         binding.fabChat.setOnClickListener(v -> {
             if (!isAdded()) return;
             androidx.fragment.app.FragmentManager fragmentManager = getParentFragmentManager();
@@ -85,9 +77,17 @@ public class FeedFragment extends Fragment implements FeedAdapter.OnPostClickLis
     }
 
     @Override
-    public void onLikeClick(Post post) {
+    public void onLikeClick(Post post, Runnable completed) {
         if (post != null && post.getPostId() != null) {
-            viewModel.likePost(post.getPostId());
+            viewModel.likePost(post.getPostId(), new FeedRepository.OnPostActionListener() {
+                @Override public void onSuccess(String message) { completed.run(); }
+                @Override public void onFailure(String error) {
+                    completed.run();
+                    if (isAdded()) Toast.makeText(requireContext(), error, Toast.LENGTH_LONG).show();
+                }
+            });
+        } else {
+            completed.run();
         }
     }
 
@@ -182,4 +182,4 @@ public class FeedFragment extends Fragment implements FeedAdapter.OnPostClickLis
         handler.removeCallbacksAndMessages(null);
         binding = null;
     }
-}
+ @Override public void onResume(){super.onResume();if(SessionManagerReady())FeedRepository.getInstance().refresh();} private boolean SessionManagerReady(){return com.example.meetomxh.supabase.SessionManager.getInstance().getCurrentUser()!=null;}}

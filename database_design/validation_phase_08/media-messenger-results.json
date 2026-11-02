@@ -1,0 +1,100 @@
+{
+  "checks": [
+    {
+      "check": "real restored user",
+      "pass": true
+    },
+    {
+      "check": "cancel request removes pending",
+      "pass": true
+    },
+    {
+      "check": "decline request removes pending",
+      "pass": true
+    },
+    {
+      "check": "verified Android upload avatar",
+      "pass": true
+    },
+    {
+      "check": "verified Android upload cover",
+      "pass": true
+    },
+    {
+      "check": "profile attachments authoritative",
+      "pass": true
+    },
+    {
+      "check": "stale profile version conflicts",
+      "pass": true
+    },
+    {
+      "check": "private profile current version",
+      "pass": true
+    },
+    {
+      "check": "peer cannot read private birth date",
+      "pass": true
+    },
+    {
+      "check": "verified Android upload posts",
+      "pass": true
+    },
+    {
+      "check": "video view network decode",
+      "pass": true
+    },
+    {
+      "check": "MP4 authenticated Range",
+      "pass": true
+    },
+    {
+      "check": "verified Android upload chats\/4a5a1248-a5d0-45e4-9d69-ef2a37b33c3f",
+      "pass": true
+    },
+    {
+      "check": "ready unattached chat asset deny",
+      "pass": true
+    },
+    {
+      "check": "chat media attached",
+      "pass": true
+    },
+    {
+      "check": "recall revokes asset",
+      "pass": true
+    },
+    {
+      "check": "promoted member role",
+      "pass": true
+    },
+    {
+      "check": "kicked old JWT denies",
+      "pass": true
+    },
+    {
+      "check": "rejoin does not restore history",
+      "pass": true
+    },
+    {
+      "check": "pending outbox persisted",
+      "pass": true
+    },
+    {
+      "check": "retry dispatches committed RPC",
+      "pass": true
+    },
+    {
+      "check": "retry not duplicated",
+      "pass": true
+    },
+    {
+      "check": "unfriend removes canonical relation",
+      "pass": true
+    },
+    {
+      "check": "friends audience revoked after unfriend",
+      "pass": true
+    }
+  ]
+}

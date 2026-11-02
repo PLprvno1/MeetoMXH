@@ -39,11 +39,11 @@ public class FriendItem {
         this.relationshipStatus = relationshipStatus;
     }
 
-    public long getTimestamp() {
+    public long getServerTime() {
         return timestamp;
     }
 
-    public void setTimestamp(long timestamp) {
+    public void setServerTime(long timestamp) {
         this.timestamp = timestamp;
     }
 }

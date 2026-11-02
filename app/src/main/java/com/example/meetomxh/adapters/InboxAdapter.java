@@ -41,7 +41,7 @@ public class InboxAdapter extends RecyclerView.Adapter<InboxAdapter.InboxViewHol
                 return equals(oldItem.getChatName(), newItem.getChatName())
                         && equals(oldItem.getLastMessage(), newItem.getLastMessage())
                         && equals(oldItem.getAvatarUrl(), newItem.getAvatarUrl())
-                        && equals(oldItem.getTimestamp(), newItem.getTimestamp())
+                        && equals(oldItem.getServerTime(), newItem.getServerTime())
                         && oldItem.isUnread() == newItem.isUnread();
             }
             private boolean equals(String first, String second) {
@@ -85,12 +85,12 @@ public class InboxAdapter extends RecyclerView.Adapter<InboxAdapter.InboxViewHol
         public void bind(Inbox inbox) {
             binding.tvChatName.setText(inbox.getChatName());
             binding.tvLastMessage.setText(inbox.getLastMessage());
-            binding.tvTimestamp.setText(inbox.getTimestamp());
+            binding.tvTimestamp.setText(inbox.getServerTime());
             binding.viewUnread.setVisibility(inbox.isUnread() ? android.view.View.VISIBLE : android.view.View.GONE);
 
             if (inbox.getAvatarUrl() != null && !inbox.getAvatarUrl().isEmpty()) {
                 Glide.with(binding.ivAvatar.getContext())
-                        .load(inbox.getAvatarUrl())
+                        .applyDefaultRequestOptions(new com.bumptech.glide.request.RequestOptions().diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.NONE).skipMemoryCache(true)).load(inbox.getAvatarUrl())
                         .placeholder(com.example.meetomxh.R.drawable.ic_home)
                         .error(com.example.meetomxh.R.drawable.ic_home)
                         .into(binding.ivAvatar);

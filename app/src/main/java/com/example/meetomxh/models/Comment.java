@@ -1,6 +1,8 @@
 package com.example.meetomxh.models;
 
 public class Comment {
+    public long version=1;
+    public String parentId,state;
     private String commentId;
     private String postId;
     private String authorUid;

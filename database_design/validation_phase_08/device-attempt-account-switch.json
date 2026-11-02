@@ -1,0 +1,185 @@
+{
+  "environment": "Android emulator -> Supabase local",
+  "checks": [
+    {
+      "check": "screen LoginActivity",
+      "pass": true
+    },
+    {
+      "check": "screen RegisterActivity",
+      "pass": true
+    },
+    {
+      "check": "mail verification stays loopback",
+      "pass": true
+    },
+    {
+      "check": "signup requires email confirmation",
+      "pass": true
+    },
+    {
+      "check": "unverified password login denied",
+      "pass": true
+    },
+    {
+      "check": "GoTrue PKCE redirect",
+      "pass": true
+    },
+    {
+      "check": "screen RegisterActivity",
+      "pass": true
+    },
+    {
+      "check": "PKCE created actual session",
+      "pass": true
+    },
+    {
+      "check": "screen MainActivity",
+      "pass": true
+    },
+    {
+      "check": "onboarding persisted",
+      "pass": true
+    },
+    {
+      "check": "mail verification stays loopback",
+      "pass": true
+    },
+    {
+      "check": "mail verification stays loopback",
+      "pass": true
+    },
+    {
+      "check": "screen ProfileEditActivity",
+      "pass": true
+    },
+    {
+      "check": "profile editor populated",
+      "pass": true
+    },
+    {
+      "check": "profile edited through UI",
+      "pass": true
+    },
+    {
+      "check": "screen CreatePostActivity",
+      "pass": true
+    },
+    {
+      "check": "post UI committed",
+      "pass": true
+    },
+    {
+      "check": "post DTO",
+      "pass": true
+    },
+    {
+      "check": "reaction current state",
+      "pass": true
+    },
+    {
+      "check": "thread parent",
+      "pass": true
+    },
+    {
+      "check": "share points to source",
+      "pass": true
+    },
+    {
+      "check": "friendship actual server",
+      "pass": true
+    },
+    {
+      "check": "actual upload verified by local worker",
+      "pass": true
+    },
+    {
+      "check": "authenticated media Range",
+      "pass": true
+    },
+    {
+      "check": "private post guessed UUID denied",
+      "pass": true
+    },
+    {
+      "check": "screen ChatImageViewerActivity",
+      "pass": true
+    },
+    {
+      "check": "screen ChatActivity",
+      "pass": true
+    },
+    {
+      "check": "private WS joined on emulator",
+      "pass": true
+    },
+    {
+      "check": "actual Broadcast received by Android",
+      "pass": true
+    },
+    {
+      "check": "visible device read ACK",
+      "pass": true
+    },
+    {
+      "check": "chat UI send committed",
+      "pass": true
+    },
+    {
+      "check": "search server full ACL",
+      "pass": true
+    },
+    {
+      "check": "lost ACK idempotency",
+      "pass": true
+    },
+    {
+      "check": "recall tombstone",
+      "pass": true
+    },
+    {
+      "check": "hide affects current reader",
+      "pass": true
+    },
+    {
+      "check": "group DTO",
+      "pass": true
+    },
+    {
+      "check": "archive rejects send",
+      "pass": true
+    },
+    {
+      "check": "old JWT after leave denied",
+      "pass": true
+    },
+    {
+      "check": "socket reconnect reauthorizes",
+      "pass": true
+    },
+    {
+      "check": "real GoTrue refresh keeps actor",
+      "pass": true
+    },
+    {
+      "check": "block revokes current peer JWT",
+      "pass": true
+    },
+    {
+      "check": "screen LoginActivity",
+      "pass": true
+    },
+    {
+      "check": "logout clears session",
+      "pass": true
+    },
+    {
+      "check": "screen LoginActivity",
+      "pass": true
+    },
+    {
+      "check": "screen MainActivity",
+      "pass": false
+    }
+  ]
+}

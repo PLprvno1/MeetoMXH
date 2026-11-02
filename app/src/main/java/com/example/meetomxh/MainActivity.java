@@ -17,7 +17,7 @@ import com.example.meetomxh.fragments.FeedFragment;
 import com.example.meetomxh.fragments.FriendsFragment;
 import com.example.meetomxh.fragments.InboxFragment;
 import com.example.meetomxh.fragments.ProfileFragment;
-import com.google.firebase.auth.FirebaseAuth;
+import com.example.meetomxh.supabase.SessionManager;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -65,14 +65,14 @@ public class MainActivity extends AppCompatActivity {
                 loadFragment(new FeedFragment());
                 return true;
             } else if (itemId == R.id.nav_video) {
-                Toast.makeText(this, "Màn hình Video đang phát triển", Toast.LENGTH_SHORT).show();
-                return true;
+                Toast.makeText(this, "Video feed chưa được hỗ trợ trên Supabase", Toast.LENGTH_SHORT).show();
+                return false;
             } else if (itemId == R.id.nav_friends) {
                 loadFragment(new FriendsFragment());
                 return true;
             } else if (itemId == R.id.nav_notifications) {
-                Toast.makeText(this, "Màn hình Thông báo đang phát triển", Toast.LENGTH_SHORT).show();
-                return true;
+                Toast.makeText(this, "Thông báo chưa được hỗ trợ trên Supabase", Toast.LENGTH_SHORT).show();
+                return false;
             } else if (itemId == R.id.nav_profile) {
                 loadFragment(new ProfileFragment());
                 return true;
@@ -84,15 +84,15 @@ public class MainActivity extends AppCompatActivity {
         binding.navView.setNavigationItemSelectedListener(item -> {
             int itemId = item.getItemId();
             if (itemId == R.id.drawer_friends) {
-                loadFragment(new FriendsFragment());
+                binding.bottomNavigation.setSelectedItemId(R.id.nav_friends);
             } else if (itemId == R.id.drawer_saved) {
-                Toast.makeText(this, "Mục Đã lưu", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Đã lưu chưa được hỗ trợ trên Supabase", Toast.LENGTH_SHORT).show();
             } else if (itemId == R.id.drawer_memories) {
-                Toast.makeText(this, "Mục Kỷ niệm", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Kỷ niệm chưa được hỗ trợ trên Supabase", Toast.LENGTH_SHORT).show();
             } else if (itemId == R.id.drawer_marketplace) {
-                Toast.makeText(this, "Mục Marketplace", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Marketplace chưa được hỗ trợ trên Supabase", Toast.LENGTH_SHORT).show();
             } else if (itemId == R.id.drawer_logout) {
-                FirebaseAuth.getInstance().signOut();
+                SessionManager.getInstance().signOut();
                 Intent intent = new Intent(this, LoginActivity.class);
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                 startActivity(intent);
@@ -124,13 +124,19 @@ public class MainActivity extends AppCompatActivity {
                     binding.drawerLayout.closeDrawer(GravityCompat.START);
                 } else {
                     setEnabled(false);
-                    getOnBackPressedDispatcher().onBackPressed();
+                    try {
+                        getOnBackPressedDispatcher().onBackPressed();
+                    } finally {
+                        setEnabled(true);
+                    }
                 }
             }
         });
     }
 
     private void loadFragment(Fragment fragment) {
+        getSupportFragmentManager().popBackStackImmediate(null,
+                androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE);
         getSupportFragmentManager().beginTransaction()
                 .replace(R.id.fragment_container, fragment)
                 .commit();

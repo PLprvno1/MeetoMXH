@@ -1,0 +1,6 @@
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:fillViewport="true">
+ <LinearLayout android:id="@+id/formFields" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="24dp" android:paddingTop="48dp">
+  <TextView android:id="@+id/formTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="24sp" android:textStyle="bold" android:text="Meeto" />
+  <TextView android:id="@+id/formStatus" android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="8dp" android:accessibilityLiveRegion="polite" />
+ </LinearLayout>
+</ScrollView>

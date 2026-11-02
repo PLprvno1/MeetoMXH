@@ -1,0 +1,8 @@
+{
+  "actualBridgeRemoved": true,
+  "rpcFailureObserved": true,
+  "outboxRetained": true,
+  "rpcAndPrivateWsReconnect": true,
+  "oneCommittedRetry": true,
+  "realBroadcastAfterRecovery": true
+}

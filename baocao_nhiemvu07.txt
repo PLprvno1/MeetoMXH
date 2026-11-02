@@ -1,0 +1,126 @@
+BÁO CÁO NHIỆM VỤ 07 — SUPABASE PHASE C: MESSENGER
+Ngày 01/11/2026, Asia/Bangkok. Workspace F:\MeetoMXH.
+
+KẾT QUẢ
+CODED + LOCAL TESTED: private/group chat, inbox/history/search, replies, recall/hide, delivery/read ACK, private Broadcast và media chat thực.
+STAGING VERIFIED: CHƯA. PRODUCTION DEPLOYED: CHƯA.
+Không kết nối Cloud; không sửa Android, Gradle, local.properties, Firebase hoặc ImgBB. Không triển khai Stories, community Groups, Moderation hoặc push service.
+
+1. MIGRATIONS VÀ BASELINE
+Đã kiểm lại 9 containers, healthchecks và ledger 001–009 trước thao tác. Giữ nguyên bytes 001–009 cùng báo cáo/evidence A/B.
+Thêm 6 migration:
+- 20261101001000_messenger.sql: core private/group RPCs, safe projections/RLS, transactional events.
+- 20261101001100_chat_media_realtime.sql: chat-media, conversation-bound intent/finalize, shared worker ABI, Realtime policy và eligibility.
+- 20261101001200_shared_media_quota.sql: B quota tính pending chat-media đúng worst-case 50MiB.
+- 20261101001300_chat_lock_order.sql: shared actor guards C, chuẩn hóa pair writer order B, không global-lock chat.
+- 20261101001400_chat_search_contract.sql: literal case-insensitive substring theo Android, query validation.
+- 20261101001500_chat_upload_admin_safety.sql: standard-upload-only restrictive policy và operative-admin checks.
+Rehearsal 010/011 rollback thành công; CLI db push --local áp thật. Tổng 15 versions/checksums, không sửa ledger hoặc migration đã áp. Không reset/delete volumes, DROP CASCADE hoặc managed stubs.
+Kiến trúc vẫn 36 tables, 79 FK, 104 CHECK, 110 indexes. Không thêm bảng/cột/FK/index; không cần đổi dictionary/ERD cấu trúc.
+
+2. RPC HOÀN THÀNH
+18 public RPC mới, tổng A/B/C = 49:
+get_or_create_private; create_group_conversation; get_conversation; get_inbox; get_conversation_members;
+send_message; get_messages; search_messages; acknowledge_delivery; mark_read; get_read_receipts;
+recall_message; hide_message_for_me; manage_conversation_member; leave_conversation; rename_conversation; set_conversation_state; prepare_message_upload.
+finalize_upload cũ mở rộng purpose=message, không tính như RPC mới. Public invoker fixed parameters; private definer search_path rỗng, explicit execute, actor từ auth.uid. Owner-only helpers không API grant, private schema không exposed.
+Signature/cursor/output/error đầy đủ: database_design/MEETO_PHASE_C_IMPLEMENTATION.md.
+
+3. PRIVATE CHAT
+Canonical pair unique, một conversation/cặp và đúng 2 matching active members; lookup hai phía trả cùng ID. Khi tạo/lookup, peer phải active/onboarded/verified, không block; không yêu cầu friendship.
+Text/media send, reply, history, inbox, search, recall/hide, ACK/read chạy qua JWT thật. Reply chỉ cùng conversation và source readable; không snapshot private body.
+Block chặn lookup/history/send/media ở request mới. JWT cũ không bypass current DB gates. Account suspension làm private conversation unavailable fail-closed. Private leave/archive tùy ý chưa bật; hỗ trợ hide từng message.
+
+4. CHAT NHÓM
+Dùng cùng schema conversations/members/messages, tách biệt community Groups. Creator admin; 1–49 invitees, tối đa 50 active members.
+Lựa chọn hiện tại: admin chỉ auto-add mutual friends active/onboarded/verified và không blocked với inviter. Chưa có invitation-consent workflow riêng; thành viên được leave.
+Add/remove/promote/demote/leave/rename/archive/restore kiểm admin scope. Thành viên mới bắt đầu history_from_seq=next_seq+1; rejoin reset boundary/markers và role member, không phục hồi lịch sử hoặc vai trò cũ.
+Hai admin leave đồng thời: 200/409, còn một operative admin. Target chưa onboarding không được promote; admin không thể hoạt động không được tính làm người thay thế.
+Archive giữ read history, chặn send/upload; inbox mặc định bỏ archived, có include option. Restore yêu cầu admin/version. Không client hard-delete conversation/history.
+Group roster ID/role là metadata được thành viên active thấy; tên/avatar theo profile ACL, message của blocked sender lọc theo viewer. Không hứa che roster/timing tuyệt đối. Operator khóa admin cuối vẫn cần staff recovery riêng, không tự unsuspend/elevate.
+
+5. SEQUENCE, IDEMPOTENCY VÀ RECEIPTS
+Conversation row lock cấp seq/high_water trong transaction. UNIQUE(conversation,sender,clientUUID) và canonical payload hash bảo vệ retry: cùng payload trả ID/seq cũ, khác payload 409; không thêm send event do lost-ACK retry.
+Text 1–10000; media 1–10 ordered assets; kind system bị chặn. Asset lỗi rollback cả seq/message. Recall sender-only scrub body, giữ seq/hash và retire media. Hide một phía không xóa dữ liệu của peer.
+Commit chỉ là sent/committed. Delivery khi device ACK actual visible message ID; read khi client mark_read và đồng thời advances delivery. max(old,new) ngăn stale/out-of-order ACK giảm marker trong cùng membership episode.
+Read là client assertion, không chứng minh người thật đã nhìn màn hình. Broadcast accept không là device delivery. Sender query delivered/read theo từng eligible active recipient, history boundary và block. Rejoin reset markers là episode mới có chủ đích.
+
+6. INBOX, HISTORY VÀ SEARCH
+Inbox keyset(updated_at,id), max 50, latest visible message/unread theo viewer. Không grant raw global last_message_id; hidden/block/prejoin không làm lộ private preview.
+History max 100: before_seq DESC cho older, after_seq ASC cho catch-up, không truyền cả hai. Envelope items/high_water/conversation_version; tombstones giữ version.
+Search literal case-insensitive substring, query trim 2–100, scoped conversation/history/RLS, không trả recalled/hidden messages. Giữ Android contains partial-word; GIN FTS scaffold không tối ưu route contains này.
+Inbox có thể di chuyển khi có message mới: client dedup/refetch first window. Reconnect cần refetch loaded old windows để nhận recall/hide, không chỉ seq mới. Không cam kết snapshot xuyên nhiều HTTP pages.
+
+7. REALTIME CHANNELS VÀ AUTHORIZATION
+Private Broadcast user:<auth.uid>, event invalidate, payload đúng 2 fields: event_id và scope=messenger. Không body/URL/hash/conversation/message/sender/roster payload. Không app PostgreSQL Changes publication.
+meeto_c_receive trên realtime.messages chỉ SELECT broadcast own topic và current active/onboarded/verified. Không client publish/presence INSERT policy. Outsider, resource channel, public join, missing/forged JWT bị từ chối.
+Configure-ChatRealtimeLocal.ps1 dùng API của local Realtime đang chạy để bật private_only=true, cập nhật cache/disconnect. Không in tenant struct hoặc secrets. Phải chạy sau CLI start/recreate vì default seed có thể đặt private_only=false.
+Đã phát hiện app postgres không UPDATE được managed tenant; UPDATE bằng managed owner rồi restart bị seed ghi đè. Cách cuối gọi Realtime.Api.update_tenant_by_external_id và kiểm private/public join thực. Không thay remote project. Handshake 101 không được dùng thay business evidence.
+
+8. MEDIA CHAT VÀ STORAGE
+Private chat-media: PNG/JPEG/WebP/MP4, bucket 50MiB; worker image 10MiB/video 50MiB, tối đa 40M pixels và video 300s. PDF/text/ordinary files chưa thiết kế bật, trả 422.
+Conversation context nằm trong registry metadata server-only. Quota chung A/B/C: 10 pending, 100 chưa deleted, 500MiB reserved. Migration 012 sửa B under-reservation khi có pending chat video.
+User JWT standard upload -> shared FFmpeg worker kiểm magic/actual size/dimensions/codec/full decode -> verified metadata giữ conversation_id -> caller finalize với current membership -> send kiểm owner/ready/purpose/context/single attachment.
+Sai owner/context/purpose bị chặn; ready unattached deny cả owner. Kick/leave/rejoin không mở lại attachment cũ. Recall deny trước API purge; hide chỉ caller, peer còn quyền. Orphan 24h cleanup; sent linked media không bị sweep.
+Storage GET/info kiểm current parent ACL. Restrictive standard-upload-only policy cho profile/social/chat ngăn signed-upload capability và TUS/S3/copy INSERT bypass. Owned pending intent cũng không mint signed upload token. Không mở upsert/update/delete/list/sign/public download.
+Không tuyên bố thu hồi bytes đã tải/cache/in-flight; chưa antivirus, EXIF byte sanitization, transcoding, CDN/cache hoặc large-video certification. Media worker source B giữ nguyên, chỉ mở rộng SQL ABI. Files đều synthetic.
+
+9. WORKERS VÀ OUTBOX
+Chat event ghi cùng business transaction; completed group-create hash receipt state done không dispatch.
+Invoke-ChatDispatcher.ps1 chạy local một lượt: SKIP LOCKED, lease 2 phút, attempt fencing, max 5/backoff/dead, sanitized last_error, reclaim expired lease. Local service key chỉ memory, không arguments/log/file; private Broadcast HTTP thật.
+Recompute recipient account/member/history/block/hidden trước dispatch. Membership/state/block có generic clear hint cho recipients đã liên quan; message events lọc current eligibility. Tests xác nhận kick/block trước flush suppress queued message event, data refetch RLS deny.
+At-least-once: crash sau publish trước ACK có thể duplicate; event_id ổn định. Messages/outbox vẫn bền khi worker dừng. Offline socket không buffer Broadcast, cần DB backfill.
+Đã fault inject retry/backoff/dead/requeue/expired lease, rồi publish thật và quan sát delivery. Không mô tả fault injection là outage thật. Chưa cloud durable scheduler, alerts, dead-letter UI hoặc push.
+Cached authorization/in-flight generic hint có thể còn tới sau revoke; payload không resource/content. Không hứa che toàn bộ generic activity timing.
+
+10. HTTP/JWT TESTS
+511 assertions C đạt, 0 fail. Actual GoTrue signup/verify qua Mailpit/password login; không fake JWT success.
+Đủ 18 RPC mới: success/deny, missing/forged JWT, spoof actor, incomplete/suspended/deleting và unverified với JWT đã cấp trước khi operator gỡ confirmation.
+Đã chạy private/group/reply/search/inbox/markers/recall/hide/history/media/versions/quota/normal upload/signed-upload denial. PNG/MP4 bytes thật.
+HTTP refetch trong WS suite vẫn tính HTTP; điều kiện WS ở file riêng. SQL/GUC fixtures không tính vào JWT evidence.
+
+11. WEBSOCKET INTEGRATION
+40 assertions đạt, 0 fail: 3 independent clients A/B/C cùng negative joins.
+Kiểm private delivery, outsider/public/resource/missing/forged JWT deny, client cannot publish, reconnect/backfill, GoTrue token refresh trên live channel, invalid refresh đóng Phoenix channel.
+Driver theo dõi phx_error/phx_close: server có thể đóng channel mà giữ TCP socket. Harness đã sửa cách quan sát này, không nới quyền để pass.
+New message/receipt/recall/membership/leave/kick/block/state/suspension được kiểm bằng delivery/refetch/revoke thật. Dựng wire newer -> older -> duplicate bằng scoped checkpoint replay; reducer dedup 2 IDs và reconcile ordered DB truth.
+Dùng ws module có sẵn trong guarded local Storage container -> Kong nội bộ project; key/token qua stdin, script /tmp xóa sau test. Không npm install hoặc external service. Chưa real Android/device/staging test.
+
+12. CONCURRENCY VÀ RLS
+8 races thật, observer thấy 2 authenticator sessions đợi Lock: two senders; same UUID; recall/read; out-of-order read; send/block; send/leave; send/join; two admins leave.
+Lost-ACK simulation retry message đã commit, cùng ID/seq. Send với block/join/leave chấp nhận serialization hợp lệ, không ép thứ tự giả.
+Probe giữ B global 6061101 và parent AB: cùng actor gửi AD hoàn thành khi AB vẫn đợi; thả row lock thì AB 200. Chứng minh loại global/unrelated-parent bottleneck, không phải load benchmark.
+RLS chặn raw hash/global pointer, direct DML/foreign marker/body/sender edits, guessed UUID/nonmember, prejoin/rejoin/kicked/left old JWT, hidden raw/inbox/search/reply/media. Current DB gates kiểm account/onboarding/verification.
+
+13. REGRESSION A/B VÀ CATALOG
+174 HTTP A nguyên bản đạt, đủ 8 RPC và Auth/reset/onboarding/block.
+473 HTTP B nguyên bản đạt, gồm social/Storage/races; execute source trong memory chỉ relocate root/output07, không rewrite tests/evidence06.
+87 SQL PG17 đạt và rollback: adapter chỉ đổi future-grant expectation vì posts/comments/messages đã mở read ở B/C; device subscriptions vẫn đóng. Không managed stubs.
+33 catalog/invariant assertions đạt: 36/79/104/110, 49 RPC, defaults/owners/RLS/future closure, 3 private buckets/5 Storage policies, own-user Realtime/private_only, 15 ledger, pair/seq/markers/one-send-event/admin invariants.
+7 expiry assertions của06 là historical preserved, không rerun trong07 hoặc cộng vào results mới. WS token refresh/invalid JWT có test mới riêng.
+
+14. LOCK, HIỆU NĂNG VÀ GIỚI HẠN
+C không lấy global B lock: private pair -> shared actor -> conversation -> assets; group shared actor -> conversation -> members/assets. Auth FOR SHARE/status FOR SHARE/profile FOR KEY SHARE cho phép same actor ở different conversations.
+B request/resolve normalize global -> pair -> actor, giữ receipt/state implementation cũ. Không tuyên bố zero deadlock dưới mọi trusted operator workflow.
+Chưa load/stress/large-data benchmark. Cần đo unread/RLS/contains search/per-user fanout, global B throughput, rate/quota và media sandbox.
+Chưa invitation consent, staff last-admin recovery, retention/account deletion, durable worker scheduler/alerts, cache/CDN/antivirus/EXIF sanitization hoặc mobile background certification. Backlog đã dispatch qua worker thật, không xóa events/ledger để giả pass.
+
+15. FILE MỚI VÀ ĐÃ SỬA
+Mới: migrations010–015; Configure-ChatRealtimeLocal.ps1, Invoke-ChatDispatcher.ps1, Invoke-PhaseCDeployment.ps1; Invoke-PhaseCHttp.ps1, PhaseC-WebSocket.ps1, phase-c-ws.cjs; validation_phase_07 với README/runners/SQL/hashes/evidence; implementation C và báo cáo này.
+Sửa: migrations.sha256.json thêm6 entries; RPC catalog/roadmap thêm status C và chuyển core group chat từ E dự kiến sang C theo nhiệm vụ07.
+Không sửa Java/XML/Gradle/dependencies/local.properties/Firebase/ImgBB;001–009;config bytes;storage.sql cũ;reports/evidence A/B;media worker B source.
+
+16. LOCAL/STAGING/PRODUCTION VÀ RECOVERY
+CODED + LOCAL TESTED trong phạm vi trên. Chưa staging/production, không thao tác Cloud.
+Bàn giao 9 containers RUNNING, healthchecks healthy, API127.0.0.1:54321; TTL3600 config nguyên; Realtime private_only=true; no app publication. Portable PG không khởi động, listener55439 absent; không worker/Node/FFmpeg daemon nền.
+Giữ existing/synthetic users/messages/outbox/media/Mailpit trong volumes. Không xóa Auth accounts hoặc data cũ. Chỉ cleanup fixture files/IDs riêng; SQL regression rollback. Deferred media giữ checkpoint/TTL.
+Dừng giữ dữ liệu bằng CLI stop. Sau CLI start chạy configure private-only. Recovery theo inventory/forward fix/backup restore có kế hoạch, không tự reset/drop schema.
+
+17. ANDROID VÀ READINESS
+Đã đối chiếu ChatRepository, ChatActivity, InboxFragment, Chat/ChatMessage, ChatMessageAdapter, InboxAdapter, ChatImageViewer, SupabaseStorage. Backend hỗ trợ text/image/reply/copy/recall/hide/search/read/unread theo quyền; group/video bổ sung theo nhiệm vụ.
+Android cần Supabase Auth/secure session/relogin/JWT refresh, Firebase UID -> UUID mapping, DTO seq/version/clientUUID persisted retry, private channel/reconnect/dedup/refetch loaded windows, per-viewer inbox và explicit receipt ACK, group role/history UX, authenticated media/Range/cache theo user và intent/worker/finalize polling. Public URL validator/anon upload cũ không dùng làm contract chat mới.
+Không đổi Android hoặc chuyển authoritative Firebase. Không triển khai Phase D/E community features hoặc background push.
+Đủ backend local để review Messenger integration, chuẩn bị staging/Android bằng nhiệm vụ riêng. Trước Cloud cần inventory/backup restore/owners/ABI/private-only socket gates, durable workers, security/load/recovery và identity migration rehearsal. Chưa production-ready.
+
+CHI TIẾT VÀ LỆNH TÁI LẬP
+Database_design/MEETO_PHASE_C_IMPLEMENTATION.md và database_design/validation_phase_07/README.md.

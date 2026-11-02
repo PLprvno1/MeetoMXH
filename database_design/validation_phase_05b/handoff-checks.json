@@ -1,0 +1,14 @@
+﻿{
+    "protectedFilesUnchanged":  1175,
+    "protectedInventoryUnchanged":  true,
+    "utf8NonemptyArtifacts":  19,
+    "credentialScan":  "no credential-shaped values found",
+    "powershellScriptsParsed":  9,
+    "parseErrors":  0,
+    "migrationManifest":  "3 unchanged checksums verified",
+    "portableStatusExitCode":  3,
+    "sqlProbeCleanup":  true,
+    "jwtExpiry":  3600,
+    "supabaseLocal":  "RUNNING",
+    "remoteDeployment":  false
+}

@@ -1,0 +1,148 @@
+INFO         | Android emulator version 37.2.12.0 (build_id 16428233) (CL:N/A)
+INFO         | Graphics backend: gfxstream
+emulator: INFO: Use user provided system path F:/android/Sdk/system-images/android-37.0/google_apis_playstore/x86_64
+INFO         | Guest usage of host flag 'VulkanVirtualQueue' will be ignored.
+INFO         | Increasing RAM size to 4096MB
+INFO         | IPv4 server found: 180.148.0.132
+INFO         | Ignore IPv6 address: 48bf:ccf6:c601:0:b7:ccf6:c601:0
+INFO         | Ignore IPv6 address: 48bf:ccf6:c601:0:b7:ccf6:c601:0
+INFO         | Ignore IPv6 address: 48bf:ccf6:c601:0:b7:ccf6:c601:0
+INFO         | Ignore IPv6 address: 18cb:ccf6:c601:0:b7:ccf6:c601:0
+INFO         | Ignore IPv6 address: 18cb:ccf6:c601:0:b7:ccf6:c601:0
+INFO         | Ignore IPv6 address: 18cb:ccf6:c601:0:b7:ccf6:c601:0
+INFO         | Guest GLES Driver: Auto (ext controls)
+INFO         | emuglConfig_init: vulkan_mode_selected:swiftshader gles_mode_selected:swiftshader
+INFO         | Checking system compatibility:
+INFO         |   Checking: hasCompatibleHypervisor
+INFO         |      Ok: Hypervisor compatibility to run avd: `Pixel_4` are met
+INFO         |   Checking: hasSufficientSystem
+INFO         |      Warning: Suggested minimum system RAM to run avd 'Pixel_4' is 16384 MiB (available: 16197 MiB)
+INFO         |   Checking: hasSufficientHwGpu
+INFO         |      Ok: Hardware GPU compatibility checks are not required
+INFO         |   Checking: hasSufficientDiskSpace
+INFO         |      Ok: Disk space requirements to run avd: `Pixel_4` are met
+USER_WARNING | Suggested minimum system RAM to run avd 'Pixel_4' is 16384 MiB (available: 16197 MiB).
+INFO         | Storing crashdata in: C:\Users\holon\AppData\Local\Temp\\AndroidEmulator\emu-crash-37.2.12.db, detection is enabled for process: 20284
+INFO         | Initializing gfxstream backend
+INFO         | startOpenglesRendererImpl: gpu info
+INFO         | GPU #1
+  Make: 10de
+  Model: NVIDIA GeForce RTX 3060
+  Device ID: 2503
+
+INFO         | Vulkan 1.4 is not supported for the guest and won't be enabled
+INFO         | Disabling implicit Vulkan layers to avoid compatibility issues. Set VK_LOADER_LAYERS_DISABLE manually to disable this behavior.
+INFO         | initIcdPaths: ICD set to 'swiftshader', using Swiftshader ICD
+INFO         | Setting ICD filenames for the loader = F:\android\Sdk\emulator\lib64\vulkan\vk_swiftshader_icd.json
+INFO         | SharedLibrary::open for [F:\android\Sdk\emulator\qemu\windows-x86_64\lib64\vulkan\vulkan-1.dll]
+INFO         | SharedLibrary::open for [F:\android\Sdk\emulator\lib64\vulkan\vulkan-1.dll]
+INFO         | Added library: F:\android\Sdk\emulator\lib64\vulkan\vulkan-1.dll
+INFO         | Selecting Vulkan device: SwiftShader Device (LLVM 10.0.0), Version: 1.2.0
+INFO         | Using Vulkan externalMemoryMode: HostAllocation for VkEmulation
+INFO         | Format VK_FORMAT_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16 does not support YCbCr sampler conversion
+INFO         | Format VK_FORMAT_G10X6_B10X6R10X6_2PLANE_422_UNORM_3PACK16 does not support YCbCr sampler conversion
+INFO         | Initializing VkEmulation features:
+INFO         |     glInteropSupported: false
+INFO         |     useDeferredCommands: true
+INFO         |     createResourceWithRequirements: true
+INFO         |     useVulkanComposition: false
+INFO         |     useVulkanNativeSwapchain: false
+INFO         |     enable guestRenderDoc: false
+INFO         |     ASTC LDR emulation mode: Gpu
+INFO         |     enable ETC2 emulation: true
+INFO         |     enable Ycbcr emulation: false
+INFO         |     guestVulkanOnly: false
+INFO         |     useDedicatedAllocations: false
+INFO         |     guestVulkanMaxApiVersion: 1.3.0
+INFO         |     enableProtectedMemoryEmulation: false
+INFO         | Graphics Adapter Vendor Google (Google Inc.)
+INFO         | Graphics Adapter Android Emulator OpenGL ES Translator (Google SwiftShader)
+INFO         | Graphics API Version OpenGL ES 3.0 (OpenGL ES 3.0 SwiftShader 4.0.0.1)
+INFO         | Graphics API Extensions GL_OES_EGL_sync GL_OES_EGL_image GL_OES_EGL_image_external GL_OES_depth24 GL_OES_depth32 GL_OES_element_index_uint GL_OES_texture_float GL_OES_texture_float_linear GL_OES_compressed_paletted_texture GL_OES_compressed_ETC1_RGB8_texture GL_OES_depth_texture GL_OES_texture_half_float GL_OES_texture_half_float_linear GL_OES_packed_depth_stencil GL_OES_vertex_half_float GL_OES_standard_derivatives GL_OES_texture_npot GL_OES_rgb8_rgba8 GL_EXT_color_buffer_float GL_EXT_color_buffer_half_float GL_EXT_texture_format_BGRA8888 GL_APPLE_texture_format_BGRA8888 
+INFO         | Graphics Device Extensions N/A
+INFO         | Disabling sparse binding feature support
+INFO         | Sending adb public key [QAAAALVRGfdjKwxs5g/ANrHYSJ/Nc3CQ6SdEVi4lwzogcHA2gvsPlvrzKn38xt1dXCMkjFvkHNXh9D1z9v2z4fafN7HLPwSFA8rauQSho8+Rr8gDVTTcaNhl52rkk5znle6J2n9AaB+GFcGkSimr5Iy+D/MBJs7rM8Le1qHGU5X6tmE4go5rpC5Nr/CjRpX5jqeDcJq9Cp30mNsQxx93VsWpFFJcLs/LrDXJ+7V8oYOhWnasSVaB7ssS7jwsCexYH3e6CoJiXQG0xZ9gzAOUGqIV8DntU7MZBLlSLTkqCrh0L2hSGTEgaInBLQu3u5fDzCmkyWiTubVTfkRjUOqebkWlQbqYFSCsRBR+HTSWvlHw3qNJxIF7a661y0b1A2YY5O3QC2g5wibsRmwTkZSFifx89EthRmmcIhh7c1IQw54/epn1CqQYuLbesYk7YcdW7n8hC4NOSpb+1521bBkzTFOT5/2kzLaJxbKjVZQZb8woWVUN3OKugWh/lLxPR18SoTiZCV9+5z5yY1AAd6X8dpdn4oV2Qe8DR1s3CGrxmZak2MEtAUAuu3q7lxVZHGTavtpW2pCT8O4jibx8AQPCfJyjwHm2ZxvE37s+XLNkYQjS/X2utmz/e2mdErFchUy5U3MnRow9knps2cu6XMUy0pmG2Iii2FNbWxo1zBOq9zWY3POwzv4pDQEAAQA= @unknown]
+INFO         | Userspace boot properties:
+INFO         |   androidboot.boot_devices=pci0000:00/0000:00:03.0 pci0000:00/0000:00:06.0
+INFO         |   androidboot.dalvik.vm.heapsize=576m
+INFO         |   androidboot.debug.hwui.renderer=skiagl
+INFO         |   androidboot.debug.sf.nobootanimation=1
+INFO         |   androidboot.hardware=ranchu
+INFO         |   androidboot.hardware.gltransport=pipe
+INFO         |   androidboot.hardware.vulkan=ranchu
+INFO         |   androidboot.logcat=*:V
+INFO         |   androidboot.opengles.version=196608
+INFO         |   androidboot.qemu=1
+INFO         |   androidboot.qemu.adb.pubkey=QAAAALVRGfdjKwxs5g/ANrHYSJ/Nc3CQ6SdEVi4lwzogcHA2gvsPlvrzKn38xt1dXCMkjFvkHNXh9D1z9v2z4fafN7HLPwSFA8rauQSho8+Rr8gDVTTcaNhl52rkk5znle6J2n9AaB+GFcGkSimr5Iy+D/MBJs7rM8Le1qHGU5X6tmE4go5rpC5Nr/CjRpX5jqeDcJq9Cp30mNsQxx93VsWpFFJcLs/LrDXJ+7V8oYOhWnasSVaB7ssS7jwsCexYH3e6CoJiXQG0xZ9gzAOUGqIV8DntU7MZBLlSLTkqCrh0L2hSGTEgaInBLQu3u5fDzCmkyWiTubVTfkRjUOqebkWlQbqYFSCsRBR+HTSWvlHw3qNJxIF7a661y0b1A2YY5O3QC2g5wibsRmwTkZSFifx89EthRmmcIhh7c1IQw54/epn1CqQYuLbesYk7YcdW7n8hC4NOSpb+1521bBkzTFOT5/2kzLaJxbKjVZQZb8woWVUN3OKugWh/lLxPR18SoTiZCV9+5z5yY1AAd6X8dpdn4oV2Qe8DR1s3CGrxmZak2MEtAUAuu3q7lxVZHGTavtpW2pCT8O4jibx8AQPCfJyjwHm2ZxvE37s+XLNkYQjS/X2utmz/e2mdErFchUy5U3MnRow9knps2cu6XMUy0pmG2Iii2FNbWxo1zBOq9zWY3POwzv4pDQEAAQA= @unknown
+INFO         |   androidboot.qemu.avd_name=Pixel_4
+INFO         |   androidboot.qemu.camera_hq_edge_processing=0
+INFO         |   androidboot.qemu.camera_protocol_ver=1
+INFO         |   androidboot.qemu.cpuvulkan.version=4210688
+INFO         |   androidboot.qemu.gltransport.drawFlushInterval=800
+INFO         |   androidboot.qemu.gltransport.name=pipe
+INFO         |   androidboot.qemu.hwcodec.avcdec=2
+INFO         |   androidboot.qemu.hwcodec.hevcdec=2
+INFO         |   androidboot.qemu.hwcodec.vpxdec=2
+INFO         |   androidboot.qemu.settings.system.screen_off_timeout=2147483647
+INFO         |   androidboot.qemu.skin=pixel_4
+INFO         |   androidboot.qemu.virtiowifi=1
+INFO         |   androidboot.qemu.vsync=60
+INFO         |   androidboot.serialno=EMULATOR37X2X12X0
+INFO         |   androidboot.vbmeta.digest=bb50238116ebb95ca407415523d34be28a89696874f73533dd0f9f9168801771
+INFO         |   androidboot.vbmeta.hash_alg=sha256
+INFO         |   androidboot.vbmeta.size=6720
+INFO         |   androidboot.veritymode=enforcing
+WHPX on Windows 10.0.26200 detected.
+Windows Hypervisor Platform accelerator is operational
+INFO         | Monitoring duration of emulator setup.
+WARNING      | The emulator now requires a signed jwt token for gRPC access! Use the -grpc flag if you really want an open unprotected grpc port
+INFO         | Using security allow list from: F:\android\Sdk\emulator\lib\emulator_access.json
+INFO         | The active JSON Web Key Sets can be found here: C:\Users\holon\AppData\Local\Temp\avd\running\20284\jwks\ef6e182c-b694-41e6-9669-17b059693c37\active.jwk
+INFO         | Scanning C:\Users\holon\AppData\Local\Temp\avd\running\20284\jwks\ef6e182c-b694-41e6-9669-17b059693c37 for jwk keys.
+INFO         | Started GRPC server at 127.0.0.1:8554, security: Local, auth: +token
+INFO         | Advertising in: C:\Users\holon\AppData\Local\Temp\avd\running\pid_20284.ini
+INFO         | Activated packet streamer for bluetooth emulation
+INFO         | Activated packet streamer for uwb emulation
+INFO         | Successfully initialized netsim WiFi
+INFO         | Setting display: 0 configuration to: 1080x2280, dpi: 440x440 
+INFO         | setDisplayActiveConfig: id:0, 1080x2280
+WARNING      | getEnvironmentConfig: No environment config is provided
+INFO         | getEnvironmentConfig: Using default virtual scene mode for the environment.
+INFO         | getEnvironmentConfig: Using default configuration for mode mesh3d for the environment.
+INFO         | Initializing a scene with mode: mesh3d, argument: Toren1BD.obj
+USER_INFO    | Emulator is performing a full startup. This may take upto two minutes, or more.
+INFO         | Boot completed in 121744 ms
+INFO         | Increasing screen off timeout, logcat buffer size to 2M.
+WARNING      | adb command 'F:\android\Sdk\platform-tools\adb.exe -s emulator-5554 shell settings put system screen_off_timeout 2147483647 ' failed: 'adb.exe: device offline'
+WARNING      | adb command 'F:\android\Sdk\platform-tools\adb.exe -s emulator-5554 shell settings put system screen_off_timeout 2147483647 ' failed: 'adb.exe: device offline'
+WARNING      | adb command 'F:\android\Sdk\platform-tools\adb.exe -s emulator-5554 shell settings put system screen_off_timeout 2147483647 ' failed: 'adb.exe: device offline'
+WARNING      | adb command 'F:\android\Sdk\platform-tools\adb.exe -s emulator-5554 shell settings put system screen_off_timeout 2147483647 ' failed: 'adb.exe: device still authorizing'
+WARNING      | adb command 'F:\android\Sdk\platform-tools\adb.exe -s emulator-5554 shell settings put system screen_off_timeout 2147483647 ' failed: 'adb.exe: device still authorizing'
+INFO         | IPv4 server found: 180.148.0.132
+INFO         | Ignore IPv6 address: e848:acb0:c601:0:a040:acb0:c601:0
+INFO         | Ignore IPv6 address: e848:acb0:c601:0:a040:acb0:c601:0
+INFO         | Ignore IPv6 address: e848:acb0:c601:0:a040:acb0:c601:0
+INFO         | Ignore IPv6 address: b854:acb0:c601:0:a040:acb0:c601:0
+INFO         | Ignore IPv6 address: b854:acb0:c601:0:a040:acb0:c601:0
+INFO         | Ignore IPv6 address: b854:acb0:c601:0:a040:acb0:c601:0
+INFO         | IPv4 server found: 180.148.0.132
+INFO         | Ignore IPv6 address: e848:acb0:c601:0:a040:acb0:c601:0
+INFO         | Ignore IPv6 address: e848:acb0:c601:0:a040:acb0:c601:0
+INFO         | Ignore IPv6 address: e848:acb0:c601:0:a040:acb0:c601:0
+INFO         | Ignore IPv6 address: b854:acb0:c601:0:a040:acb0:c601:0
+INFO         | Ignore IPv6 address: b854:acb0:c601:0:a040:acb0:c601:0
+INFO         | Ignore IPv6 address: b854:acb0:c601:0:a040:acb0:c601:0
+INFO         | IPv4 server found: 180.148.0.132
+INFO         | Ignore IPv6 address: e848:acb0:c601:0:a040:acb0:c601:0
+INFO         | Ignore IPv6 address: e848:acb0:c601:0:a040:acb0:c601:0
+INFO         | Ignore IPv6 address: e848:acb0:c601:0:a040:acb0:c601:0
+INFO         | Ignore IPv6 address: b854:acb0:c601:0:a040:acb0:c601:0
+INFO         | Ignore IPv6 address: b854:acb0:c601:0:a040:acb0:c601:0
+INFO         | Ignore IPv6 address: b854:acb0:c601:0:a040:acb0:c601:0
+INFO         | Wait for emulator (pid 20284) 20 seconds to shutdown gracefully before kill;you can set environment variable ANDROID_EMULATOR_WAIT_TIME_BEFORE_KILL(in seconds) to change the default value (20 seconds)
+
+WARNING      | Not saving state: RAM not mapped as shared
+INFO         | Saving snapshot 'default_boot' took 6 ms
+INFO         | removeScene: scene=0x1c68b394ed0
+INFO         | removeAll
+WARNING      | Netsim Wifi dns:///localhost:62161 is gone due to Stream removed (CANCELLED)

@@ -1,0 +1,5 @@
+﻿{
+    "passed":  true,
+    "output":  "Connecting to local database...\n{\"upToDate\":true,\"dryRun\":false,\"migrations\":[],\"seeds\":[],\"roles\":[],\"message\":\"Local database is up to date.\"}",
+    "test":  "actual CLI replay up to date"
+}

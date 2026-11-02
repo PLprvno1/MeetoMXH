@@ -1,0 +1,6 @@
+﻿{
+    "passed":  true,
+    "expectedSqlstate":  "22012",
+    "scope":  "local only",
+    "test":  "actual CLI failed migration rolls back DDL and ledger"
+}

@@ -1,0 +1,37 @@
+{
+  "completedChecks": [
+    "anonymous protected activity routes to login",
+    "wrong password remains unauthenticated; retry button recovers",
+    "JWT B: own topic allow; wrong\/public\/publish deny; spoof\/DML denial",
+    "one 2x2 PNG owner upload\/preview follows pending intent contract; state pending; public deny; finalize409",
+    "wrong-user upload\/finalize\/download denied for A pending fixture",
+    "UI returns to A after repeated logout\/login; no extra accounts"
+  ],
+  "storageResponses": [
+    {
+      "http": 400,
+      "storageStatusCode": 403
+    },
+    {
+      "http": 400,
+      "storageStatusCode": 403
+    },
+    {
+      "http": 200,
+      "storageStatusCode": 200
+    },
+    {
+      "http": 200,
+      "storageStatusCode": 200
+    },
+    {
+      "http": 400,
+      "storageStatusCode": 404
+    },
+    {
+      "http": 400,
+      "storageStatusCode": 404
+    }
+  ],
+  "mediaReady": false
+}

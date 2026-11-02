@@ -1,0 +1,68 @@
+MEETO — BÁO CÁO NHIỆM VỤ 11: ANDROID + SUPABASE CLOUD
+Ngày 02/11/2026, Asia/Bangkok. Workspace F:\MeetoMXH. Project Meeto, exact ref qjpohzpapiwdrxsionyr, eu-west-1, Free, development/demo; không production.
+
+TRẠNG THÁI CUỐI
+ANDROID CLOUD BUILD/EMULATOR: PASS
+LOGIN A/B VỚI JWT GoTrue THẬT: PASS
+ONBOARDING A/B: PASS
+PROFILE RPC READ/UPDATE/RESTORE: PASS; Profile Editor UI chưa chạy
+FEED/POSTS/FRIENDS/COMMENTS/REACTIONS: PASS trong phạm vi bên dưới
+PRIVATE/GROUP MESSENGER: PASS
+RLS A/B VÀ PRIVATE REALTIME: PASS trong ma trận đã chạy
+CLOUD CRON → PRIVATE BROADCAST → REFRESH/RECEIPTS: PASS sau forward migration 018
+GoTrue FORCE REFRESH: PASS
+APP NETWORK LOSS / OUTBOX / RPC + WEBSOCKET RECOVERY: PASS trên emulator
+EMAIL SIGNUP/CONFIRM/RECOVERY FLOW: NOT RUN (các account đã pre-confirm)
+STORAGE ACL/UPLOAD: NOT RUN
+IMAGE/VIDEO VERIFIER: BLOCKED; không upload/không mark ready
+DOCKER/LOCAL POWERSHELL WORKER: NOT USED
+APK/AAB EXPORTED: NO
+FULL MEETO CLOUD DEMO READY: NO — media, email-flow, UI/device và các operational gates vẫn mở.
+
+1. PROJECT VÀ AN TOÀN
+Android dùng HTTPS https://qjpohzpapiwdrxsionyr.supabase.co và public client key; không dùng service_role. A và B là hai tài khoản synthetic do chủ dự án tạo, xác nhận email và đăng nhập trực tiếp trên Pixel_4 emulator. Không ghi email, password, JWT hay key vào source, evidence hoặc báo cáo; không tạo thêm tài khoản.
+
+Không chạy Docker/PowerShell worker, không dùng ADB reverse, không xuất APK/AAB. Emulator network được khôi phục sau test và trạng thái cuối xác nhận firewall chain disabled, hai package app/test ở trạng thái allow. Không gọi Auth logout ở các bước chuyển phiên hai-user harness; cuối lượt app đang giữ phiên A. Không thay Auth/Storage/Realtime Dashboard settings hoặc Supabase plan.
+
+2. SỬA CLOUD DISPATCHER BẰNG FORWARD MIGRATION
+Task10 migration016 kiểm tra `realtime.messages.id` bằng UUID gửi vào payload. Cloud `realtime.send()` tạo row `id` riêng nhưng giữ caller `payload.id`; do đó row đã được ghi vẫn bị dispatcher coi là chưa persist, chuyển outbox sang retry với `broadcast_failed`. Catalog function definition và một probe transaction ROLLBACK xác nhận hành vi; probe không để lại row hay gửi event.
+
+Đã thêm [20261102000100_chat_broadcast_persistence_check.sql](supabase/migrations/20261102000100_chat_broadcast_persistence_check.sql), không sửa migration001–017. Dispatcher mới kiểm tra payload.id + event_id + topic + event + private + extension sau `realtime.send()`. Manifest SHA256 18/18 PASS; dry-run exact project liệt kê duy nhất migration018; apply thành công. Cloud ledger read-only xác nhận18 versions, min 20261101000100, max 20261102000100.
+
+Sau apply, Android test thực tế nhận invalidation trên private topic B; DB kiểm tra sau đó thấy event mới hoàn tất. Read-only snapshot cuối cho thấy 25 `chat.invalidate` events trong30 phút ở state done, attempts=1; ba event test cũ từng bị retry cũng đã done ở attempts=5. Ba lượt Cron gần nhất đều succeeded. Không xóa outbox/messages; chỉ synthetic test content.
+
+3. KIỂM THỬ ANDROID/CLOUD ĐÃ PASS
+| Suite | Kết quả cuối |
+|---|---|
+| CloudConnectivityTest | 2/2 PASS: Auth health HTTPS bằng Android client; anonymous profile RPC và anonymous private/public Realtime joins bị từ chối. |
+| ClientSecurityTest | 1/1 PASS bằng JWT A: missing/tampered JWT, spoof actor, direct DML, guessed conversation deny; A own topic allow; topic B/public/client publish deny. |
+| FeedRenderingTest | 1/1 PASS: feed RPC/DTO Cloud hiển thị synthetic post trên RecyclerView. |
+| CommentsUiTest | 1/1 PASS: UI tạo root/reply, resolve author qua profile ACL, delete reply thành tombstone; truy vấn xác nhận tombstone. |
+| CloudProfileTest | 1/1 PASS: profile self read; update_profile với version đúng; xác nhận bio mới rồi restore bio cũ với version mới. Không thay avatar/cover. |
+| CloudTwoAccountTest | 1/1 PASS: A/B login/session, B onboarding; friendship; public post B đọc được và react/comment được, A đọc comment B; private post A bị B từ chối; private conversation/group và group history; B own private topic; A send → Cloud Cron → invalidation tới B → B refetch message → delivery/read ACK → A thấy receipt; GoTrue force refresh giữ đúng identity đang active. |
+| CloudNetworkRecoveryTest | 1/1 PASS: Android connectivity firewall deny app + test UID; Cloud RPC và message retry fail offline; encrypted outbox giữ payload; restore network; RPC và private WebSocket reconnect; retry commit đúng một lần/outbox clear/search trả một message. Firewall được restore trong finally và kiểm tra trạng thái allow sau test. |
+
+Các test suite được chạy riêng qua instrumentation; 8 JUnit test methods PASS cuối (2 connectivity + 6 suite đơn). Các lần chạy trước có lỗi test/selector và 404 trạng thái; xem mục4. Không gộp số với bằng chứng Task05–10. Matrix này không phải chứng nhận mọi RPC/threat model, tải production hay mọi thao tác UI.
+
+4. LỖI PHÁT HIỆN VÀ KHẮC PHỤC
+- CommentsUiTest ban đầu tìm nút xóa chỉ theo ID trùng trong RecyclerView và có thể chọn root. Matcher được giới hạn theo row chứa đúng reply, đợi reply hiện trên UI; lần chạy cuối PASS. Một fixture synthetic của lượt lỗi trước đã tombstone root nhầm và được giữ nguyên.
+- Friend request đầu tiên tới B chưa onboarding bị backend từ chối404 theo thiết kế. B hoàn tất onboarding trên emulator; request/accept sau đó thành công. Không nới quyền backend.
+- Dispatcher mismatch đã sửa bằng migration forward018 như mục2. Sau migration, Cron Broadcast đi thật tới WebSocket B; test assertion điều chỉnh để nhận transport `id` do Realtime thêm ngoài trường ứng dụng `event_id`/`scope`.
+- Hai lượt test GoTrue refresh đầu dùng kỳ vọng actor cố định trong khi app đã chuyển phiên. Assertion sửa để so với UID đang active; suite cuối PASS và refresh trả access token thật.
+- Test network đầu tắt Wi-Fi/data nhưng emulator vẫn route Cloud qua network khác. Chuyển sang Android connectivity firewall deny đúng hai app UID; test lỗi sớm được an toàn và khôi phục mạng. Lần cuối outage/recovery PASS.
+
+5. DATA VÀ BẰNG CHỨNG CÒN GIỚI HẠN
+Các post/comment/message synthetic tạo trong lượt này được giữ trên Cloud; không xóa bằng SQL, reset hay cleanup thủ công. Thử nghiệm offline để lại các payload synthetic encrypted trong outbox tới khi lần sau retry; lượt recovery cuối đã commit chúng một lần và clear outbox. Không có Auth user mới, password reset, email gửi hoặc bytes media upload.
+
+Accounts đã được Dashboard xác nhận trước test nên chưa kiểm signup/email confirmation/PKCE recovery trên Cloud. Onboarding B đã hoàn tất từ Register flow; onboarding A verified ở profile self. Profile update được kiểm qua Android RPC, không phải thao tác UI của ProfileEditActivity. Friends/comments/reactions thao tác qua Android RPC; feed và comments có UI evidence. Không chạy mọi menu UI/rotation/background lifecycle.
+
+Realtime đã kiểm A own allow/cross-user B deny/public deny/client publish deny và B own channel allow/actual message invalidation; chưa chạy publish bằng JWT B hoặc toàn bộ refresh-token channel refresh matrix trên Cloud. Network test kiểm app package loss/restore, không phải mất Internet toàn host/thiết bị thật. Auth refresh và WebSocket reconnect có bằng chứng emulator.
+
+Storage cross-user/private ACL, signed/list/range/revoke và cleanup bytes chưa chạy; media verifier Task10 tiếp tục BLOCKED. Không dùng local worker để thay Cloud verifier. Không kết luận full Cloud demo, signup cho người ngoài hoặc sản xuất sẵn sàng.
+
+6. FILES, DEPLOYMENT VÀ HANDOFF
+- Android tests: [CloudConnectivityTest.java](app/src/androidTest/java/com/example/meetomxh/CloudConnectivityTest.java), [CloudTwoAccountTest.java](app/src/androidTest/java/com/example/meetomxh/CloudTwoAccountTest.java), [CloudNetworkRecoveryTest.java](app/src/androidTest/java/com/example/meetomxh/CloudNetworkRecoveryTest.java), [CloudProfileTest.java](app/src/androidTest/java/com/example/meetomxh/CloudProfileTest.java), [CommentsUiTest.java](app/src/androidTest/java/com/example/meetomxh/CommentsUiTest.java).
+- Report này ghi trạng thái cuối; migration manifest checker xác nhận18 file. Backend/DDL mutation duy nhất là forward migration018; ngoài ra Android user RPC đã tạo synthetic profile/post/comment/reaction/friend/conversation/message fixtures theo phạm vi kiểm thử. Không sửa Auth config, buckets hay Storage/Realtime policies.
+- Cloud profile cuối đã restore bio; post/comment/message fixtures còn để review. Cloud outbox gần nhất done; outbox không bị reset.
+- Image/video vẫn tắt cho nghiệm thu. Trước demo rộng còn kiểm email Auth flow, Storage authorization, profile editor UI, real-device/background behavior, cache, retention/restore, monitoring và các giới hạn Free.
+- Password dùng chung đã xuất hiện trong nội dung hội thoại; nên đổi sau kiểm thử. Không lưu trong repo/báo cáo.

@@ -1,0 +1,6 @@
+{
+  "processRestart": true,
+  "realRpcWithRestoredSession": true,
+  "encryptedAtRest": true,
+  "realRefresh": true
+}

@@ -17,8 +17,8 @@ import com.example.meetomxh.databinding.ItemPostBinding;
 import com.example.meetomxh.databinding.ItemStoryListBinding;
 import com.example.meetomxh.models.Post;
 import com.example.meetomxh.models.Story;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
+import com.example.meetomxh.supabase.SessionManager;
+import com.example.meetomxh.supabase.SessionUser;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,7 +30,7 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     public static final int TYPE_POST = 2;
 
     public interface OnPostClickListener {
-        void onLikeClick(Post post);
+        void onLikeClick(Post post, Runnable completed);
         void onCommentClick(Post post);
         void onShareClick(Post post);
         void onCreatePostClick();
@@ -44,16 +44,10 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     public FeedAdapter(OnPostClickListener listener) {
         this.listener = listener;
-        initDummyStories();
+        initUnsupportedStories();
     }
 
-    private void initDummyStories() {
-        storyList.add(new Story("s0", "Tạo tin", "", "", true));
-        storyList.add(new Story("s1", "Hoàng Long", "https://i.pravatar.cc/150?img=11", "https://picsum.photos/id/1011/400/600", false));
-        storyList.add(new Story("s2", "Nguyễn Mỹ Anh", "https://i.pravatar.cc/150?img=5", "https://picsum.photos/id/1025/400/600", false));
-        storyList.add(new Story("s3", "Trịnh Văn E", "https://i.pravatar.cc/150?img=8", "https://picsum.photos/id/1035/400/600", false));
-        storyList.add(new Story("s4", "Lê Yến Vy", "https://i.pravatar.cc/150?img=9", "https://picsum.photos/id/1040/400/600", false));
-    }
+    private void initUnsupportedStories(){storyList.add(new Story("disabled","Stories chưa hỗ trợ","","",true));}
 
     public void setPosts(List<Post> posts) {
         this.postList.clear();
@@ -141,6 +135,7 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     public static class PostViewHolder extends RecyclerView.ViewHolder {
         private final ItemPostBinding binding;
+        private String boundPostId;
 
         public PostViewHolder(@NonNull ItemPostBinding binding) {
             super(binding.getRoot());
@@ -148,9 +143,11 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         }
 
         public void bind(Post post, OnPostClickListener listener) {
+            boundPostId = post.getPostId();
+            binding.btnLike.setEnabled(true);
             binding.tvUserName.setText(post.getUserName());
             binding.tvTimeAgo.setText(post.getTimeAgo() != null ? post.getTimeAgo() : "Vừa xong");
-            binding.tvContent.setText(post.getContent());
+            binding.tvContent.setText(post.getContent());binding.tvContent.setOnClickListener(v->com.example.meetomxh.supabase.PostDetails.show((android.app.Activity)v.getContext(),post.getPostId()));
 
             binding.tvLikesCount.setText(post.getLikesCount() + " lượt thích");
             binding.tvCommentsCount.setText(post.getCommentsCount() + " bình luận");
@@ -158,7 +155,7 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             // Author Avatar
             if (post.getUserAvatar() != null && !post.getUserAvatar().isEmpty()) {
                 Glide.with(binding.ivAvatar.getContext())
-                        .load(post.getUserAvatar())
+                        .applyDefaultRequestOptions(new com.bumptech.glide.request.RequestOptions().diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.NONE).skipMemoryCache(true)).load(post.getUserAvatar())
                         .placeholder(R.drawable.ic_home)
                         .error(R.drawable.ic_home)
                         .into(binding.ivAvatar);
@@ -188,7 +185,7 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 binding.videoPostPlayer.setVisibility(View.GONE);
                 binding.ivPostImage.setVisibility(View.VISIBLE);
                 Glide.with(binding.ivPostImage.getContext())
-                        .load(postImg)
+                        .applyDefaultRequestOptions(new com.bumptech.glide.request.RequestOptions().diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.NONE).skipMemoryCache(true)).load(postImg)
                         .placeholder(R.drawable.ic_home)
                         .error(R.drawable.ic_home)
                         .into(binding.ivPostImage);
@@ -220,10 +217,16 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                                 .start())
                         .start();
 
-                if (listener != null) listener.onLikeClick(post);
+                if (listener != null) {
+                    binding.btnLike.setEnabled(false);
+                    String requestedPostId = post.getPostId();
+                    listener.onLikeClick(post, () -> {
+                        if (requestedPostId.equals(boundPostId)) binding.btnLike.setEnabled(true);
+                    });
+                }
             });
 
-            binding.btnComment.setOnClickListener(v -> {
+            binding.btnLike.setOnLongClickListener(v->{new android.app.AlertDialog.Builder(v.getContext()).setItems(new String[]{"Thích","Yêu thích","Thương thương","Haha","Wow","Buồn","Phẫn nộ","Bỏ cảm xúc"},(d,i)->com.example.meetomxh.repositories.FeedRepository.getInstance().setReaction(post.getPostId(),i==7?null:new String[]{"like","love","care","haha","wow","sad","angry"}[i],new com.example.meetomxh.repositories.FeedRepository.OnPostActionListener(){public void onSuccess(String m){}public void onFailure(String e){android.widget.Toast.makeText(v.getContext(),e,android.widget.Toast.LENGTH_LONG).show();}})).show();return true;}); binding.ivPostImage.setOnClickListener(v->{if(post.getImageUrls().isEmpty())return;String[] labels=new String[post.getImageUrls().size()];for(int i=0;i<labels.length;i++)labels[i]="Ảnh/video "+(i+1);new android.app.AlertDialog.Builder(v.getContext()).setItems(labels,(d,i)->v.getContext().startActivity(new android.content.Intent(v.getContext(),com.example.meetomxh.ChatImageViewerActivity.class).putExtra("image_url",post.getImageUrls().get(i)))).show();}); binding.btnComment.setOnClickListener(v -> {
                 if (listener != null) listener.onCommentClick(post);
             });
 
@@ -233,11 +236,11 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
             // More Options Popup Menu
             binding.ibMore.setOnClickListener(v -> {
-                FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+                SessionUser currentUser = SessionManager.getInstance().getCurrentUser();
                 if (currentUser != null && currentUser.getUid().equals(post.getAuthorUid())) {
                     PopupMenu popup = new PopupMenu(v.getContext(), v);
-                    popup.getMenu().add("Xóa bài viết");
-                    popup.setOnMenuItemClickListener(item -> {
+                    popup.getMenu().add("Xóa bài viết"); popup.getMenu().add(0,101,0,"Chỉnh sửa bài viết");
+                    popup.setOnMenuItemClickListener(item -> { if(item.getItemId()==101){v.getContext().startActivity(new android.content.Intent(v.getContext(),com.example.meetomxh.CreatePostActivity.class).putExtra("post_id",post.getPostId()));return true;}
                         if ("Xóa bài viết".equals(item.getTitle().toString())) {
                             if (listener != null) listener.onDeletePostClick(post);
                             return true;

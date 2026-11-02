@@ -1,0 +1,62 @@
+MEETO — BÁO CÁO NHIỆM VỤ 10: CLOUD BACKGROUND PROCESSING
+Ngày 02/11/2026, Asia/Bangkok. Supabase Meeto, exact ref qjpohzpapiwdrxsionyr, region eu-west-1, gói Free, development/demo.
+
+TRẠNG THÁI CUỐI
+CLOUD PROJECT VERIFIED: YES
+REALTIME PRIVATE-ONLY SETTING: VERIFIED
+CHAT DISPATCHER CLOUD DEPLOYED: YES
+CHAT DISPATCHER FUNCTIONAL: PARTIAL
+OUTBOX RETRY/FENCING: PARTIAL
+PRIVATE BROADCAST AUTHORIZATION: PARTIAL
+CLOUD CLEANUP JOBS: DEPLOYED
+IMAGE VERIFIER CLOUD: BLOCKED
+VIDEO VERIFIER CLOUD: BLOCKED
+MEDIA CONTRACT PRESERVED: YES
+REQUIRES LOCAL DOCKER: NO
+REQUIRES LOCAL POWERSHELL WORKER: NO
+ADDITIONAL PAID SERVICES: NO
+READY FOR TASK 11: CONDITIONAL
+FULL MEETO CLOUD DEMO READY: NO
+
+1. ĐÃ TRIỂN KHAI
+Giữ nguyên migrations 001–015; thêm forward migrations 20261101001600_cloud_workers.sql và 20261101001700_cloud_worker_timeout.sql. CLI manifest kiểm tra PASS17. Cloud ledger có17 versions. 016 bật pg_cron1.6.4 và pg_net0.20.4; thêm dispatcher DB-native, cleanup lease/ACK, nonce một lần và bốn RPC worker chỉ service_role gọi. 017 tăng timeout pg_net lên120 giây để phù hợp cleanup Edge batch hữu hạn. Không sửa schema/product RPC 001–015, Auth, Storage buckets/policies hay Realtime policy trong Task10.
+
+Cron Cloud: chat dispatcher mỗi phút; media cleanup mỗi5 phút. Chat dùng SKIP LOCKED, lease2 phút, eligibility tính lại, Broadcast riêng tới user:<uid> với payload invalidate tối thiểu, attempt fencing, tối đa5 lần, exponential backoff và dead-letter. Broadcast delivery không cập nhật message delivery/read receipts. Dispatcher chỉ chạy trên Cloud DB/Cron.
+
+Cleanup dùng Cloud Edge Function meeto-background-cleanup gọi Storage API; SQL không xóa storage.objects. Claim tối đa5 object, kiểm trạng thái/purpose/bucket/path và link hiện tại; ACK fenced theo event/attempt, mất object là idempotent sau kiểm tra bucket/object, lỗi retry tối đa5. Cleanup vẫn tuân TTL/orphan contracts hiện hữu. Không chạy local PowerShell worker.
+
+Function được deploy cho exact project, verify_jwt=false vì endpoint cần nhận lời gọi Cron không có user JWT. Bù lại, mỗi lần chạy phải có nonce ngẫu nhiên256-bit, một lần, hết hạn sau2 phút; DB chỉ lưu SHA-256 hash. Worker lấy service secret qua môi trường runtime SUPABASE_SECRET_KEYS, không đưa secret vào SQL, cron queue, Android, arguments hoặc logs. Cron chỉ gửi public publishable API key và nonce dùng một lần. Body được giới hạn1KiB, token sai trả401, body quá lớn trả413. Request queue pg_net là hàng đợi ngắn hạn; nonce đã dùng không thể replay.
+
+2. KIỂM TRA CLOUD THỰC TẾ
+- Exact project/ledger xác nhận; dry-run trước apply có đúng migration016 rồi017, không seed/roles. Cả hai apply thành công.
+- Catalog: Cron jobs đúng tên/lịch; worker wrappers chỉ EXECUTE bởi service_role; anon/authenticated không EXECUTE wrapper hoặc private worker helpers.
+- Cron chat có nhiều lượt succeeded. Một event fixture synthetic với recipient không tồn tại được Cron xử lý tự động sang done trong1 attempt; fixture sau đó đã xóa. Hiện không còn task10 fixture hoặc chat/media event pending/processing.
+- Cron cleanup chạy thành công; Edge invocation HTTP200, nonce consumed/completed, sanitized summary claimed=0/deleted=0/failed=0. Không có Auth user hay registered media phù hợp, do đó không xóa object thật và chưa kiểm chứng bytes deletion.
+- Gọi Edge bằng token không hợp lệ trả401; body2048 byte trả413. Sau timeout migration, Cloud cleanup invocation mới trả HTTP200 và completed.
+- Realtime Dashboard setting Allow public access to channels OFF; WebSocket thực tế từ kiểm tra hiện tại bị từ chối ở public topic (PrivateOnly), và private topic không JWT bị Unauthorized. Không có tài khoản/JWT hợp lệ để kiểm tra own-user allow, cross-user deny hoặc client publish bằng Auth user.
+- Project không có user test được phê duyệt. Vì vậy không có bằng chứng real user nhận Broadcast, đọc/reconnect refetch, retry/dead-letter khi transport lỗi, hoặc race hai worker. Code/cấu hình được triển khai, các phần này PARTIAL chứ không PASS. Dispatcher không được đánh giá bằng JWT service_role giả làm user.
+- Không tạo user/email, không sửa dữ liệu thật; test fixtures đã dọn. Không thay đổi Supabase plan, không mua dịch vụ.
+
+3. MEDIA VERIFIER
+Image/video verifier không triển khai và không mark asset ready. Worker B/C hiện yêu cầu decode nội dung đầy đủ; ảnh tối đa40MP, video tới50MiB/300s và codec validation. Supabase Edge Free hiện giới hạn256MB RAM,2 giây CPU/request và150 giây wall-clock. 40MP RGBA đã cần khoảng160MB trước decoder/runtime/buffer overhead; không có dư địa an toàn đã chứng minh cho PNG/JPEG/WebP full decode ở mọi input. Full decode MP4/video không thể được chứng nhận với2 giây CPU. Không có proof-of-concept đầy đủ giới hạn-contract để kết luận PASS; dừng nhánh này thay vì kiểm header rồi tin file.
+
+Media contract và tính năng Android/B/C được giữ nguyên; không giảm size, pixel, duration, codec hoặc bỏ upload/video. Cloud intent có thể chờ do không có verifier. Trước khi media demo được bật cần một runtime được chấp thuận và kiểm chứng đầy đủ; không tự chọn dịch vụ ngoài Supabase hoặc chi phí mới.
+
+Vận hành/dừng: kiểm tra cron.job_run_details, sanitized worker_invocations.summary và pg_net HTTP status. Nếu lỗi, tạm dừng bằng cron.unschedule cho đúng hai job meeto-chat-dispatch-every-minute và meeto-media-cleanup-every-five-minutes; giữ nguyên outbox/migration/buckets, không DROP extension vì sẽ xóa toàn bộ jobs. Lịch cleanup tạo tối đa khoảng8,640 Edge invocations/30 ngày nếu chạy đủ; chat dispatcher chỉ dùng DB Cron, không tạo Edge invocation. Đây là ước lượng lịch, không phải số usage/billing đã đo.
+
+4. RỦI RO CÒN MỞ
+- Endpoint cleanup có verify_jwt=false nhưng nonce service-to-service một lần ngăn thực thi trái phép. Chưa có rate limiter bền vững theo IP trên Supabase Free; request sai vẫn có thể tiêu tốn Edge invocation quota. Body/nonce limit giảm bề mặt nhưng không thay thế rate limit. Không thêm dịch vụ ngoài hoặc tuyên bố endpoint miễn nhiễm abuse.
+- Không có Auth users nên private channel authorization cross-user và delivered Broadcast chưa được kiểm tra end-to-end. Cần tài khoản synthetic có hộp thư được chủ dự án cho phép trước khi thử.
+- Retry/dead-letter/fencing được triển khai trong SQL nhưng chưa chứng minh end-to-end dưới lỗi thật/concurrent worker. Không tạo outage giả cho user data để ép test.
+- Cleanup queue đang rỗng nên xác nhận là Cron → pg_net → Edge → DB ACK chạy, chưa xác nhận Storage object thật bị xóa. Cần controlled registered fixture/user hợp lệ.
+- Free quotas/availability, no automatic backup/PITR theo khảo sát09A vẫn là giới hạn. Không coi Task10 là full Cloud demo certification.
+
+5. HANDOFF TASK11
+Backend chat dispatcher và cleanup không cần Docker/PowerShell/ADB reverse hoặc server cá nhân; Android có thể dùng HTTPS Cloud URL https://qjpohzpapiwdrxsionyr.supabase.co và public anon/publishable key, không bao giờ dùng service_role. Task11 cần tài khoản email test được cho phép để xác nhận GoTrue, own-topic receive, cross-user/public/publish denial, message/refetch/ACK và UI failure flows. Realtime public-only setting hiện OFF. Text Messenger có Cloud Cron, nhưng real recipient path chưa chứng nhận. Ảnh/video vẫn chờ verifier; không đưa chúng vào PASS trong demo.
+
+Nội dung chính thức runtime/Storage đối chiếu (02/11/2026):
+https://supabase.com/docs/guides/functions/limits
+https://supabase.com/docs/guides/cron
+https://supabase.com/docs/guides/database/extensions/pg_net
+https://supabase.com/docs/guides/storage/management/delete-objects
+https://supabase.com/docs/guides/realtime/authorization

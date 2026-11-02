@@ -1,0 +1,355 @@
+﻿{
+    "environment":  "REAL SUPABASE PG17; SQL identities/GUCs, NOT HTTP",
+    "passed":  87,
+    "failed":  0,
+    "tests":  [
+                  {
+                      "label":  "36 public application tables",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "actor spoof internal denied",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "all app tables RLS",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "anon data denied",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "anon RPC denied",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "anonymous identity denied",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "asset guessed rejects",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "asset transition rolled back",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "block accepted",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "block cancels pending request",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "block idempotent",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "block removes both follows",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "block removes friendship",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "blocked search filtered",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "blocked target denied",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "bootstrap idempotent",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "cannot raw DOB",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "cannot raw onboard",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "cannot raw status",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "cannot self role",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "cursor shape validation",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "definer safe path",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "deleting bootstrap no resurrection",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "deleting cannot mutate",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "deleting only status",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "future D device column grants remain closed in C",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "future DOB rejects",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "future table writes closed",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "incomplete cannot search",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "incomplete self RPC visible",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "infinite DOB rejects",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "internal actor bootstrap not executable",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "missing identity denied",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "new private function closed",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "new public function closed",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "new table closed",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "no app function anon execute",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "no public execute app functions",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "null expected rejects change",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "null name rejects",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "old avatar disabled",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "onboard not editable via retry",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "onboarding committed",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "onboarding retry same state",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "one migration owner",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "other private data never read",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "other private profile unavailable",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "other public profile projection",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "other settings filtered",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "outbox transition rolled back",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "owned ready avatar attach",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "partial bootstrap recovery",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "partial bootstrap state detectable",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "pending attachment",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "pending profile hidden via raw RLS",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "pending raw target filtered",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "prefix search",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "private same state retry",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "private update",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "profile mutation rolled back",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "recovered user cannot bypass onboarding",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "recovery does not reset public profile",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "replace avatar and set cover",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "retire outbox atomic",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "RPC partial write rolls back",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "search max limit",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "self block denied",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "settings own update",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "settings unknown keys",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "signup trigger four rows",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "stale onboarding rejects",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "stale update rejects",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "suspended bootstrap no resurrection",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "suspended only status envelope",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "suspended search denied",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "suspended update denied",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "unblock desired state",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "unblock never restores relations",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "under age rejects",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "unverified onboarding denied",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "unverified self recovery allowed",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "update own profile",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "update retry no increment",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "whole missing profile detectable",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "whole profile recovered",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "wrong owner attachment",
+                      "passed":  true
+                  },
+                  {
+                      "label":  "wrong purpose attachment",
+                      "passed":  true
+                  }
+              ]
+}

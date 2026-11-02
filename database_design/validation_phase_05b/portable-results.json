@@ -1,0 +1,86 @@
+﻿{
+    "environment":  "PostgreSQL 16 portable; SQL identity stubs; NOT Supabase HTTP",
+    "steps":  [
+                  {
+                      "label":  "recreate only synthetic meeto_phase05",
+                      "passed":  true,
+                      "output":  "{\"Status\":1,\"SqlState\":\"\",\"Error\":\"\",\"Rows\":[]}"
+                  },
+                  {
+                      "label":  "Phase A stubs",
+                      "passed":  true,
+                      "output":  "{\"Status\":2,\"SqlState\":\"\",\"Error\":\"\",\"Rows\":[[\"LOCAL_STUBS_ONLY\",\"PostgreSQL 16.11, compiled by Visual C++ build 1944, 64-bit\",\"meeto_phase05\"]]}"
+                  },
+                  {
+                      "label":  "3 migrations",
+                      "passed":  true,
+                      "output":  "Verified migration checksums: 3\nNOTICE:  schema \"private\" already exists, skipping\n{\"Applied\":3,\"Skipped\":0,\"Environment\":\"PostgreSQL local with managed stubs\"}"
+                  },
+                  {
+                      "label":  "01_auth_profile_tests.sql",
+                      "passed":  true,
+                      "output":  "{\"Status\":2,\"SqlState\":\"\",\"Error\":\"\",\"Rows\":[[\"{\\\"scope\\\": \\\"PostgreSQL local stubs, not Auth HTTP\\\", \\\"failed\\\": 0, \\\"passed\\\": 59}\"]]}"
+                  },
+                  {
+                      "label":  "02_extended_tests.sql",
+                      "passed":  true,
+                      "output":  "{\"Status\":2,\"SqlState\":\"\",\"Error\":\"\",\"Rows\":[[\"{\\\"scope\\\": \\\"PostgreSQL phase A with stubs\\\", \\\"failed\\\": 0, \\\"passed\\\": 83}\"]]}"
+                  },
+                  {
+                      "label":  "03_block_cleanup_tests.sql",
+                      "passed":  true,
+                      "output":  "{\"Status\":2,\"SqlState\":\"\",\"Error\":\"\",\"Rows\":[[\"{\\\"scope\\\": \\\"PostgreSQL phase A with stubs\\\", \\\"failed\\\": 0, \\\"passed\\\": 87}\"]]}"
+                  },
+                  {
+                      "label":  "3 Phase A races",
+                      "passed":  true,
+                      "output":  "[{\"Test\":\"profile optimistic version conflict\",\"Passed\":true,\"ObservedLockOverlap\":true,\"Expected\":\"PT409\",\"SqlStates\":[\"PT409\"]},{\"Test\":\"bootstrap versus edit serializes\",\"Passed\":true,\"ObservedLockOverlap\":true,\"Expected\":\"success\",\"SqlStates\":[]},{\"Test\":\"same identity bootstrap retry\",\"Passed\":true,\"ObservedLockOverlap\":true,\"Expected\":\"success\",\"SqlStates\":[]}]"
+                  },
+                  {
+                      "label":  "4 migration controls",
+                      "passed":  true,
+                      "output":  "NOTICE:  schema \"private\" already exists, skipping\nNOTICE:  relation \"meeto_local_migrations\" already exists, skipping\nNOTICE:  schema \"private\" already exists, skipping\nNOTICE:  relation \"meeto_local_migrations\" already exists, skipping\n{\"passed\":4,\"failed\":0,\"scope\":\"local ledger harness, not Supabase CLI remote ledger\",\"checks\":[\"manifest checksum tampering rejected\",\"applied ledger checksum drift rejected\",\"failed migration transaction rolls back DDL and leaves ledger intact\",\"migration replay no-op 0 applied 3 skipped\"]}"
+                  },
+                  {
+                      "label":  "recreate only synthetic audit04 final",
+                      "passed":  true,
+                      "output":  "{\"Status\":1,\"SqlState\":\"\",\"Error\":\"\",\"Rows\":[]}"
+                  },
+                  {
+                      "label":  "00_local_supabase_stubs.sql",
+                      "passed":  true,
+                      "output":  "{\"Status\":2,\"SqlState\":\"\",\"Error\":\"\",\"Rows\":[[\"LOCAL_STUBS_ONLY\",\"PostgreSQL 16.11, compiled by Visual C++ build 1944, 64-bit\",\"meeto_audit04_final\"]]}"
+                  },
+                  {
+                      "label":  "01_schema_local.sql",
+                      "passed":  true,
+                      "output":  "{\"Status\":1,\"SqlState\":\"\",\"Error\":\"\",\"Rows\":[]}"
+                  },
+                  {
+                      "label":  "02_rls_local.sql",
+                      "passed":  true,
+                      "output":  "{\"Status\":1,\"SqlState\":\"\",\"Error\":\"\",\"Rows\":[]}"
+                  },
+                  {
+                      "label":  "03_synthetic_fixtures.sql",
+                      "passed":  true,
+                      "output":  "{\"Status\":2,\"SqlState\":\"\",\"Error\":\"\",\"Rows\":[[\"SYNTHETIC_FIXTURES_ONLY\"]]}"
+                  },
+                  {
+                      "label":  "04_constraints_rls_tests.sql",
+                      "passed":  true,
+                      "output":  "{\"Status\":2,\"SqlState\":\"\",\"Error\":\"\",\"Rows\":[[\"{\\\"passed\\\" : 83, \\\"failed\\\" : 0, \\\"tests\\\" : [\\\"admin.case_triage\\\", \\\"admin.not_private_chat\\\", \\\"admin.not_private_profile\\\", \\\"anon.helpers_denied\\\", \\\"anon.posts_denied\\\", \\\"anonymous_auth.no_social\\\", \\\"blocked.asset_denied\\\", \\\"blocked.direct_chat_denied\\\", \\\"blocked.post_topic_denied\\\", \\\"blocked.profile_denied\\\", \\\"blocked.public_post_denied\\\", \\\"catalog.34_select_policies\\\", \\\"catalog.36_tables\\\", \\\"catalog.helper_paths\\\", \\\"catalog.rls_all\\\", \\\"catalog.roles_nobypass\\\", \\\"chat.group_history_boundary\\\", \\\"chat.guess_id_denied\\\", \\\"chat.member_read\\\", \\\"chat.other_conversation_deny\\\", \\\"columns.comment_hash_denied\\\", \\\"columns.endpoint_denied\\\", \\\"columns.message_hash_denied\\\", \\\"columns.post_hash_denied\\\", \\\"comment.deleted_tombstone\\\", \\\"comment.hidden\\\", \\\"constraint.comment_same_post\\\", \\\"constraint.cross_request_unique\\\", \\\"constraint.deleted_comment_redacted\\\", \\\"constraint.direct_chat_pair_unique\\\", \\\"constraint.friend_pair_unique\\\", \\\"constraint.last_pointer_same_chat\\\", \\\"constraint.media_purpose_bucket\\\", \\\"constraint.message_same_chat_reply\\\", \\\"constraint.message_seq_unique\\\", \\\"constraint.no_self_friend\\\", \\\"constraint.read_le_delivery\\\", \\\"constraint.recall_redacted\\\", \\\"constraint.report_typed_target\\\", \\\"constraint.request_state_timestamp\\\", \\\"constraint.send_retry_unique\\\", \\\"constraint.story_24hours\\\", \\\"counters.direct_update_denied\\\", \\\"friend.friends_only_read\\\", \\\"friend.media_read\\\", \\\"friend.private_group_read\\\", \\\"group.private_nonmember_deny\\\", \\\"hide.raw_message_denied\\\", \\\"incomplete.no_social\\\", \\\"media.nonfriend_deny\\\", \\\"moderated_post.hidden\\\", \\\"moderator.assigned_case_read\\\", \\\"moderator.unassigned_case_deny\\\", \\\"nonfriend.friends_deny\\\", \\\"nonfriend.only_me_deny\\\", \\\"nonfriend.private_profile_deny\\\", \\\"nonfriend.public_read\\\", \\\"onboard.direct_flag_denied\\\", \\\"owner.expired_story_deny\\\", \\\"owner.only_me_read\\\", \\\"owner.pending_preview\\\", \\\"owner.recalled_media_deny\\\", \\\"posts.direct_write_denied\\\", \\\"private.birthdate_direct_update_denied\\\", \\\"realtime.invalid_topic_safe\\\", \\\"realtime.other_topic_denied\\\", \\\"realtime.own_topic_allowed\\\", \\\"realtime.post_topic_friend\\\", \\\"removed.private_group_denied\\\", \\\"roles.self_escalation_denied\\\", \\\"settings.owner_patch\\\", \\\"share.author_shell\\\", \\\"storage.auth_get_policy\\\", \\\"storage.direct_delete_denied\\\", \\\"storage.list_deny\\\", \\\"storage.recall_get_deny\\\", \\\"storage.sign_deny\\\", \\\"storage.unreserved_insert_deny\\\", \\\"story.expired_denied\\\", \\\"story.live_friend_read\\\", \\\"suspended.no_posts\\\", \\\"suspended.own_status\\\", \\\"unverified.no_social\\\"]}\"]]}"
+                  },
+                  {
+                      "label":  "07_regression_tests.sql",
+                      "passed":  true,
+                      "output":  "{\"Status\":2,\"SqlState\":\"\",\"Error\":\"\",\"Rows\":[[\"{\\\"passed\\\" : 99, \\\"failed\\\" : 0, \\\"regressions\\\" : 16}\"]]}"
+                  },
+                  {
+                      "label":  "3 audit04 race patterns",
+                      "passed":  true,
+                      "output":  "[{\"Test\":\"pending_pair_cross_request\",\"Passed\":true,\"ObservedLockOverlap\":true,\"Expected\":\"23505\",\"SqlStates\":[\"23505\"]},{\"Test\":\"message_retry_same_request\",\"Passed\":true,\"ObservedLockOverlap\":true,\"Expected\":\"23505\",\"SqlStates\":[\"23505\"]},{\"Test\":\"reaction_counter_two_writers\",\"Passed\":true,\"ObservedLockOverlap\":true,\"Expected\":\"success\",\"SqlStates\":[]}]"
+                  }
+              ],
+    "portableStopped":  true
+}

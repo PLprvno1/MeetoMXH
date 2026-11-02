@@ -1,0 +1,74 @@
+﻿{
+    "date":  "2026-11-02T15:05:35.2606339+07:00",
+    "instrumentationScenarios":  10,
+    "allPassed":  true,
+    "unit":  {
+                 "tests":  10,
+                 "failures":  0,
+                 "lint":  "0 errors, 226 warnings",
+                 "runtimeLegacyDependencyHits":  0
+             },
+    "note":  "UI and Java-client integration coverage differ; no counts added to phases05-07",
+    "scenarios":  [
+                      {
+                          "name":  "Core UI + app clients",
+                          "pass":  true,
+                          "log":  "replay-SupabaseCutoverTest.log",
+                          "evidence":  "replay-cutover-results.json"
+                      },
+                      {
+                          "name":  "Feed RPC/DTO/RecyclerView",
+                          "pass":  true,
+                          "log":  "replay-FeedRenderingTest.log",
+                          "evidence":  "replay-feed-rendering-results.json"
+                      },
+                      {
+                          "name":  "Process death encrypted restore",
+                          "pass":  true,
+                          "log":  "replay-SessionRestoreTest.log",
+                          "evidence":  "replay-session-restore-results.json"
+                      },
+                      {
+                          "name":  "PKCE password recovery UI",
+                          "pass":  true,
+                          "log":  "replay-RecoveryTest.log",
+                          "evidence":  "replay-recovery-results.json"
+                      },
+                      {
+                          "name":  "Media and social/group contracts",
+                          "pass":  true,
+                          "log":  "replay-MediaAndMessengerTest.log",
+                          "evidence":  "replay-media-messenger-results.json"
+                      },
+                      {
+                          "name":  "History catchup and older page",
+                          "pass":  true,
+                          "log":  "replay-ChatHistoryTest.log",
+                          "evidence":  "replay-history-results.json"
+                      },
+                      {
+                          "name":  "JWT/actor/private WS security",
+                          "pass":  true,
+                          "log":  "replay-ClientSecurityTest.log",
+                          "evidence":  "replay-client-security-results.json"
+                      },
+                      {
+                          "name":  "Actual network loss/retry UI and outbox",
+                          "pass":  true,
+                          "log":  "device-network.log",
+                          "evidence":  "network-recovery-results.json"
+                      },
+                      {
+                          "name":  "Comment/reply/delete component UI",
+                          "pass":  true,
+                          "log":  "device-comments-ui.log",
+                          "evidence":  "comments-ui-results.json"
+                      },
+                      {
+                          "name":  "Actual JWT expiry and revoke",
+                          "pass":  true,
+                          "log":  "device-expiry.log",
+                          "evidence":  "expiry-results.json"
+                      }
+                  ]
+}

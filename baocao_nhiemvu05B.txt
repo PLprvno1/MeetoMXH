@@ -1,0 +1,92 @@
+BÁO CÁO NHIỆM VỤ 05B — SUPABASE LOCAL AUTH/PROFILE INTEGRATION
+Ngày 01/11/2026, Asia/Bangkok. Workspace F:\MeetoMXH.
+
+KẾT LUẬN
+PASS phạm vi nhiệm vụ 05B: SUPABASE LOCAL INTEGRATION TESTED cho foundation và Auth/Profile. Đã kiểm Auth, JWT, PostgREST, 8 RPC và RLS thật qua Docker. Không STAGING VERIFIED, không PRODUCTION DEPLOYED. Full Phase A theo roadmap vẫn PARTIAL ở media workflow/account deletion/operational gates ngoài phạm vi 05B; không triển khai Phase B/C/D/E.
+
+1. DOCKER VÀ CLI
+Docker Client/Engine 29.9.2, Compose v5.6.1, context desktop-linux, Linux containers. WSL 2 hoạt động; kernel 6.18.54.1-microsoft-standard-WSL2.
+Docker RAM 8.230.060.032 bytes (~7,7 GiB), host RAM ~15,8 GiB. Trước start C còn ~36,3 GB, F ~190,7 GB; sau tải image C ~30,0 GB, F ~190,7 GB. Các cổng 54320–54330 không có listener trước start.
+CLI chính thức 2.122.0 dùng lại tại %LOCALAPPDATA%\MeetoTools\supabase\2.122.0\supabase.exe. Không sửa PATH/Windows/BIOS/WSL hoặc cài thêm phần mềm hệ thống.
+
+2. SUPABASE LOCAL STACK
+Start bằng CLI từ workspace, loại edge-runtime/logflare/vector để giảm tải. Trước start không container, image hoặc volume cũ; không db reset hoặc xóa dữ liệu cũ.
+Endpoint local: API http://127.0.0.1:54321; DB 127.0.0.1:54322; Studio http://127.0.0.1:54323; Mailpit http://127.0.0.1:54324.
+Auth/Data API/Storage status/Studio/Mailpit HTTP 200; Realtime WebSocket handshake 101. Không kết nối Supabase Cloud, không login/link/deploy remote.
+
+3. CONTAINERS VÀ IMAGE
+Tất cả 9 containers đang chạy; 8 có healthcheck healthy, PostgREST không khai Docker healthcheck nhưng HTTP thực đạt:
+- supabase_db_MeetoMXH: supabase/postgres:17.11.0.006.
+- supabase_auth_MeetoMXH: supabase/gotrue:v2.197.0.
+- supabase_rest_MeetoMXH: supabase/postgrest:v16.5.
+- supabase_kong_MeetoMXH: supabase/kong:2.8.1.
+- supabase_inbucket_MeetoMXH: supabase/mailpit:v1.31.3 (tên container legacy inbucket).
+- supabase_realtime_MeetoMXH: supabase/realtime:v2.147.1.
+- supabase_storage_MeetoMXH: supabase/storage-api:v1.84.19.
+- supabase_pg_meta_MeetoMXH: supabase/postgres-meta:v0.100.0.
+- supabase_studio_MeetoMXH: supabase/studio:2026.10.19-sha-b375769.
+Nguồn public.ecr.aws/supabase chính thức; image IDs SHA-256 và trạng thái ở environment-results.json. Không in Docker env hoặc raw CLI status có keys.
+
+4. MIGRATION
+3 migration 001 foundation /002 authorization /003 auth_profile apply sạch bằng CLI trên Supabase PostgreSQL17.11. SHA-256 manifest giữ nguyên, không cần sửa SQL/RPC/RLS.
+Catalog: 36 bảng public,79 FK,104 CHECK,110 indexes,36 RLS,21 authorization helpers (20 SQL +1 PL/pgSQL),8 public RPC. Không function ứng dụng EXECUTE cho PUBLIC; FUTURE không table/column grants ngoài scope. Owner definer postgres có BYPASSRLS; auth.users thuộc supabase_auth_admin. GoTrue signup thật gọi trigger bootstrap thành công.
+25 catalog/ACL/managed-compatibility assertions đạt. Probes default privileges rollback.
+CLI local dry-run/apply replay upToDate. Thêm đúng 1 migration probe tạm 004 để cố ý SELECT 1/0: CLI lỗi22012, cả DDL lẫn ledger rollback; probe được xóa trong finally. Bàn giao vẫn chỉ3 migrations, manifest khớp. Không dùng IF NOT EXISTS che lỗi hoặc sửa ledger để giả pass.
+
+5. SUPABASE AUTH
+174 assertions HTTP đạt, gồm Auth/RPC/RLS và3 HTTP race tests;7 assertions hết hạn JWT đạt riêng.
+Đăng ký email/password thật; email không hợp lệ400, password yếu422; duplicate signup không tạo session; email chưa verify không login; email confirmation thật qua Mailpit; metadata client không auto-onboard. Password đúng/sai, refresh, logout và recovery email/verify/change-password/login mới/old password deny được kiểm.
+JWT do GoTrue cấp, invalid JWT và signature bị sửa đều401. Không dùng JWT giả để chứng nhận success. Hết hạn: tạm TTL local60, login lấy token thật, trước hạn200, sau exp+35 giây401, refresh cấp token mới200. PostgREST tolerance30 giây; không sửa clock hoặc claims. Finally khôi phục nguyên bytes config TTL3600 và restart giữ volumes.
+Logout thu hồi refresh token; access JWT stateless đã ký vẫn dùng được đến hạn. Suspended/deleting vẫn có thể Auth login, nhưng database chặn data/mutations theo state; không tuyên bố Auth tự ban tài khoản bằng account_status.
+Khôi phục thiếu toàn profile/thiếu profile_private, bootstrap retry cùng UID và giữ onboarding state đã test. Auth email production/SMS/deep link Android chưa được chứng nhận.
+
+6. TÁM RPC QUA POSTGREST VÀ JWT THẬT
+bootstrap_profile, get_my_profile, complete_onboarding, update_profile, update_profile_private, get_profile, search_profiles, set_block đều có HTTP success tests.
+Mỗi RPC được kiểm thiếu JWT, forged JWT, actor parameter do client tự gửi, unverified account với token thật đã cấp, incomplete hoặc suspended/deleting theo contract. bootstrap/get_my cho wizard hoặc locked envelope2 fields là có chủ đích; complete_onboarding cho incomplete đúng dữ liệu là có chủ đích.
+Input validation, PT403/PT404/PT409/PT422 mapping, retry version ổn định, stale conflict, private/public projections, search block filtering, block/unblock retry và transaction rollback được kiểm. RPC không có input người dùng như bootstrap/get_my được kiểm từ chối actor parameter lạ bằng404 PGRST202.
+3 races HTTP thật: hai update cùng version ->200/409; bootstrap/edit ->200/200; bootstrap cùng UID ->200/200. Operator chỉ giữ Auth row làm barrier; observer thấy2 authenticator connections đồng thời đợi Lock. Final version/state được kiểm.
+
+7. RLS VÀ QUYỀN
+Anonymous denied; JWT hợp lệ đọc dữ liệu theo RLS. Raw private query của user khác trả rỗng; public projection không DOB/gender/settings. Private profile và incomplete placeholder không lộ cho người khác. Block có hiệu lực hai chiều ở get/search.
+Direct writes profile/onboarding/private/status/roles bị403; owner settings PATCH hợp lệ; PATCH settings người khác bị RLS lọc và không đổi dữ liệu. JSON CHECK lỗi23514/HTTP400, rollback cả các column trong request.
+Suspended/deleting raw profiles rỗng, mutation403, bootstrap không tự reactivate. Private schema không exposed; owner-only actor helper không EXECUTE cho client. Không mở rộng grants để test pass.
+
+8. REGRESSION VÀ PHÂN BIỆT EVIDENCE
+- Supabase PG17 managed schemas thật: tái dùng87 SQL assertions Phase A, tất cả đạt; SQL identity/GUC fixtures chỉ là SQL test, không cộng thành HTTP/JWT tests. Adapter thay guard chỉ trong memory, container/catalog/fixed-ID guard rõ ràng; rollback toàn fixtures/schema test_a.
+- PostgreSQL16.11 portable tách biệt:87 Phase A +99 audit04 đạt;3 RPC races +3 audit04 constraint patterns đạt;4 migration controls đạt. Portable finally stop.
+- 25 catalog checks,174 HTTP assertions gồm3 races,7 expiry assertions,actual CLI rollback/replay và6 endpoint checks có evidence riêng. Không cộng59/83/87 tích lũy hoặc các môi trường thành một chứng chỉ production.
+Evidence và scripts tái lập: database_design/validation_phase_05b/. Không sửa evidence lịch sử nhiệm vụ04/05.
+
+9. LỖI PHÁT HIỆN VÀ SỬA
+Không phát hiện lỗi backend nghiêm trọng cần đổi migration/RPC/RLS trong các ca đã chạy. Các lỗi harness đã sửa và chạy lại:
+- Registry429 khi tải GoTrue: CLI retry thành công, không đổi nguồn không rõ.
+- CLI db query prepared/row-returning query không phù hợp DML hoặc multi-statement fixtures. Dùng psql trong container có kiểm nhãn MeetoMXH và exact workdir, ON_ERROR_STOP và transaction.
+- PowerShell stderr/notice từ native CLI bị ErrorAction Stop hiểu thành lỗi: capture riêng, kiểm native exit code.
+- HTTP error parser cũ bỏ code/body và catch che assertion: giữ JSON trong memory để assert code, chỉ xuất nhãn lỗi đã lọc.
+- Invalid email Auth thực trả400, weak password422: sửa kỳ vọng test.
+- JWT exp+3 chưa vượt clock-skew tolerance30 giây: sửa đợi exp+35, token thật sau đó bị401. Đây là hành vi platform, không lỗi RLS.
+- Tên hàm Cli trong script expiry trùng alias Clear-Item: đổi Invoke-LocalCli; finally phục hồi config.
+- Catalog helper cũ giả định tất cả SQL: thực có can_subscribe_topic PL/pgSQL; kiểm đúng21 boolean helpers.
+
+10. FILE THAY ĐỔI
+Sửa supabase/tests/Invoke-AuthProfileHttp.ps1; cập nhật database_design/MEETO_PHASE_A_IMPLEMENTATION.md.
+Tạo supabase/tests/Invoke-ExpiredJwt.ps1; baocao_nhiemvu05B.txt; thư mục database_design/validation_phase_05b/ gồm README, catalogue.sql,5 runner/verification scripts và evidence JSON tương ứng.
+supabase/config.toml chỉ đổi TTL tạm khi test rồi khôi phục nguyên bytes;3 migrations và manifest không đổi. Probe migration004 được tạo/xóa có kiểm soát, không nằm bàn giao.
+Không sửa Android Java/XML/Gradle/local.properties/Firebase/ImgBB, SQL Storage cũ hoặc báo cáo lịch sử. Handoff-checks ghi kiểm hash1175 file được bảo vệ, syntax và UTF-8.
+
+11. GIỚI HẠN
+Storage healthy, ABI allow_any_operation(text[])/operation()/owner_id text có thật; không buckets/media policies ứng dụng. Chưa upload/finalize/cleanup bytes, signed/list/Range/CDN/cache hoặc worker retire.
+Realtime healthy và WebSocket handshake đạt; chưa private channel authorization/publisher/reconnect/delivery hoặc business logic. Chưa bật app-table publication. Trước B/C phải test từng route ABI, owner/operation semantics và private channel settings; không cần đổi thiết kế hiện tại chỉ dựa trên startup checks.
+Chưa SMTP production/SMS, Android reset PKCE/deep-link/session storage, account deletion/retention/reauth/last-admin, load/rate-limit/CAPTCHA/backup restore hoặc staging. Rate-limit behavior không được chứng nhận từ số lượng signup local.
+Users/Mailpit emails tổng hợp giữ trong Docker volumes local để xem lại; không tự xóa Auth accounts hoặc triển khai self-delete. Không dùng production secrets.
+
+12. READINESS
+Nhiệm vụ05B Auth/Profile local: PASS, SUPABASE LOCAL INTEGRATION TESTED.
+Full Phase A roadmap: PARTIAL do media/deletion/operational gates nêu trên; không coi toàn sản phẩm hoàn tất.
+Phase B: nền tảng đủ để review/lập kế hoạch, chưa triển khai hoặc tự mở grants.
+Staging: ứng viên có local evidence; cần chủ dự án xác nhận project rỗng cụ thể, inventory/backup/owners/checksum và integration trên staging. Chưa quyền deploy remote. Production: chưa deploy và chưa nghiệm thu.
+
+13. BƯỚC TIẾP THEO VÀ TRẠNG THÁI CUỐI
+Review artifacts, privacy/retention/media gates; sau đó giao nhiệm vụ staging hoặc B riêng. Chủ dự án tự login/link nếu staging được duyệt; không gửi secrets vào chat/report. Chạy lại HTTP suite và kiểm backup/restore trên staging đã xác nhận.
+Supabase local ĐANG CHẠY với9 containers, TTL3600. PostgreSQL portable ĐÃ DỪNG. Không background portable server. Khi cần dừng stack giữ dữ liệu, dùng CLI stop tại workspace; không tự reset/xóa volumes.
+Chi tiết và lệnh tái lập: database_design/MEETO_PHASE_A_IMPLEMENTATION.md và database_design/validation_phase_05b/README.md.

@@ -76,7 +76,7 @@ public class FriendItemAdapter extends RecyclerView.Adapter<FriendItemAdapter.Fr
 
             if (user.getAvatarUrl() != null && !user.getAvatarUrl().isEmpty()) {
                 Glide.with(binding.ivFriendAvatar.getContext())
-                        .load(user.getAvatarUrl())
+                        .applyDefaultRequestOptions(new com.bumptech.glide.request.RequestOptions().diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.NONE).skipMemoryCache(true)).load(user.getAvatarUrl())
                         .placeholder(R.drawable.ic_home)
                         .error(R.drawable.ic_home)
                         .into(binding.ivFriendAvatar);

@@ -1,201 +1,28 @@
 package com.example.meetomxh;
-
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.Toast;
-
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
+import android.widget.*;
 import androidx.appcompat.app.AppCompatActivity;
-
+import androidx.activity.result.*;
+import androidx.activity.result.contract.ActivityResultContracts;
 import com.bumptech.glide.Glide;
 import com.example.meetomxh.databinding.ActivityCreatePostBinding;
+import com.example.meetomxh.supabase.*;
 import com.example.meetomxh.storage.SupabaseStorage;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.FirebaseFirestore;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-
+import com.example.meetomxh.repositories.FeedRepository;
+import org.json.*;
+import java.util.*;
 public class CreatePostActivity extends AppCompatActivity {
-
-    private ActivityCreatePostBinding binding;
-    private FirebaseAuth mAuth;
-    private FirebaseFirestore db;
-
-    private Uri selectedImageUri;
-    private String visibility = "public"; // "public", "friends", "private"
-    private String authorName = "";
-    private String authorAvatar = "";
-
-    private final ActivityResultLauncher<Intent> imagePickerLauncher = registerForActivityResult(
-            new ActivityResultContracts.StartActivityForResult(),
-            result -> {
-                if (result.getResultCode() == RESULT_OK && result.getData() != null) {
-                    selectedImageUri = result.getData().getData();
-                    binding.layoutImagePreview.setVisibility(View.VISIBLE);
-                    String mime = getContentResolver().getType(selectedImageUri);
-                    if (mime != null && mime.startsWith("image/")) binding.ivSelectedImagePreview.setImageURI(selectedImageUri);
-                    else binding.ivSelectedImagePreview.setImageResource(R.drawable.ic_photo);
-                }
-            }
-    );
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        binding = ActivityCreatePostBinding.inflate(getLayoutInflater());
-        setContentView(binding.getRoot());
-
-        // Dynamic Status Bar WindowInsets padding for top bar safe area
-        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(binding.createPostMainContainer, (v, insets) -> {
-            androidx.core.graphics.Insets statusBarInsets = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.statusBars());
-            int topPadding = Math.max(statusBarInsets.top + 16, (int) (36 * getResources().getDisplayMetrics().density));
-            v.setPadding(v.getPaddingLeft(), topPadding, v.getPaddingRight(), v.getPaddingBottom());
-            return insets;
-        });
-
-        mAuth = FirebaseAuth.getInstance();
-        db = FirebaseFirestore.getInstance();
-
-        FirebaseUser currentUser = mAuth.getCurrentUser();
-        if (currentUser == null) {
-            Toast.makeText(this, "Vui lòng đăng nhập để đăng bài viết", Toast.LENGTH_SHORT).show();
-            finish();
-            return;
-        }
-
-        setupUI(currentUser);
-        loadAuthorDetails(currentUser.getUid());
-    }
-
-    private void setupUI(FirebaseUser currentUser) {
-        binding.btnBack.setOnClickListener(v -> finish());
-
-        binding.btnPickImage.setOnClickListener(v -> {
-            Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-            intent.setType("*/*");
-            intent.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"image/*", "video/*"});
-            intent.addCategory(Intent.CATEGORY_OPENABLE);
-            imagePickerLauncher.launch(intent);
-        });
-
-        binding.btnRemoveImage.setOnClickListener(v -> {
-            selectedImageUri = null;
-            binding.layoutImagePreview.setVisibility(View.GONE);
-        });
-
-        binding.btnAudience.setOnClickListener(v -> {
-            if ("public".equals(visibility)) {
-                visibility = "friends";
-                binding.btnAudience.setText("👥 Bạn bè");
-            } else if ("friends".equals(visibility)) {
-                visibility = "private";
-                binding.btnAudience.setText("🔒 Chỉ mình tôi");
-            } else {
-                visibility = "public";
-                binding.btnAudience.setText("🌎 Công khai");
-            }
-        });
-
-        binding.btnPostSubmit.setOnClickListener(v -> submitPost(currentUser.getUid()));
-    }
-
-    private void loadAuthorDetails(String uid) {
-        db.collection("Users").document(uid)
-                .get()
-                .addOnSuccessListener(document -> {
-                    if (isDestroyed() || isFinishing()) return;
-                    if (document.exists()) {
-                        authorName = document.getString("fullName");
-                        authorAvatar = document.getString("avatarUrl");
-
-                        if (authorName != null && !authorName.isEmpty()) {
-                            binding.tvAuthorName.setText(authorName);
-                        }
-
-                        if (authorAvatar != null && !authorAvatar.isEmpty()) {
-                            Glide.with(this)
-                                    .load(authorAvatar)
-                                    .placeholder(R.drawable.ic_home)
-                                    .into(binding.ivAuthorAvatar);
-                        }
-                    }
-                });
-    }
-
-    private void submitPost(String authorUid) {
-        String content = binding.etPostContent.getText().toString().trim();
-        if (content.isEmpty() && selectedImageUri == null) {
-            Toast.makeText(this, "Vui lòng nhập nội dung hoặc chọn ảnh/video để đăng bài", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        binding.btnPostSubmit.setEnabled(false);
-        binding.btnPostSubmit.setText("Đang đăng...");
-        if (selectedImageUri == null) {
-            savePostToFirestore(authorUid, content, "");
-            return;
-        }
-        SupabaseStorage.upload(getContentResolver(), selectedImageUri, "posts", authorUid, new SupabaseStorage.UploadListener() {
-            @Override public void onSuccess(String mediaUrl) {
-                runOnUiThread(() -> savePostToFirestore(authorUid, content, mediaUrl));
-            }
-            @Override public void onFailure(String errorMsg) {
-                runOnUiThread(() -> {
-                    binding.btnPostSubmit.setEnabled(true);
-                    binding.btnPostSubmit.setText("Đăng");
-                    Toast.makeText(CreatePostActivity.this, "Lỗi tải tệp: " + errorMsg, Toast.LENGTH_SHORT).show();
-                });
-            }
-        });
-    }
-
-    private void savePostToFirestore(String authorUid, String content, String imageUrl) {
-        String postId = db.collection("Posts").document().getId();
-        long now = System.currentTimeMillis();
-
-        List<String> imageUrls = new ArrayList<>();
-        if (!imageUrl.isEmpty()) {
-            imageUrls.add(imageUrl);
-        }
-
-        Map<String, Object> postMap = new HashMap<>();
-        postMap.put("postId", postId);
-        postMap.put("authorUid", authorUid);
-        postMap.put("userName", authorName != null && !authorName.isEmpty() ? authorName : "Thành viên Meeto");
-        postMap.put("userAvatar", authorAvatar != null ? authorAvatar : "");
-        postMap.put("content", content);
-        postMap.put("postImage", imageUrl);
-        postMap.put("imageUrls", imageUrls);
-        String mimeType = selectedImageUri == null ? "" : getContentResolver().getType(selectedImageUri);
-        postMap.put("mediaType", mimeType != null && mimeType.startsWith("video/") ? "video" : (imageUrl.isEmpty() ? "" : "image"));
-        postMap.put("likesCount", 0);
-        postMap.put("commentsCount", 0);
-        postMap.put("sharesCount", 0);
-        postMap.put("type", "normal");
-        postMap.put("originalPostId", "");
-        postMap.put("visibility", visibility);
-        postMap.put("createdAt", now);
-        postMap.put("updatedAt", now);
-
-        db.collection("Posts").document(postId)
-                .set(postMap)
-                .addOnSuccessListener(aVoid -> {
-                    Toast.makeText(CreatePostActivity.this, "Đăng bài viết thành công!", Toast.LENGTH_SHORT).show();
-                    setResult(RESULT_OK);
-                    finish();
-                })
-                .addOnFailureListener(e -> {
-                    binding.btnPostSubmit.setEnabled(true);
-                    binding.btnPostSubmit.setText("Đăng");
-                    Toast.makeText(CreatePostActivity.this, "Đăng bài thất bại: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                });
-    }
-
+ private ActivityCreatePostBinding binding;private final List<Uri> selected=new ArrayList<>();private final List<String> assets=new ArrayList<>();private String audience="public",editingId;private long version;private SupabaseStorage.Transfer transfer;
+ private final ActivityResultLauncher<Intent> picker=registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),r->{if(r.getResultCode()!=RESULT_OK||r.getData()==null)return;Intent data=r.getData();if(data.getClipData()!=null){for(int i=0;i<data.getClipData().getItemCount()&&selected.size()+assets.size()<10;i++)selected.add(data.getClipData().getItemAt(i).getUri());}else if(data.getData()!=null&&selected.size()+assets.size()<10)selected.add(data.getData());preview();});
+ @Override protected void onCreate(Bundle state){super.onCreate(state);binding=ActivityCreatePostBinding.inflate(getLayoutInflater());setContentView(binding.getRoot());if(SessionManager.getInstance().getCurrentUser()==null){finish();return;}editingId=getIntent().getStringExtra("post_id");if(editingId!=null)setComposerReady(false);binding.btnBack.setOnClickListener(v->finish());binding.btnPickImage.setOnClickListener(v->{Intent pick=new Intent(Intent.ACTION_OPEN_DOCUMENT).setType("*/*").addCategory(Intent.CATEGORY_OPENABLE).putExtra(Intent.EXTRA_MIME_TYPES,new String[]{"image/*","video/*"}).putExtra(Intent.EXTRA_ALLOW_MULTIPLE,true);picker.launch(pick);});binding.btnRemoveImage.setOnClickListener(v->{selected.clear();assets.clear();preview();});binding.btnAudience.setOnClickListener(v->new android.app.AlertDialog.Builder(this).setTitle("Quyền xem").setItems(new String[]{"Công khai","Bạn bè","Chỉ mình tôi"},(d,i)->{audience=new String[]{"public","friends","private"}[i];binding.btnAudience.setText(new String[]{"Công khai","Bạn bè","Chỉ mình tôi"}[i]);}).show());binding.btnPostSubmit.setOnClickListener(v->submit());ProfileClient.get(SessionManager.getInstance().uid(),new Api.Callback<com.example.meetomxh.models.User>(){public void success(com.example.meetomxh.models.User u){binding.tvAuthorName.setText(u.getFullName());Glide.with(CreatePostActivity.this).applyDefaultRequestOptions(new com.bumptech.glide.request.RequestOptions().diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.NONE).skipMemoryCache(true)).load(u.getAvatarUrl()).into(binding.ivAuthorAvatar);}public void error(String e){toast(e);}});if(editingId!=null)Api.run(()->RpcClient.object("get_post",Api.obj("p_post_id",editingId)),new Api.Callback<JSONObject>(){public void success(JSONObject p){binding.etPostContent.setText(p.optString("body"));audience=p.optString("audience");version=p.optLong("version");binding.btnAudience.setText("private".equals(audience)?"Chỉ mình tôi":"friends".equals(audience)?"Bạn bè":"Công khai");binding.btnPostSubmit.setText("Lưu thay đổi");setComposerReady(true);JSONArray media=p.optJSONArray("media");if(media!=null)for(int i=0;i<media.length();i++)assets.add(Dto.asset(media.optJSONObject(i).optString("asset_id")));preview();}public void error(String e){toast(e);finish();}});}
+ private void setComposerReady(boolean ready){binding.etPostContent.setEnabled(ready);binding.btnAudience.setEnabled(ready);binding.btnPickImage.setEnabled(ready);binding.btnRemoveImage.setEnabled(ready);binding.btnPostSubmit.setEnabled(ready);}
+ private void preview(){binding.layoutImagePreview.setVisibility(selected.isEmpty()&&assets.isEmpty()?View.GONE:View.VISIBLE);if(!selected.isEmpty())Glide.with(this).applyDefaultRequestOptions(new com.bumptech.glide.request.RequestOptions().diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.NONE).skipMemoryCache(true)).load(selected.get(0)).into(binding.ivSelectedImagePreview);else if(!assets.isEmpty())Glide.with(this).applyDefaultRequestOptions(new com.bumptech.glide.request.RequestOptions().diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.NONE).skipMemoryCache(true)).load(assets.get(0)).into(binding.ivSelectedImagePreview);binding.btnPickImage.setContentDescription("Ảnh/video ("+(selected.size()+assets.size())+"/10)");}
+ private void submit(){String text=binding.etPostContent.getText().toString();if(text.trim().isEmpty()&&selected.isEmpty()&&assets.isEmpty()){toast("Nhập nội dung hoặc chọn ảnh/video.");return;}binding.btnPostSubmit.setEnabled(false);nextUpload(text);}
+ private void nextUpload(String body){if(selected.isEmpty()){save(body);return;}Uri uri=selected.get(0);transfer=SupabaseStorage.upload(getContentResolver(),uri,"posts",SessionManager.getInstance().uid(),new SupabaseStorage.UploadListener(){public void onProgress(int p){binding.btnPostSubmit.setText("Tải lên "+p+"% · chờ xác minh");}public void onSuccess(String ref){assets.add(ref);selected.remove(0);nextUpload(body);}public void onFailure(String e){binding.btnPostSubmit.setEnabled(true);binding.btnPostSubmit.setText("Thử lại");toast(e);}});}
+ private void save(String body){JSONArray ids=new JSONArray();for(String ref:assets)ids.put(Dto.assetId(ref));JSONObject input=Api.obj("p_body",body,"p_audience",audience,"p_assets",ids);String fingerprint=input.toString();Api.run(()->{if(editingId!=null){input.put("p_post_id",editingId).put("p_expected_version",version);return RpcClient.call("edit_post",input);}input.put("p_client_request_id",RequestIds.get("post",fingerprint));Object row=RpcClient.call("create_post",input);RequestIds.complete("post",fingerprint);return row;},new Api.Callback<Object>(){public void success(Object p){FeedRepository.getInstance().refresh();setResult(RESULT_OK);finish();}public void error(String e){binding.btnPostSubmit.setEnabled(true);binding.btnPostSubmit.setText("Thử lại");toast(e);}});}
+ private void toast(String e){if(!isFinishing())Toast.makeText(this,e,Toast.LENGTH_LONG).show();}
+ @Override protected void onDestroy(){if(transfer!=null)transfer.cancel();super.onDestroy();}
 }

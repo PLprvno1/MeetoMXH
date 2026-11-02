@@ -1,6 +1,6 @@
 package com.example.meetomxh.repositories;
 
-/** Small, deterministic pieces of the Firestore user prefix-search contract. */
+/** Small, deterministic pieces of the user prefix-search contract. */
 public final class UserSearchQuery {
     private UserSearchQuery() { }
 

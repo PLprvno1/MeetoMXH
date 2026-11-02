@@ -1,0 +1,42 @@
+{
+  "date": "2026-11-02",
+  "timezone": "Asia/Bangkok",
+  "projectRef": "qjpohzpapiwdrxsionyr",
+  "environment": "Pixel 4 API37 -> Supabase Cloud",
+  "evidenceSource": "Observed instrumentation console results and the linked device/Cloud artifacts; this is an agent-recorded summary, not a generated JUnit XML report.",
+  "instrumentation": [
+    {"suite": "Task11CUiAuditTest", "methods": 6, "result": "PASS", "run": "Part of OK(9 tests) batch"},
+    {"suite": "CommentsUiTest", "methods": 1, "result": "PASS", "run": "Same 9-test batch"},
+    {"suite": "adapters.MessagePresentationTest", "methods": 1, "result": "PASS", "scope": "Local presentation fixture; also passed after sequence/receipt changes"},
+    {"suite": "Task11CNavigationTest", "methods": 1, "result": "PASS", "lastRunSeconds": 37.212, "scope": "Final targeted rerun includes search/empty/rotation/theme after earlier theme failure"},
+    {"suite": "Task11CTwoUserUiTest", "mode": "full social flow before extension", "result": "PASS", "runSeconds": 135.605, "evidence": "two-user-ui-results.json"},
+    {"suite": "Task11CTwoUserUiTest", "mode": "messenger_only=true", "result": "PASS", "runSeconds": 88.546, "evidence": "messenger-ui-results.json", "scope": "Targeted final reply/hide/recall regression; same JUnit method, not another distinct method"},
+    {"suite": "Task11CAuthStorageTest", "methods": 1, "result": "PASS", "runSeconds": 60.076, "evidence": "auth-storage-results.json", "scope": "Includes the B JWT/WS matrix; Storage remains pending"},
+    {"suite": "Task11CGroupUiTest", "methods": 1, "result": "PASS", "runSeconds": 69.75},
+    {"suite": "Task11CRecallUiTest", "methods": 1, "result": "PASS", "scope": "Passed in the later four-method run, including one-line Send label"},
+    {"suite": "CloudNetworkRecoveryTest", "methods": 1, "result": "PASS", "scope": "Passed in that four-method run; the run as a whole failed only Navigation/theme, which was fixed and retested separately"},
+    {"suite": "SessionRestoreTest", "methods": 1, "result": "PASS", "runSeconds": 5.943, "evidence": "session-restore-results.json", "precondition": "Actual adb force-stop before instrumentation"}
+  ],
+  "build": {
+    "debugAppAndInstrumentation": "PASS",
+    "unitTests": 10,
+    "unitFailures": 0,
+    "unitErrors": 0,
+    "lintErrors": 0,
+    "lintWarnings": 228,
+    "releaseBuilt": false,
+    "releaseOrHandoffPackageExported": false
+  },
+  "migrationManifestVerified": 18,
+  "remoteDdlOrConfigurationMutations": false,
+  "newAuthUsers": 0,
+  "knownFindings": {"foundGroups": 14, "fixedGroups": 14, "confirmedUnfixedP0": 0, "confirmedUnfixedP1": 0, "confirmedUnfixedP2": 0},
+  "allFeatureCoverageComplete": false,
+  "mediaVerifier": "BLOCKED",
+  "emailSignupConfirmationRecovery": "NOT RUN",
+  "fullCloudDemoReady": false,
+  "requiresDockerOrLocalBackendWorker": false,
+  "finalSession": "A",
+  "networkHandoff": "network-handoff.json",
+  "cloudHealth": "cloud-health.json"
+}

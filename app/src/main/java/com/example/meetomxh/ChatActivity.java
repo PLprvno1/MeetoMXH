@@ -37,11 +37,11 @@ import com.example.meetomxh.models.ChatMessage;
 import com.example.meetomxh.models.User;
 import com.example.meetomxh.repositories.ChatRepository;
 import com.example.meetomxh.storage.SupabaseStorage;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.ListenerRegistration;
-import com.google.firebase.Timestamp;
+import com.example.meetomxh.supabase.SessionManager;
+import com.example.meetomxh.supabase.SessionUser;
+import com.example.meetomxh.supabase.*;
+import com.example.meetomxh.supabase.Subscription;
+import com.example.meetomxh.supabase.ServerTime;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -56,8 +56,8 @@ public class ChatActivity extends AppCompatActivity {
 
     private ActivityChatBinding binding;
     private ChatRepository chatRepository;
-    private ListenerRegistration messagesRegistration;
-    private ListenerRegistration chatStateRegistration;
+    private int historyLimit=50; private Subscription messagesRegistration;
+    private Subscription chatStateRegistration;
     private ChatMessageAdapter adapter;
     private String currentUid;
     private String chatId;
@@ -70,7 +70,7 @@ public class ChatActivity extends AppCompatActivity {
     private ChatMessage replyTarget;
     private ActivityResultLauncher<PickVisualMediaRequest> imagePickerLauncher;
     private Uri pendingImageUri;
-    private Call activeUploadCall;
+    private SupabaseStorage.Transfer activeUploadCall;
     private String uploadedImageUrl;
     private boolean uploadingImage;
     private boolean followImageAfterSend;
@@ -110,6 +110,7 @@ public class ChatActivity extends AppCompatActivity {
         });
         ViewCompat.requestApplyInsets(binding.getRoot());
         chatRepository = ChatRepository.getInstance();
+        android.widget.Button older=new android.widget.Button(this); older.setText("Tải tin nhắn cũ hơn"); ((android.widget.LinearLayout)binding.getRoot()).addView(older,1); older.setOnClickListener(v->{historyLimit=Math.max(historyLimit,currentMessages.size())+50;removeMessagesListener();attachMessagesListenerIfNeeded();});        android.widget.Button retry=new android.widget.Button(this); retry.setText("Thử gửi lại tin đang chờ");((android.widget.LinearLayout)binding.getRoot()).addView(retry,2);retry.setOnClickListener(v->com.example.meetomxh.supabase.Api.run(()->com.example.meetomxh.supabase.MessageOutbox.retry(chatId),new com.example.meetomxh.supabase.Api.Callback<Integer>(){public void success(Integer count){Toast.makeText(ChatActivity.this,"Đã gửi lại "+count+" tin nhắn",Toast.LENGTH_LONG).show();removeMessagesListener();attachMessagesListenerIfNeeded();}public void error(String error){Toast.makeText(ChatActivity.this,error,Toast.LENGTH_LONG).show();}}));
         imagePickerLauncher = registerForActivityResult(new ActivityResultContracts.PickVisualMedia(), uri -> {
             if (uri == null || binding == null) return;
             pendingImageUri = uri;
@@ -117,7 +118,7 @@ public class ChatActivity extends AppCompatActivity {
             followImageAfterSend = isAtBottom();
             startOrRetryImageSend();
         });
-        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        SessionUser currentUser = SessionManager.getInstance().getCurrentUser();
         currentUid = currentUser == null ? null : currentUser.getUid();
         if (currentUid == null || currentUid.trim().isEmpty()) {
             failAndClose("Bạn cần đăng nhập để mở cuộc trò chuyện.");
@@ -151,7 +152,7 @@ public class ChatActivity extends AppCompatActivity {
             if (uploadingImage) return;
             if (pendingImageUri != null) startOrRetryImageSend();
             else imagePickerLauncher.launch(new PickVisualMediaRequest.Builder()
-                    .setMediaType(ActivityResultContracts.PickVisualMedia.ImageOnly.INSTANCE).build());
+                    .setMediaType(ActivityResultContracts.PickVisualMedia.ImageAndVideo.INSTANCE).build());
         });
         binding.btnCancelImageUpload.setOnClickListener(v -> {
             if (uploadingImage) return;
@@ -239,7 +240,7 @@ public class ChatActivity extends AppCompatActivity {
     private void attachMessagesListenerIfNeeded() {
         if (!started || binding == null || chatId == null || messagesRegistration != null) return;
         binding.progressMessages.setVisibility(hasLoadedMessages ? View.GONE : View.VISIBLE);
-        messagesRegistration = chatRepository.listenToMessages(chatId, new ChatRepository.OnMessagesListener() {
+        messagesRegistration = chatRepository.listenToMessages(chatId, historyLimit, new ChatRepository.OnMessagesListener() {
             @Override
             public void onMessages(List<ChatMessage> messages) {
                 if (binding == null || !started || isFinishing() || isDestroyed()) return;
@@ -302,12 +303,18 @@ public class ChatActivity extends AppCompatActivity {
                     @Override public void onState(Chat chat) {
                         if (binding == null || !started || !listeningChatId.equals(chatId)) return;
                         currentChatState = chat;
+                        if ("group".equals(chat.getType())) {
+                            binding.tvChatTitle.setText(chat.title + ("archived".equals(chat.state) ? " · Đã lưu trữ" : ""));
+                            binding.tvChatTitle.setOnClickListener(v -> ChatControls.show(ChatActivity.this, chat));
+                        }
+                        updateComposerPermissions();
                         String other = otherUid;
                         if (other == null && chat.getParticipants() != null) {
                             for (String participant : chat.getParticipants())
                                 if (participant != null && !participant.equals(currentUid)) other = participant;
                         }
-                        adapter.setOtherParticipantLastReadAt(other == null ? null : chat.getLastReadAt(other));
+                        adapter.setOtherParticipantLastReadSeq("private".equals(chat.getType()) && other != null
+                                ? chat.getLastReadSeq(other) : null);
                         maybeMarkLatestIncomingRead();
                     }
 
@@ -324,6 +331,21 @@ public class ChatActivity extends AppCompatActivity {
             chatStateRegistration = null;
         }
         currentChatState = null;
+    }
+
+    public void refreshConversationState() {
+        if (binding == null || !started) return;
+        removeChatStateListener();
+        updateComposerPermissions();
+        attachChatStateListenerIfNeeded();
+    }
+
+    private void updateComposerPermissions() {
+        if (binding == null) return;
+        boolean active = currentChatState != null && "active".equals(currentChatState.state);
+        binding.btnSendMessage.setEnabled(active && !sending);
+        binding.etMessage.setEnabled(active && !sending);
+        binding.btnAttachImage.setEnabled(active && !uploadingImage);
     }
 
     private void maybeMarkLatestIncomingRead() {
@@ -345,9 +367,7 @@ public class ChatActivity extends AppCompatActivity {
         } else {
             for (ChatMessage message : currentMessages) {
                 if (message == null || message.getMessageId() == null || currentUid.equals(message.getSenderId())) continue;
-                if (latestIncoming == null || (message.getCreatedAt() != null
-                        && (latestIncoming.getCreatedAt() == null
-                        || message.getCreatedAt().compareTo(latestIncoming.getCreatedAt()) > 0))) {
+                if (latestIncoming == null || message.seq > latestIncoming.seq) {
                     latestIncoming = message;
                 }
             }
@@ -357,10 +377,7 @@ public class ChatActivity extends AppCompatActivity {
         String lastReadMessageId = currentChatState.getLastReadMessageIdByUid() == null ? null
                 : currentChatState.getLastReadMessageIdByUid().get(currentUid);
         if (messageId.equals(lastReadMessageId)) return;
-        Timestamp incomingAt = currentChatState.getLastIncomingMessageAtByUid() == null ? null
-                : currentChatState.getLastIncomingMessageAtByUid().get(currentUid);
-        Timestamp lastReadAt = currentChatState.getLastReadAt(currentUid);
-        if (incomingAt != null && lastReadAt != null && incomingAt.compareTo(lastReadAt) <= 0) return;
+        if (latestIncoming.seq > 0 && latestIncoming.seq <= currentChatState.lastReadSeq) return;
         if (readRequestsInFlight.contains(messageId) || readMessagesAcknowledged.contains(messageId)) return;
         readCheckScheduled = true;
         String expectedChatId = chatId;
@@ -388,63 +405,9 @@ public class ChatActivity extends AppCompatActivity {
         });
     }
 
-    private void findOtherParticipant(String id) {
-        FirebaseFirestore.getInstance().collection("Chats").document(id).get()
-                .addOnSuccessListener(snapshot -> {
-                    if (isFinishing() || isDestroyed()) return;
-                    Chat chat = Chat.fromSnapshot(snapshot);
-                    if (chat == null || chat.getParticipants() == null || chat.getParticipants().size() != 2
-                            || !chat.getParticipants().contains(currentUid)) {
-                        failAndClose("Không tìm thấy cuộc trò chuyện hoặc bạn không phải thành viên.");
-                        return;
-                    }
-                    for (String participant : chat.getParticipants()) {
-                        if (!currentUid.equals(participant)) {
-                            otherUid = participant;
-                            loadOtherProfile(otherUid);
-                            return;
-                        }
-                    }
-                    failAndClose("Không tìm thấy người tham gia còn lại.");
-                })
-                .addOnFailureListener(error -> {
-                    if (!isFinishing() && !isDestroyed())
-                        failAndClose("Không thể tải cuộc trò chuyện: " + error.getLocalizedMessage());
-                });
-    }
+    private void findOtherParticipant(String id) {chatRepository.getChat(id,new ChatRepository.OnChatListener(){public void onSuccess(Chat chat){if(isFinishing()||binding==null)return;if("group".equals(chat.getType())){currentChatState=chat;binding.tvChatTitle.setText(chat.title);binding.tvChatTitle.setOnClickListener(v->ChatControls.show(ChatActivity.this,chat));}else for(String participant:chat.getParticipants())if(!participant.equals(currentUid)){otherUid=participant;loadOtherProfile(participant);break;}}public void onError(String e){failAndClose(e);}});}
 
-    private void loadOtherProfile(String uid) {
-        if (uid == null || uid.trim().isEmpty() || currentUid.equals(uid)) {
-            failAndClose("UID người trò chuyện không hợp lệ.");
-            return;
-        }
-        otherUid = uid;
-        binding.tvChatTitle.setText("Người dùng");
-        binding.ivChatAvatar.setImageResource(R.drawable.ic_home);
-        FirebaseFirestore.getInstance().collection("Users").document(uid).get()
-                .addOnSuccessListener(snapshot -> {
-                    if (binding == null || isFinishing() || isDestroyed()) return;
-                    User user = snapshot.exists() ? snapshot.toObject(User.class) : null;
-                    String name = user == null ? null : user.getFullName();
-                    if (name == null || name.trim().isEmpty()) name = "Người dùng";
-                    binding.tvChatTitle.setText(name);
-                    String avatarUrl = user == null ? null : user.getAvatarUrl();
-                    if (avatarUrl == null || avatarUrl.trim().isEmpty()) {
-                        Glide.with(this).clear(binding.ivChatAvatar);
-                        binding.ivChatAvatar.setImageResource(R.drawable.ic_home);
-                    } else {
-                        Glide.with(this).load(avatarUrl)
-                                .placeholder(R.drawable.ic_home)
-                                .error(R.drawable.ic_home)
-                                .into(binding.ivChatAvatar);
-                    }
-                })
-                .addOnFailureListener(error -> {
-                    if (binding == null || isFinishing() || isDestroyed()) return;
-                    binding.tvChatTitle.setText("Người dùng");
-                    binding.ivChatAvatar.setImageResource(R.drawable.ic_home);
-                });
-    }
+    private void loadOtherProfile(String uid) {if(uid==null)return;otherUid=uid;ProfileClient.get(uid,new Api.Callback<User>(){public void success(User user){if(binding==null||isFinishing())return;binding.tvChatTitle.setText(user.getFullName());Glide.with(ChatActivity.this).applyDefaultRequestOptions(new com.bumptech.glide.request.RequestOptions().diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.NONE).skipMemoryCache(true)).load(user.getAvatarUrl()).placeholder(R.drawable.ic_home).into(binding.ivChatAvatar);}public void error(String e){if(binding!=null)binding.tvChatTitle.setText("NgÆ°á»i dÃ¹ng khÃ´ng kháº£ dá»¥ng");}});}
 
     private void sendCurrentMessage() {
         if (sending || binding == null) return;
@@ -472,6 +435,7 @@ public class ChatActivity extends AppCompatActivity {
                 }
                 sending = false;
                 updateSendingState(false);
+                refetchMessages();
                 if (shouldFollowSentMessage) {
                     messageToScrollTo = messageId;
                     int sentPosition = adapter.indexOfMessage(messageId);
@@ -527,7 +491,7 @@ public class ChatActivity extends AppCompatActivity {
 
     private void sendUploadedImageMessage() {
         if (binding == null || uploadingImage || uploadedImageUrl == null || chatId == null) return;
-        if (!uploadedImageUrl.startsWith("https://")) {
+        if (!ChatRepository.isValidStorageImageUrl(uploadedImageUrl)) {
             showImageFailure("Image URL is invalid.");
             return;
         }
@@ -616,40 +580,33 @@ public class ChatActivity extends AppCompatActivity {
         if (pendingSearch != null) searchHandler.removeCallbacks(pendingSearch);
         long generation = ++searchGeneration;
         String needle = query == null ? "" : query.trim();
-        if (needle.isEmpty()) {
+        searchResultAdapter.submit(new ArrayList<>());
+        binding.tvMessageSearchState.setVisibility(View.VISIBLE);
+        binding.rvMessageSearchResults.setVisibility(View.GONE);
+        if (needle.length() < 2 || needle.length() > 100) {
             binding.progressMessageSearch.setVisibility(View.GONE);
-            binding.tvMessageSearchState.setVisibility(View.VISIBLE);
-            binding.tvMessageSearchState.setText(messageLoadError == null
-                    ? "Searches text in the latest 50 messages loaded for this chat."
-                    : "Chat refresh failed: " + messageLoadError);
-            binding.rvMessageSearchResults.setVisibility(View.GONE);
-            searchResultAdapter.submit(new ArrayList<>());
+            binding.tvMessageSearchState.setText("Nhập 2–100 ký tự để tìm trong lịch sử được phép xem.");
             return;
         }
         binding.progressMessageSearch.setVisibility(View.VISIBLE);
-        binding.tvMessageSearchState.setVisibility(View.VISIBLE);
-        binding.tvMessageSearchState.setText("Searching loaded messages…");
-        pendingSearch = () -> {
-            if (binding == null || !searchVisible || generation != searchGeneration || adapter == null) return;
-            List<ChatMessage> results = adapter.searchLoadedTextMessages(needle);
-            binding.progressMessageSearch.setVisibility(View.GONE);
-            searchResultAdapter.submit(results);
-            if (results.isEmpty()) {
-                binding.tvMessageSearchState.setText(messageLoadError == null
-                        ? "No text matches in the loaded chat messages."
-                        : "No match in loaded messages. Chat refresh failed: " + messageLoadError);
-                binding.rvMessageSearchResults.setVisibility(View.GONE);
-            } else {
-                binding.tvMessageSearchState.setText(results.size() + " result(s) · latest 50 loaded messages · text only"
-                        + (messageLoadError == null ? "" : " · refresh failed"));
+        pendingSearch = () -> chatRepository.search(chatId, needle, new ChatRepository.OnMessagesListener() {
+            public void onMessages(List<ChatMessage> rows) {
+                if (binding == null || generation != searchGeneration || !searchVisible) return;
+                binding.progressMessageSearch.setVisibility(View.GONE);
+                searchResultAdapter.submit(rows);
                 binding.rvMessageSearchResults.setVisibility(View.VISIBLE);
+                binding.tvMessageSearchState.setText(rows.isEmpty() ? "Không có kết quả." : rows.size() + " kết quả (tối đa 100). Chọn để xem nội dung.");
             }
-        };
-        searchHandler.postDelayed(pendingSearch, 180);
+            public void onError(String error) {
+                if (binding == null || generation != searchGeneration) return;
+                binding.progressMessageSearch.setVisibility(View.GONE);
+                binding.tvMessageSearchState.setText(error);
+            }
+        });
+        searchHandler.postDelayed(pendingSearch, 250);
     }
-
     private void onSearchResultSelected(ChatMessage message) {
-        if (message != null) scrollToMessage(message.getMessageId());
+        if (message != null) { new AlertDialog.Builder(this).setMessage(message.getDisplayText()).setPositiveButton("Đến tin nhắn", (d, w) -> scrollToMessage(message.getMessageId())).show(); }
     }
 
     private void showMessageActions(ChatMessage message) {
@@ -662,6 +619,7 @@ public class ChatActivity extends AppCompatActivity {
             labels.add("Sao chép"); actions.add(1);
         }
         boolean mine = currentUid.equals(message.getSenderId());
+        if (mine) { labels.add("Trạng thái giao / đọc"); actions.add(4); }
         if (mine && !message.isRecalled()) { labels.add("Thu hồi tin nhắn"); actions.add(2); }
         labels.add("Xóa khỏi phía tôi"); actions.add(3);
         String[] options = labels.toArray(new String[0]);
@@ -671,6 +629,7 @@ public class ChatActivity extends AppCompatActivity {
                 case 1: copyMessage(message); break;
                 case 2: confirmMessageAction(message, true); break;
                 case 3: confirmMessageAction(message, false); break;
+                case 4: com.example.meetomxh.supabase.ChatControls.receipts(this, chatId, message.getMessageId()); break;
             }
         }).show();
     }
@@ -699,6 +658,7 @@ public class ChatActivity extends AppCompatActivity {
             @Override public void onSuccess() {
                 if (binding == null || isFinishing() || isDestroyed()) return;
                 adapter.setMessageBusy(message.getMessageId(), false);
+                refetchMessages();
                 Toast.makeText(ChatActivity.this, recall ? "Đã thu hồi tin nhắn." : "Đã xóa tin nhắn phía bạn.", Toast.LENGTH_SHORT).show();
             }
             @Override public void onError(String error) {
@@ -719,6 +679,11 @@ public class ChatActivity extends AppCompatActivity {
         binding.etMessage.requestFocus();
     }
 
+    private void refetchMessages() {
+        if (messagesRegistration instanceof com.example.meetomxh.supabase.Observer)
+            ((com.example.meetomxh.supabase.Observer<?>) messagesRegistration).refresh();
+    }
+
     private void clearReplyTarget() {
         replyTarget = null;
         if (binding != null) {
@@ -735,8 +700,7 @@ public class ChatActivity extends AppCompatActivity {
     }
 
     private void updateSendingState(boolean isSending) {
-        binding.btnSendMessage.setEnabled(!isSending);
-        binding.etMessage.setEnabled(!isSending);
+        updateComposerPermissions();
         binding.btnSendMessage.setText(isSending ? "" : "Gửi");
         binding.progressSending.setVisibility(isSending ? View.VISIBLE : View.GONE);
     }

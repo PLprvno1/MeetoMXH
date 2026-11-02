@@ -1,0 +1,138 @@
+﻿[
+    {
+        "path":  "F:\\MeetoMXH\\supabase\\migrations\\20261101000100_foundation.sql",
+        "sha256":  "440E5814B09DC114F6A722878CF7DBC77EA5536BC13FC50674C4A7B865FC71FD"
+    },
+    {
+        "path":  "F:\\MeetoMXH\\supabase\\migrations\\20261101000200_authorization.sql",
+        "sha256":  "B9D433982566BDD17994E91C2362F4E8023815EA68764FA0C1DD225913369CA9"
+    },
+    {
+        "path":  "F:\\MeetoMXH\\supabase\\migrations\\20261101000300_auth_profile.sql",
+        "sha256":  "F8264B9DC2F853D838ED141E4B4038A04964617F3C95B60E933C9A61ECB8B598"
+    },
+    {
+        "path":  "F:\\MeetoMXH\\supabase\\migrations\\20261101000400_social.sql",
+        "sha256":  "4B313E6DEEBF669A9CBD7FA86B9BCDDF00E156E39D7A546985FB54E4ABC0C4DD"
+    },
+    {
+        "path":  "F:\\MeetoMXH\\supabase\\migrations\\20261101000500_media.sql",
+        "sha256":  "67B4D08CE3BCB8BB8C18355604E9CEF0FFE137CC81FECEB436A56AFCF8AE86FB"
+    },
+    {
+        "path":  "F:\\MeetoMXH\\supabase\\migrations\\20261101000600_media_cleanup_safety.sql",
+        "sha256":  "B061C989B976AA7B3B9C7CA9F2889667209C06C6E1E6345A60DF12F35AC8098C"
+    },
+    {
+        "path":  "F:\\MeetoMXH\\supabase\\migrations\\20261101000700_friend_request_receipts.sql",
+        "sha256":  "AE4F80486F4031234076F0C0C13B78F67B38E5D6AAA0FB112945615B78BA2829"
+    },
+    {
+        "path":  "F:\\MeetoMXH\\supabase\\migrations\\20261101000800_media_quota_reservations.sql",
+        "sha256":  "7073AC582976A5877F24659F6A83362BF8D4492A320C290FC2CB81D11405FF15"
+    },
+    {
+        "path":  "F:\\MeetoMXH\\supabase\\migrations\\20261101000900_media_cleanup_fairness.sql",
+        "sha256":  "BA3B54FF4E3D812F8A2E429A747B5D4418D4D0DDA7AD1D00F501A783925F84F5"
+    },
+    {
+        "path":  "F:\\MeetoMXH\\supabase\\migrations\\20261101001000_messenger.sql",
+        "sha256":  "A02D8559A4616A490DEFBCDD0AC51154001D2B5703C5A389960324542D8AE871"
+    },
+    {
+        "path":  "F:\\MeetoMXH\\supabase\\migrations\\20261101001100_chat_media_realtime.sql",
+        "sha256":  "C6698508E35084F9301C523213BD57E84C2AFBE1B74E5FEFF0C6FAF5457F21C0"
+    },
+    {
+        "path":  "F:\\MeetoMXH\\supabase\\migrations\\20261101001200_shared_media_quota.sql",
+        "sha256":  "F496FF35786DE8CA530D5090016FFEFDF9EBAA74FA954A2ED7C3C7DB2518D690"
+    },
+    {
+        "path":  "F:\\MeetoMXH\\supabase\\migrations\\20261101001300_chat_lock_order.sql",
+        "sha256":  "2874F74A57CB1DC9832F029F0C80614E54FFA0ABC765CBBAE9150A69FBAE5710"
+    },
+    {
+        "path":  "F:\\MeetoMXH\\supabase\\migrations\\20261101001400_chat_search_contract.sql",
+        "sha256":  "C75F97ABF95CD85A4AE834E7BAB29B2EF5D4D57C83D83DBCB93824B64B3DF1B5"
+    },
+    {
+        "path":  "F:\\MeetoMXH\\supabase\\migrations\\20261101001500_chat_upload_admin_safety.sql",
+        "sha256":  "53DCAB7CBBE1AE259EDF5315256131BFCCC9890822F78119DD8D5EE7812CE2DD"
+    },
+    {
+        "path":  "F:\\MeetoMXH\\database_design\\validation_phase_07\\catalogue-results.json",
+        "sha256":  "B2ECDA83A437881C2F86D16ED94FDA5CE6157B7C04BB541028528F76CF8E49DF"
+    },
+    {
+        "path":  "F:\\MeetoMXH\\database_design\\validation_phase_07\\catalogue.sql",
+        "sha256":  "BE08BEBF91D410C9E9495AEDC1E914774042F5A04C937D8ACA1A29724B44E167"
+    },
+    {
+        "path":  "F:\\MeetoMXH\\database_design\\validation_phase_07\\environment-results.json",
+        "sha256":  "0A0E29B1D168F799B7B50C3EAAF4C4B670B14DDC9A02EFF2252075D6787373C4"
+    },
+    {
+        "path":  "F:\\MeetoMXH\\database_design\\validation_phase_07\\handoff-checks.json",
+        "sha256":  "F2BA4B3CEEB8DF6E4A551595A41E2E821F017C8414C643C830ED7984B6AD7C30"
+    },
+    {
+        "path":  "F:\\MeetoMXH\\database_design\\validation_phase_07\\http-results.json",
+        "sha256":  "B75175491DA195B63F11A5F40A69030640D1317FDB36C1CD9D2BD69CED0C15BA"
+    },
+    {
+        "path":  "F:\\MeetoMXH\\database_design\\validation_phase_07\\Invoke-Regression.ps1",
+        "sha256":  "5BEBE62C1293A88C1319B65086FC12BD2E00613A0CC85AB9FBF5DF80D9D0DF00"
+    },
+    {
+        "path":  "F:\\MeetoMXH\\database_design\\validation_phase_07\\migration-dry-run-results.json",
+        "sha256":  "E49CADE8994D4A1686839C22DF6244C848ECB08FBE39448008905EAC506B68CB"
+    },
+    {
+        "path":  "F:\\MeetoMXH\\database_design\\validation_phase_07\\migration-replay-results.json",
+        "sha256":  "1478A73342BF87DD1CF4FAECDF0BB5F9780FCDE06A99E458C703CCE8A1259239"
+    },
+    {
+        "path":  "F:\\MeetoMXH\\database_design\\validation_phase_07\\phase-a-http-results.json",
+        "sha256":  "0D1CAA07524222D34F218E4ABD700C6FBDA7C552557F15BAF46617448CCE9407"
+    },
+    {
+        "path":  "F:\\MeetoMXH\\database_design\\validation_phase_07\\phase-a-sql-results.json",
+        "sha256":  "B3B3AE42A19B47DA2C1498AEDDF3A60BF34AD410CBB1F45AAADB7EA9395C5122"
+    },
+    {
+        "path":  "F:\\MeetoMXH\\database_design\\validation_phase_07\\phase-b-http-results.json",
+        "sha256":  "3A6A53ED3DBE2133E754DDC284D84758873A867FB222D0C6C8103621F1038028"
+    },
+    {
+        "path":  "F:\\MeetoMXH\\database_design\\validation_phase_07\\protected-hashes.json",
+        "sha256":  "C31322EF8CAE966C12C45FDEC2C34986A374F6C1A60A0A5238CED9C944A3BC15"
+    },
+    {
+        "path":  "F:\\MeetoMXH\\database_design\\validation_phase_07\\README.md",
+        "sha256":  "5E5315F331B533DC8A745E58B7EBF1B12C11E0C8B39E53FFA9F28EE797BF60DC"
+    },
+    {
+        "path":  "F:\\MeetoMXH\\database_design\\validation_phase_07\\runtime-data-counts.json",
+        "sha256":  "DA97A129EB5165CD544F9DA03B051793A4081C8C9AC9005261A191B32E8C1C5B"
+    },
+    {
+        "path":  "F:\\MeetoMXH\\database_design\\validation_phase_07\\Test-Handoff.ps1",
+        "sha256":  "17A9BBEAA347E853F1379389F71E61D990BEF37DCCB7F8A96AE7CAD421871FAD"
+    },
+    {
+        "path":  "F:\\MeetoMXH\\database_design\\validation_phase_07\\websocket-results.json",
+        "sha256":  "4BC9726CFE7A65A8C062B59416A5F989427D65BD7CB0B805C67EB5D205E545DF"
+    },
+    {
+        "path":  "F:\\MeetoMXH\\baocao_nhiemvu07.txt",
+        "sha256":  "00E2E9219AD8B9DD0F996AC9C1DEBE91B5DD71C00159B236220AE6B61709A75D"
+    },
+    {
+        "path":  "F:\\MeetoMXH\\database_design\\MEETO_PHASE_C_IMPLEMENTATION.md",
+        "sha256":  "7BB0C037B15B7665319CF27946FC703551C497E1C020DEA560BD54BC1BA76C67"
+    },
+    {
+        "path":  "F:\\MeetoMXH\\supabase\\config.toml",
+        "sha256":  "A04BBF1AB7E8B981BBC246E6D5110918392169F42E7ECA8EE7B24ACE6BD7883E"
+    }
+]

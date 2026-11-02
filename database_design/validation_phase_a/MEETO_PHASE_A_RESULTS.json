@@ -1,0 +1,409 @@
+{
+    "date":  "2026-11-01 Asia/Bangkok",
+    "status":  "CODED + POSTGRESQL LOCAL TESTED; SUPABASE HTTP BLOCKED",
+    "engine":  "PostgreSQL 16.11 local; Auth/Storage/Realtime stubs",
+    "phaseA":  {
+                   "fks":  79,
+                   "owner":  "meeto_audit_owner",
+                   "checks":  104,
+                   "ledger":  [
+                                  {
+                                      "sha256":  "440e5814b09dc114f6a722878cf7dbc77ea5536bc13fc50674c4a7b865fc71fd",
+                                      "version":  "20261101000100"
+                                  },
+                                  {
+                                      "sha256":  "b9d433982566bdd17994e91c2362f4e8023815ea68764fa0c1dd225913369ca9",
+                                      "version":  "20261101000200"
+                                  },
+                                  {
+                                      "sha256":  "f8264b9dc2f853d838ed141e4b4038a04964617f3c95b60e933c9a61ecb8b598",
+                                      "version":  "20261101000300"
+                                  }
+                              ],
+                   "tables":  36,
+                   "assertions":  [
+                                      {
+                                          "test":  "36 public application tables",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "RPC partial write rolls back",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "actor spoof internal denied",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "all app tables RLS",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "anon RPC denied",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "anon data denied",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "anonymous identity denied",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "asset guessed rejects",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "asset transition rolled back",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "block accepted",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "block cancels pending request",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "block idempotent",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "block removes both follows",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "block removes friendship",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "blocked search filtered",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "blocked target denied",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "bootstrap idempotent",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "cannot raw DOB",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "cannot raw onboard",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "cannot raw status",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "cannot self role",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "cursor shape validation",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "definer safe path",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "deleting bootstrap no resurrection",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "deleting cannot mutate",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "deleting only status",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "future DOB rejects",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "future column grants also closed",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "future table writes closed",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "incomplete cannot search",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "incomplete self RPC visible",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "infinite DOB rejects",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "internal actor bootstrap not executable",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "missing identity denied",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "new private function closed",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "new public function closed",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "new table closed",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "no app function anon execute",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "no public execute app functions",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "null expected rejects change",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "null name rejects",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "old avatar disabled",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "onboard not editable via retry",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "onboarding committed",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "onboarding retry same state",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "one migration owner",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "other private data never read",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "other private profile unavailable",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "other public profile projection",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "other settings filtered",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "outbox transition rolled back",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "owned ready avatar attach",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "partial bootstrap recovery",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "partial bootstrap state detectable",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "pending attachment",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "pending profile hidden via raw RLS",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "pending raw target filtered",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "prefix search",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "private same state retry",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "private update",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "profile mutation rolled back",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "recovered user cannot bypass onboarding",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "recovery does not reset public profile",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "replace avatar and set cover",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "retire outbox atomic",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "search max limit",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "self block denied",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "settings own update",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "settings unknown keys",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "signup trigger four rows",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "stale onboarding rejects",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "stale update rejects",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "suspended bootstrap no resurrection",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "suspended only status envelope",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "suspended search denied",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "suspended update denied",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "unblock desired state",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "unblock never restores relations",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "under age rejects",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "unverified onboarding denied",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "unverified self recovery allowed",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "update own profile",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "update retry no increment",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "whole missing profile detectable",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "whole profile recovered",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "wrong owner attachment",
+                                          "passed":  true
+                                      },
+                                      {
+                                          "test":  "wrong purpose attachment",
+                                          "passed":  true
+                                      }
+                                  ],
+                   "public_rpc":  8
+               },
+    "phaseAPassed":  87,
+    "phaseAFailed":  0,
+    "audit04AssertionsRerun":  99,
+    "audit04RacePatternsRerun":  3,
+    "phaseARpcRacesPassed":  [
+                                 "optimistic version conflict PT409",
+                                 "bootstrap versus edit serialized",
+                                 "same identity bootstrap retry"
+                             ],
+    "migrationControlsPassed":  [
+                                    "manifest mismatch denied",
+                                    "applied ledger checksum drift denied",
+                                    "failed DDL transaction rolled back",
+                                    "replay zero applied three skipped"
+                                ],
+    "cliVersion":  "2.122.0",
+    "cliChecksumVerified":  true,
+    "localStackBlocker":  "DockerLifecycleInspectError: Docker and Podman missing; WSL not installed",
+    "cliLocalDryRun":  "Config parsed; connection refused 127.0.0.1:54322",
+    "supabaseHttpTestsRun":  false,
+    "stagingVerified":  false,
+    "productionDeployed":  false,
+    "remoteCommandsRun":  false,
+    "handoff":  {
+                    "portablePostgresStopped":  true,
+                    "pgCtlStatusExitCode":  3,
+                    "utf8NonemptyArtifacts":  19,
+                    "powerShellParserErrors":  0,
+                    "migrationManifestVerified":  3,
+                    "androidIntentionallyModified":  false,
+                    "oldReportsIntentionallyModified":  false,
+                    "localPropertiesModified":  false
+                }
+}

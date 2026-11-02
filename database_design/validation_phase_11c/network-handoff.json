@@ -1,0 +1,5 @@
+{
+    "app":  "com.example.meetomxh:allow",
+    "instrumentation":  "com.example.meetomxh.test:allow",
+    "chain3":  "chain:disabled"
+}

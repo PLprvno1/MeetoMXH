@@ -14,16 +14,16 @@ import com.example.meetomxh.models.FriendItem;
 import com.example.meetomxh.models.User;
 import com.example.meetomxh.repositories.FriendRepository;
 import com.example.meetomxh.repositories.ChatRepository;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.FirebaseFirestore;
+import com.example.meetomxh.supabase.SessionManager;
+import com.example.meetomxh.supabase.SessionUser;
+import com.example.meetomxh.supabase.*;
 
 public class ProfileActivity extends AppCompatActivity {
 
     private ActivityProfileBinding binding;
     private FriendRepository friendRepository;
-    private FirebaseFirestore db;
-    private FirebaseAuth mAuth;
+
+    private SessionManager mAuth;
 
     private String targetUid;
     private boolean targetProfileExists;
@@ -36,11 +36,13 @@ public class ProfileActivity extends AppCompatActivity {
         setContentView(binding.getRoot());
 
         friendRepository = FriendRepository.getInstance();
-        db = FirebaseFirestore.getInstance();
-        mAuth = FirebaseAuth.getInstance();
+
+        mAuth = SessionManager.getInstance();
 
         targetUid = getIntent().getStringExtra("target_uid");
-        FirebaseUser currentUser = mAuth.getCurrentUser();
+        binding.btnPrimaryAction.setEnabled(false);
+        binding.btnSecondaryAction.setEnabled(false);
+        SessionUser currentUser = mAuth.getCurrentUser();
 
         if (targetUid == null || targetUid.isEmpty()) {
             if (currentUser != null) {
@@ -56,53 +58,25 @@ public class ProfileActivity extends AppCompatActivity {
         binding.btnMessage.setVisibility(View.GONE);
         binding.btnMessage.setOnClickListener(v -> openChatWithTarget());
 
-        loadUserProfile();
-        loadRelationshipStatus();
+        android.widget.LinearLayout content=(android.widget.LinearLayout)((androidx.core.widget.NestedScrollView)binding.getRoot()).getChildAt(0);
+        android.widget.Button posts=new android.widget.Button(this);posts.setText("Bài viết");content.addView(posts);posts.setOnClickListener(v->startActivity(new Intent(this,UserPostsActivity.class).putExtra("author_id",targetUid)));
+        if(!targetUid.equals(mAuth.uid())){android.widget.Button privacy=new android.widget.Button(this);privacy.setText("Chặn / bỏ chặn");content.addView(privacy);privacy.setOnClickListener(v->new android.app.AlertDialog.Builder(this).setTitle("Quyền riêng tư").setItems(new String[]{"Chặn người dùng","Bỏ chặn người dùng"},(d,i)->Api.run(()->RpcClient.call("set_block",Api.obj("p_target",targetUid,"p_blocked",i==0)),new Api.Callback<Object>(){public void success(Object r){Toast.makeText(ProfileActivity.this,"Đã cập nhật. Bỏ chặn không khôi phục quan hệ cũ.",Toast.LENGTH_LONG).show();finish();}public void error(String e){Toast.makeText(ProfileActivity.this,e,Toast.LENGTH_LONG).show();}})).show());}
+    }
+
+    @Override protected void onResume() {
+        super.onResume();
+        if (targetUid != null) {
+            loadUserProfile();
+            loadRelationshipStatus();
+        }
     }
 
     private void loadUserProfile() {
-        db.collection("Users").document(targetUid)
-                .get()
-                .addOnSuccessListener(document -> {
-                    if (isDestroyed() || isFinishing()) return;
-                    if (document.exists()) {
-                        User user = document.toObject(User.class);
-                        if (user != null) {
-                            targetProfileExists = true;
-                            binding.tvFullName.setText(user.getFullName() != null ? user.getFullName() : user.getEmail());
-                            binding.tvBio.setText(user.getBio() != null && !user.getBio().isEmpty() ? user.getBio() : "Chưa có tiểu sử");
-                            binding.tvGender.setText("Giới tính: " + (user.getGender() != null ? user.getGender() : "Chưa cập nhật"));
-                            binding.tvDob.setText("Ngày sinh: " + (user.getDateOfBirth() != null ? user.getDateOfBirth() : "Chưa cập nhật"));
-
-                            if (user.getAvatarUrl() != null && !user.getAvatarUrl().isEmpty()) {
-                                Glide.with(this)
-                                        .load(user.getAvatarUrl())
-                                        .placeholder(R.drawable.ic_home)
-                                        .error(R.drawable.ic_home)
-                                        .into(binding.imgAvatar);
-                            }
-
-                            if (user.getCoverUrl() != null && !user.getCoverUrl().isEmpty()) {
-                                Glide.with(this)
-                                        .load(user.getCoverUrl())
-                                        .placeholder(R.color.divider_color)
-                                        .into(binding.imgCover);
-                            }
-                            updateMessageButton();
-                        }
-                    } else {
-                        targetProfileExists = false;
-                        updateMessageButton();
-                        Toast.makeText(this, "Người dùng không tồn tại", Toast.LENGTH_SHORT).show();
-                    }
-                })
-                .addOnFailureListener(e ->
-                        Toast.makeText(this, "Lỗi tải thông tin: " + e.getMessage(), Toast.LENGTH_SHORT).show()
-                );
-    }
+ ProfileClient.get(targetUid,new Api.Callback<User>(){public void success(User user){if(isFinishing())return;targetProfileExists=true;binding.tvFullName.setText(user.getFullName());binding.tvBio.setText(user.getBio());binding.tvGender.setText(user.getGender());binding.tvDob.setText(user.getDateOfBirth());binding.tvGender.setVisibility(user.getGender()==null?View.GONE:View.VISIBLE);binding.tvDob.setVisibility(user.getDateOfBirth()==null?View.GONE:View.VISIBLE);Glide.with(ProfileActivity.this).applyDefaultRequestOptions(new com.bumptech.glide.request.RequestOptions().diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.NONE).skipMemoryCache(true)).load(user.getAvatarUrl()).placeholder(R.drawable.ic_home).into(binding.imgAvatar);Glide.with(ProfileActivity.this).applyDefaultRequestOptions(new com.bumptech.glide.request.RequestOptions().diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.NONE).skipMemoryCache(true)).load(user.getCoverUrl()).into(binding.imgCover);updateMessageButton();}public void error(String e){targetProfileExists=false;updateMessageButton();Toast.makeText(ProfileActivity.this,e,Toast.LENGTH_LONG).show();}});
+}
 
     private void loadRelationshipStatus() {
-        FirebaseUser currentUser = mAuth.getCurrentUser();
+        SessionUser currentUser = mAuth.getCurrentUser();
         if (currentUser != null && currentUser.getUid().equals(targetUid)) {
             currentRelationshipStatus = FriendItem.RelationshipStatus.SELF;
             updateActionButtonsUI();
@@ -126,15 +100,15 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void updateActionButtonsUI() {
+        binding.btnPrimaryAction.setEnabled(true);
+        binding.btnSecondaryAction.setEnabled(true);
         updateMessageButton();
         if (currentRelationshipStatus == FriendItem.RelationshipStatus.SELF) {
             binding.btnEditProfile.setVisibility(View.VISIBLE);
             binding.btnPrimaryAction.setVisibility(View.GONE);
             binding.btnSecondaryAction.setVisibility(View.GONE);
 
-            binding.btnEditProfile.setOnClickListener(v ->
-                    Toast.makeText(this, "Mở màn hình Chỉnh sửa trang cá nhân", Toast.LENGTH_SHORT).show()
-            );
+            binding.btnEditProfile.setOnClickListener(v -> startActivity(new Intent(this, ProfileEditActivity.class)));
             return;
         }
 
@@ -174,7 +148,7 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void updateMessageButton() {
-        FirebaseUser currentUser = mAuth.getCurrentUser();
+        SessionUser currentUser = mAuth.getCurrentUser();
         boolean isSelf = currentUser != null && currentUser.getUid().equals(targetUid);
         binding.btnMessage.setVisibility(targetProfileExists && !isSelf ? View.VISIBLE : View.GONE);
     }

@@ -1,0 +1,123 @@
+MEETO — BÁO CÁO NHIỆM VỤ 11C: KIỂM THỬ UI VÀ CHUẨN HÓA LOGIC
+02/11/2026, Asia/Bangkok. Workspace F:\MeetoMXH.
+Supabase Cloud Meeto: qjpohzpapiwdrxsionyr, development/demo, không production.
+
+1. KẾT QUẢ BÀN GIAO
+ANDROID CLOUD LAUNCH: PASS
+AUTH AND SESSION UI: PASS trong các luồng A/B, logout, wrong password, protected screen, Back và restore đã chạy; email flow NOT RUN.
+PROFILE UI: PASS tên/bio/save/cancel/refetch; PARTIAL cho toàn module vì private fields/version-conflict UI chưa bao phủ, avatar/cover BLOCKED.
+FEED/POSTS UI: PASS text create/edit/delete/privacy label/cancel và render; PARTIAL cho toàn bộ pagination/share/detail/restart matrix.
+FRIENDS LOGIC: PASS các chuỗi bình thường A/B đã chạy; PARTIAL cho crossed/double-tap/stale-request UI.
+COMMENTS/REPLIES LOGIC: PASS root/hai reply/edit/delete đúng hàng/giữ sibling/input rỗng; cross-user thread UI sâu hơn PARTIAL.
+REACTIONS LOGIC: PASS like/unlike UI và server state; đổi mọi loại reaction/double-tap/A+B counter UI PARTIAL.
+PRIVATE MESSENGER UI: PASS send/receive/reply/hide/recall/ACK trong scope đã chạy.
+GROUP MESSENGER UI: PASS create/send/rename/archive/restore/promote/leave trong scope đã chạy; toàn bộ membership/race/device matrix PARTIAL.
+REALTIME/RLS: PASS trong matrix A của Task11, matrix B bổ sung 11C và reconnect regression; không chứng nhận mọi threat model.
+NAVIGATION: PASS các đường được liệt kê, gồm search/empty state/Back/rotation/theme.
+NETWORK/SESSION RECOVERY: PASS targeted emulator regressions.
+STORAGE AUTHORIZATION: PARTIAL — pending profile-media fixture đã kiểm thực; chưa có ma trận ready/attached/social/chat/sign/Range/revoke đầy đủ.
+IMAGE/VIDEO: BLOCKED. Không có verifier Cloud, không mark verified/ready, không nghiệm thu media hoàn chỉnh.
+P0 ISSUES REMAINING: 0 lỗi đã xác nhận chưa sửa trong phạm vi khảo sát.
+P1 ISSUES REMAINING: 0 lỗi đã xác nhận chưa sửa trong phạm vi khảo sát.
+P2 ISSUES REMAINING: 0 lỗi hành vi đã xác nhận chưa sửa; lint warnings và khoảng trống coverage vẫn còn, không suy thành zero-defect.
+READY FOR NEXT FEATURE DEVELOPMENT: CONDITIONAL.
+REQUIRES DOCKER OR LOCAL WORKER: NO.
+APK/AAB EXPORTED: NO gói phát hành/bàn giao; chỉ build/cài debug nội bộ phục vụ emulator.
+FULL CLOUD DEMO READY: NO — media, email flow, thiết bị thật và operational gates còn mở.
+
+2. PHẠM VI VÀ BẰNG CHỨNG
+Dùng Pixel 4/API37 và hai tài khoản synthetic hiện có, JWT GoTrue thật. Không tạo Auth users, không gửi email/reset hay đổi mật khẩu. Credentials được cấp vào harness trong memory qua socket loopback ADB forward tạm; không qua arguments instrumentation hoặc file credentials mới. Runner finally gỡ forward. Đây là kênh điều khiển test, không phải worker hoặc dependency của app Cloud; app HTTP/WebSocket vẫn dùng HTTPS/WSS Cloud, không ADB reverse.
+
+Các thao tác UI dùng Espresso trên Activity/Fragment/widget/dialog/RecyclerView thật. Các RPC dùng để setup fixture hoặc đối soát trạng thái được ghi là API-level; không tính chúng thành tap UI. Hai suite có login dùng failure handler rút gọn để tránh dump form chứa credentials. Không ghi email/password/JWT/key vào source hoặc báo cáo. Scan debug app/test artifacts không thấy password/email owner đã cấp; public client key vẫn là cấu hình hợp lệ của Android.
+
+Sự cố diagnostic của phiên: có một lần đọc nguyên attachment yêu cầu đã hiển thị lại thông tin đăng nhập test vốn có trong attachment vào output công cụ. Sau đó các bước cấp credentials/scan chỉ đọc vào memory và xuất kết quả boolean. Không có giá trị credentials được chép vào source, báo cáo hoặc evidence bàn giao; không thay mật khẩu. Không tuyên bố rằng chưa từng có credential xuất hiện trong output phiên.
+
+Không sửa/apply migration 001–018, không tạo migration mới, không sửa Auth/Storage/Realtime settings, không reset/repair/delete DB hay volumes. Manifest cuối xác nhận đủ18 checksum. Cloud ledger SELECT vẫn18. Operator Cloud chỉ SELECT aggregate counts/Cron/ledger; business writes do Android user RPC và một số fixture setup bằng chính user RPC. Không dùng service_role trong Android/harness để thay user business calls.
+
+Không chạy lại toàn bộ tám phương thức Task11. Các lượt sau là targeted UI/regression, có lượt lỗi trước khi sửa hoặc đồng bộ lại harness:
+
+| Suite | Bằng chứng cuối |
+|---|---|
+| Task11CUiAuditTest | 6 phương thức PASS: Profile Editor bio/save/restore/cancel; name+bio trở lại Profile; post create/like/unlike/edit/delete; private editor label/cancel; accepted friend card; private/group composer render+commit. |
+| CommentsUiTest | PASS: UI root, hai sibling replies, xóa đúng reply thứ hai, reply thứ nhất còn, sửa reply còn lại, input rỗng không thêm row. Root/post fixture setup và đối soát là API-level. |
+| Task11CNavigationTest | PASS: future tabs không đổi selected tab sai, Friends/search/empty state/Back/Inbox/Profile card, landscape→portrait, theme toggle/recreate và giữ identity. |
+| Task11CTwoUserUiTest | Full social lượt PASS: UI logout/login A/B, request cancel/decline/accept/unfriend, profile relationship feedback; create privacy bằng UI, visibility kiểm bằng JWT/RPC B. Targeted messenger_only lượt PASS sau sửa gesture: UI A/B reply/send/receive, viewport read ACK, B hide/A vẫn đọc, A recall reply thành tombstone. Hai mode dùng cùng phương thức, không cộng lượt chạy lặp thành số kiểm mới. |
+| Task11CAuthStorageTest | PASS: anonymous protected Activity route Login, wrong password không tạo identity và mở lại nút retry, Back, login A/B; gọi matrix JWT B; pending PNG Storage flow bên dưới. |
+| ClientSecurityTest, chạy trong AuthStorage | B own private topic allow; wrong-user/public/client publish deny; missing/tampered JWT, spoof actor, direct DML, guessed conversation deny. Đây là API/WS matrix, không phải tap UI. A matrix đã có ở Task11. |
+| Task11CGroupUiTest | PASS: UI chọn bạn/tạo nhóm, đổi tên, header cập nhật, archive khóa composer, restore mở composer, roster/promote B, A leave rồi get_conversation bị deny. Chỉ nhóm synthetic mới của lượt này. |
+| Task11CRecallUiTest | PASS: gửi/thu hồi tin của owner qua menu và xác nhận server tombstone; nhãn nút Gửi vừa một dòng. |
+| adapters/MessagePresentationTest | PASS fixture cục bộ: seq20 chưa read khi marker19, read khi20; asset:// reference được render theo loại media và bị ẩn khi recalled. Không phải bytes decode/verifier/Storage success. |
+| CloudNetworkRecoveryTest | PASS rerun có mất mạng thật cho app/test UID, RPC/outbox fail offline, khôi phục RPC/private WS, retry đúng một durable message/outbox clear. Không tạo outage Cloud. |
+| SessionRestoreTest | PASS sau adb force-stop thật: encrypted vault restore, real Cloud RPC/refresh, không plaintext session JSON/actor trong vault. |
+
+Một batch gồm Audit6 + Comments1 + Presentation1 + Navigation1 đạt OK(9 tests). Các targeted sau được chạy riêng khi đường đi tương ứng thay đổi. Không coi bảng trên là một chứng nhận toàn ứng dụng trên một batch duy nhất, không cộng assertions từ Task05–11 vào11C.
+
+Build cuối assembleDebug + assembleDebugAndroidTest + testDebugUnitTest + lintDebug thành công. Unit10, failures0/errors0. Lint có0 errors; số warnings và hashes cuối ở validation_phase_11c/verification-summary.json. Không gọi zero-warning hoặc production-ready.
+
+3. CÁC LỖI/FINDINGS ĐÃ XỬ LÝ
+14 nhóm findings được sửa; phân biệt lỗi tái hiện bằng UI với lỗi tìm qua đọc code. Những mục code review không được mô tả như một sự cố Cloud đã quan sát.
+
+01 [P1, UI] Main Fragment nằm dưới bottom navigation. Nút Logout có trong hierarchy nhưng bị thanh dưới che; nhấn trúng tab Friends. Sửa activity_main bằng constraint vùng Fragment giữa AppBar và bottom navigation. Retest logout thực xóa identity/đến Login; luồng A/B tiếp tục PASS.
+02 [P2, UI + review] Video/Notifications chưa hỗ trợ nhưng vẫn được selected, khác nội dung Fragment; drawer/back có state không đồng bộ. Future tabs trả false sau thông báo; drawer Friends chọn đúng tab; top-level navigation dọn back stack phụ; Back callback được bật lại sau dispatch. Navigation retest PASS.
+03 [P2, review + UI regression] Profile card chưa gắn hành động toàn card, các child clickable tiêu thụ touch ở shortcut. Gắn đường mở profile và bỏ child click interception. Card/Profile navigation PASS.
+04 [P1, UI] Sau save tên/bio ở Editor, Cloud đã đổi nhưng Profile cũ không reload khi quay lại. ProfileActivity/Fragment tải lại khi resume. Test UI trước sửa FAIL, sau sửa PASS; tên/bio cũ được restore.
+05 [P1, delayed-load finding] Editor cho nhập/nhấn save trong khi profile còn tải; callback có thể ghi đè draft hoặc save không có profile. Khóa field/save/picker khi load/save/upload, hiện trạng thái, có tải lại khi cần, hủy callback/upload khi Activity hủy. Save/restore/cancel UI PASS; không chứng nhận mọi process-death draft case.
+06 [P1, review + UI regression] Edit post dùng audience server nhưng nhãn vẫn mặc định public và cho thao tác trước load. Hiển thị đúng audience, nút lưu, khóa composer trước khi load. Private edit label/cancel giữ nguyên body/audience/version PASS.
+07 [P1, UI] Like→unlike nhanh có thể lấy Post model cũ trong khoảng server đã commit nhưng Feed chưa refetch. Khóa nút đang chạy, tải lại đúng get_post, cập nhật model trước khi mở nút. Like/unlike + edit/delete của cùng fixture PASS. Không mở rộng kết luận thành mọi double-tap/concurrent reaction case.
+08 [P1, code review + presentation regression] Receipt summary/ACK dựa timestamp thay vì sequence, dễ sai khi thời gian trùng/khác thứ tự transaction. Giữ marker seq từ server, so seq; group không suy toàn bộ đã đọc từ một peer. Fixture marker19/seq20 và marker20 PASS; actual B viewport ACK/A receipt đối soát PASS. Không tuyên bố đã quan sát false-read trên dữ liệu Cloud cũ.
+09 [P1, code review + presentation regression] Chat send/render còn guard https:// dù client mới dùng asset:// UUID. Dùng validator registry reference hiện có. Fixture mapping PASS; media Cloud vẫn BLOCKED, chưa chứng nhận send/render bytes hoàn chỉnh.
+10 [P1, UI] Rename group commit nhưng header hiện tại không đổi; archived state chưa khóa composer theo state mới. Refetch state sau menu action, bind header/state, khóa/mở composer theo state. Group UI retest PASS cả rename/archive/restore.
+11 [P1, observed latency + review] Send/recall/hide chờ hint hoặc poll mới cập nhật hàng đang xem sau RPC thành công. Refetch Observer hiện có ngay sau mutation; giữ cửa sổ/floor history của observer. UI send/hide/recall retest PASS; đây không phải benchmark latency Cron.
+12 [P1, UI] Nhấn giữ reply mới mở lại bị mất gesture khi receipt update rebind toàn bộ latest outgoing row. Chỉ bind receipt bằng RecyclerView payload, giữ body/listeners; child text/preview/image có cùng action handler. Simple recall đã PASS riêng; targeted reply/hide/recall A/B trước sửa FAIL tại menu, sau sửa PASS.
+13 [P2, screenshot + UI regression] Nút Gửi hẹp khiến chữ xuống nhiều dòng. Giảm padding, một dòng, giữ touch height. Targeted recall kiểm lineCount1 và vẫn gửi/thu hồi PASS.
+14 [P2, UI] Sau rotate/recreate, saved checked-state của theme switch có thể khác cấu hình theme, click không đổi mode như dự kiến. Switch lấy cấu hình theme làm nguồn state, không restore checked-state cũ độc lập. Navigation/theme test trước sửa FAIL, sau sửa PASS.
+
+Các lỗi harness đã phân loại riêng: matcher leo tới toàn RecyclerView gây chọn nhiều hàng; phải scope đúng card. Test nhập trước khi editor tải xong; phải chờ dữ liệu hiển thị. startActivitySync với Login singleTask đang tồn tại có thể timeout; đổi cách launch trong harness. Menu/dialog và thread list cần đợi đúng root/reply view; AlertDialog item đã tự dismiss nên không Back thêm làm đóng Chat. Những lỗi này không được cộng vào14 product findings.
+
+4. MATRIX NGHIỆP VỤ VÀ LOGIC MẠNG XÃ HỘI
+| Module | UI | Backend | A/B logic | Verdict toàn module |
+|---|---|---|---|---|
+| Auth/Session | Các luồng liệt kê PASS | JWT/refresh thật PASS | Đổi actor/logout PASS | PARTIAL vì email/deep-link recovery chưa chạy |
+| Profile | Text editor/cancel/return refresh PASS | Versioned save/restore PASS | Self/peer projection theo contract | PARTIAL private-field conflict/media/device |
+| Feed/Posts | Text lifecycle/privacy label PASS | Same row/version/tombstone PASS | B public/friends/private RPC matrix PASS | PARTIAL share/pagination/detail UI đầy đủ |
+| Friends | Profile actions + accepted list PASS | Pending/cancel/decline/accept/unfriend đối soát PASS | Hai phía đổi account thật | PARTIAL crossed/double/stale UI |
+| Comments | Root/two replies/edit/selected delete/empty PASS | Tombstone/sibling preservation PASS | B comment/API evidence Task11 | PARTIAL cross-user thread UI sâu |
+| Reactions | Like/unlike PASS | my_reaction đối soát PASS | B react/API Task11 | PARTIAL types/count/concurrency UI |
+| Private Messenger | Composer/reply/hide/recall PASS | Durable rows/seq/tombstone/ACK PASS | A/B text và one-sided hide PASS | PARTIAL mọi lifecycle/cache/media/device |
+| Group Messenger | Create/rename/state/role/leave PASS | Role/state/access sau leave PASS | B được promote; A mất quyền nhóm mới | PARTIAL mọi role/race UI |
+| Navigation/Search | Đường đã liệt kê PASS | Prefix search/empty thật | Identity giữ qua recreate | PARTIAL mọi menu/accessibility/font scale |
+| Network/Recovery | Emulator outage/rejoin/restore PASS | Retry commit một lần PASS | Vault actor giữ đúng | PARTIAL thiết bị thật/background dài |
+| Storage | Chưa system-picker pipeline hoàn chỉnh | Pending fixture matrix PASS | A/B pending isolation PASS | PARTIAL ready/attached/Range/revoke |
+| Image/Video | Mapping fixture riêng | Verifier chưa triển khai | Không ready giả | BLOCKED |
+
+Theo năm tiêu chí:
+- Profile: intent sửa tên/bio → form loading/save → versioned Cloud update → profile projection refetch → quay lại Profile thấy tên/bio mới; test restore sau đó. Name propagation ở mọi surface đồng thời chưa chứng nhận.
+- Post: intent đăng/sửa/xóa → UI composer/menu/xác nhận → đúng row/version, delete tombstone → public/friends/private được B kiểm bằng API → Feed refresh và editor cancel được đối soát. Share/detail/paging UI chưa là PASS toàn bộ.
+- Friends: gửi/hủy/từ chối/accept/unfriend → nút profile chuyển trạng thái → ledger quan hệ/pending qua RPC → B nhận/từ chối/accept sau login thật → A quay lại thấy accepted; không tự đổi crossed-send thành auto-accept.
+- Reaction: nhấn Like/bỏ Like → chặn thao tác khi đang cập nhật → lấy my_reaction thật → contract một user/row giữ nguyên → model Feed được thay bằng server projection. Không cộng count cục bộ để che lỗi.
+- Comment: root/hai replies → chọn đúng hàng edit/delete → version/tombstone đúng → sibling/root giữ nguyên → reload thread từ server; không xóa root nhầm để đạt test.
+- Messenger: send/reply → refetch server truth → seq/idempotency hiện có → peer nhận/render rồi ACK → hide một phía không xóa peer, recall scrub body. Summary read dùng seq; group receipt chi tiết vẫn theo từng recipient, không chứng minh con người đã nhìn màn hình.
+
+5. STORAGE, CLOUD JOBS VÀ DỮ LIỆU GIỮ LẠI
+Lượt Storage PASS tạo một intent avatar/profile-media và PNG synthetic2x2, dùng JWT upload chuẩn upsert=false. Anonymous và B không upload được vào path A; B không finalize/read asset A. A upload/preview được trong thời hạn pending15 phút theo migration002; registry vẫn pending và finalize409 vì chưa verify. Public route bị deny. Một số Storage lỗi dùng HTTP400 với envelope statusCode403/404; evidence ghi cả hai, không coi mọi400 hoặc lỗi transport là auth denial.
+
+Kỳ vọng ban đầu của harness sai khi đòi deny owner preview pending. Đã đối chiếu SQL và sửa test theo contract, không sửa RLS để ép PASS. Ready chưa attach là trạng thái khác, chưa tạo fixture ready để thử. Không suy owner preview là asset đã được xác minh. Không chạy verifier, không thêm runtime/dịch vụ hoặc giảm contract ảnh/video. Các pending intents/objects từ lượt lỗi và lượt PASS giữ theo lifecycle, có TTL/orphan cleanup hiện hữu; không SQL DELETE storage.objects hoặc ép purge.
+
+Cloud SELECT snapshot 19:56:27 Bangkok: ledger18, PostgreSQL17.11; trong30 phút có52 chat.invalidate done, max_attempts1 và không có state pending trong cửa sổ đó;5 lượt Cron gần nhất succeeded. Đây là snapshot aggregate, không là đảm bảo toàn bộ queue mọi thời điểm hoặc SLA sub-second. Actual recipient Broadcast/refetch Task11 vẫn là evidence nền; 11C bổ sung WS B authorization/reconnect và current Cron health, không dùng commit/refetch đơn thuần thay bằng chứng Broadcast.
+
+Giữ post/comment/message synthetic có nhãn Task11C/Android UI từ các lượt thử; fixture post mới của scenario delete được tombstone bằng user RPC. Không reset/dọn dữ liệu cũ. Profile tên/bio được restore; không đổi avatar/cover/DOB/gender. A/B cuối accepted. Nhóm synthetic mới của GroupUiTest có scenario promote B rồi A leave, B giữ admin; không thay quản trị nhóm cũ bằng operator. Một số nhóm từ lượt lỗi trước vẫn còn để review.
+
+6. GIỚI HẠN VÀ VIỆC TIẾP THEO
+Đây là nghiệm thu các journeys đã ghi, không kiểm toàn bộ mọi nút/mọi thiết bị. Chưa chạy email signup/confirm/recovery; hai account pre-confirmed không chứng minh luồng email. Chưa test tất cả oversized inputs, double/crossed requests UI, stale accept/version-conflict UI, share UI, deep pagination, mọi counter surface, mọi multi-type reaction, long background/process-death draft, rotation ở mọi Activity hay real-device cache/video. Theme được kiểm trong process/recreate; lưu preference qua process death chưa là scope PASS.
+
+14 findings đã xử lý không có nghĩa tìm hết mọi lỗi P0/P1/P2. Lint/accessibility/hardcoded strings/deprecation debt còn; không quy đổi mỗi warning thành một lỗi runtime. Các future buttons vẫn thông báo chưa hỗ trợ; không đưa dummy feed hoặc Firebase/ImgBB fallback vào app. Community Groups khác Group Messenger.
+
+Thứ tự đề xuất cho nhiệm vụ riêng: (1) chốt verifier Cloud an toàn, email strategy và vận hành/retention/restore/monitoring, không tự mua dịch vụ; (2) real-device/background/cache/accessibility QA, Settings/Privacy bằng RPC đã được duyệt; (3) Moderation/Admin trước mở UGC rộng và Notifications qua outbox/durable worker, không giả device receipt; (4) Saved Posts và Follow với ACL/RPC riêng; (5) Community Groups; (6) Stories sau media/lifecycle/TTL; cải thiện search/paging/index chỉ theo contract và số đo. Không triển khai các subsystem này trong11C.
+
+7. FILES VÀ TRẠNG THÁI CUỐI
+Nguồn/evidence/runners: database_design/validation_phase_11c/README.md; verification-summary.json, source-inventory.json, debug-credential-scan.json, two-user-ui-results.json, messenger-ui-results.json, auth-storage-results.json, client-security-b-results.json, comments-ui-results.json, session-restore-results.json, network-handoff.json và cloud-health.json.
+Java/XML sửa tại Main/Profile/Editor/CreatePost/Feed/Chat, adapters/repositories/models/controls tương ứng; danh sách/hash cụ thể trong inventory. Báo cáo11 và báo cáo/evidence cũ giữ nguyên.
+
+Cuối lượt encrypted session A khôi phục được, app mở Main để review. Emulator network chain3 disabled, app/test package allow; forward test port đã gỡ. Không Docker/PowerShell backend worker, không Cloud schema/config mutation, không nâng plan, không export release APK/AAB. Các limits và phần PARTIAL/BLOCKED ở trên là điều kiện bàn giao, không tự chuyển sang phát triển module tiếp theo.
+
+Bộ duyệt tự động chặn một lệnh gộp kiểm tra cuối và dọn file chẩn đoán Temp với thông báo “blocked by policy”, không nêu lý do cụ thể khác; lệnh đó không chạy. Kiểm tra hashes/JSON/UTF8 được thực hiện riêng thành công. Các file chẩn đoán Temp được giữ, không thử lại hành động dọn đã bị chặn.

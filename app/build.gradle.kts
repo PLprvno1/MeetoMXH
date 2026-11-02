@@ -1,11 +1,10 @@
 import java.util.Properties
 plugins {
     alias(libs.plugins.android.application)
-    id("com.google.gms.google-services")
 }
 
-val localProperties = Properties().apply {
-    val file = rootProject.file("local.properties")
+val debugProperties = Properties().apply {
+    val file = rootProject.file("supabase.debug.properties")
     if (file.exists()) {
         file.inputStream().use { load(it) }
     }
@@ -26,14 +25,18 @@ android {
         versionCode = 1
         versionName = "1.0"
 
-        buildConfigField("String", "SUPABASE_URL", quotedBuildConfigValue(localProperties.getProperty("supabase.url", "")))
-        buildConfigField("String", "SUPABASE_ANON_KEY", quotedBuildConfigValue(localProperties.getProperty("supabase.anonKey", "")))
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
+        debug {
+            buildConfigField("String", "SUPABASE_URL", quotedBuildConfigValue(debugProperties.getProperty("url", "http://10.0.2.2:54321")))
+            buildConfigField("String", "SUPABASE_ANON_KEY", quotedBuildConfigValue(debugProperties.getProperty("anonKey", "")))
+        }
         release {
+            buildConfigField("String", "SUPABASE_URL", quotedBuildConfigValue(providers.environmentVariable("MEETO_RELEASE_URL").getOrElse("")))
+            buildConfigField("String", "SUPABASE_ANON_KEY", quotedBuildConfigValue(providers.environmentVariable("MEETO_RELEASE_ANON_KEY").getOrElse("")))
             optimization {
                 enable = false
             }
@@ -57,12 +60,7 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.espresso.core)
     androidTestImplementation(libs.ext.junit)
-    implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
-    // Firebase Authentication
-    implementation("com.google.firebase:firebase-auth")
-    // Cloud Firestore
-    implementation("com.google.firebase:firebase-firestore")
     // Glide
     implementation("com.github.bumptech.glide:glide:4.16.0")
     // Facebook Shimmer

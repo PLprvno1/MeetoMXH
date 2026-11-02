@@ -1,0 +1,102 @@
+[
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/MainActivity.java",
+        "sha256":  "589D9C4A963BC69F3781BDA20DE7A45A0A1E17A6265F8E53163C96DC1533B8BB"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/ProfileActivity.java",
+        "sha256":  "265974978EB13B19F463FF6EFD80E2712246CCA968FD551DC6A17B61B2203097"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/ProfileEditActivity.java",
+        "sha256":  "784BA3F7E6E61C8ED39C4E80AD7E24447039E085413860778DC380177C35165F"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/CreatePostActivity.java",
+        "sha256":  "42FD9BAA593D0D966BC471ED688FD09553D9ACEC5DF5F92E16E5DB4C5852F07C"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/ChatActivity.java",
+        "sha256":  "69E0BD48192278687F77C337B311DB705E351CD4B58A286E3E6269A05506752E"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/fragments/ProfileFragment.java",
+        "sha256":  "DF776BED49F571B24A2CAF6A3C4781B0DB4CDF1256181C567290DA8944127B6D"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/fragments/FeedFragment.java",
+        "sha256":  "746AC3B0C0D69B3FD572B949D7FF32C6C3E0F18C259BC119F27EA36654D9BAEA"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/adapters/FeedAdapter.java",
+        "sha256":  "E8DBFC8DA1AAAB77C479C0F671CD6AF59EBEA8B7DEDB2A079E90ED8327D632AF"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/adapters/ChatMessageAdapter.java",
+        "sha256":  "86836EFD9845A96F6C0332D2C0D06283440B86AA3E0E2B770059EA9B4F59B7BB"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/repositories/FeedRepository.java",
+        "sha256":  "827E744E561B4E9FF9ED97DEC4392E721C947F82CF2406EE2E73F35923E85071"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/repositories/ChatRepository.java",
+        "sha256":  "1CFC2E904546A20D2DBFDCDFF46D48EDFB0E888A5018FF0539163A846C34FB5A"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/viewmodels/FeedViewModel.java",
+        "sha256":  "422BFA3A660836BD067FBA730F893E58D4BCDBA6A333C4EC1C9F4D67CE4AEF41"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/models/Chat.java",
+        "sha256":  "222787C76BAD4A3A544A15199022B721F705DD400F6CF2ECD98F3AA50353A8EB"
+    },
+    {
+        "path":  "app/src/main/java/com/example/meetomxh/supabase/ChatControls.java",
+        "sha256":  "04256E0DAD995C8281B9D7D677A29C08E22F99E9B83E2F755A4FFEE87A3CCBD4"
+    },
+    {
+        "path":  "app/src/main/res/layout/activity_main.xml",
+        "sha256":  "582579F37AEFE8F5F7E4B11DB36A025C75C2440AB011A369CF7B9F9E79B91C3D"
+    },
+    {
+        "path":  "app/src/main/res/layout/activity_chat.xml",
+        "sha256":  "29B6D5C4BB66DE9044F53CB6A4DC0830110CA1A0169FC127302A12A39B3F151A"
+    },
+    {
+        "path":  "app/src/main/res/layout/fragment_profile.xml",
+        "sha256":  "D8E40515BDBFBB726975C26840684E3964C72E760E688FD6592BEBA257321E6D"
+    },
+    {
+        "path":  "app/src/androidTest/java/com/example/meetomxh/CommentsUiTest.java",
+        "sha256":  "F202BA8B88D20C36E378288052C57866FECF5B7679216C799B04AE5A908741C3"
+    },
+    {
+        "path":  "app/src/androidTest/java/com/example/meetomxh/Task11CUiAuditTest.java",
+        "sha256":  "547C7FA969815D3CAF01BC3702DF2C119A972DEE40F8D87353FFA64899FC1AFF"
+    },
+    {
+        "path":  "app/src/androidTest/java/com/example/meetomxh/Task11CTwoUserUiTest.java",
+        "sha256":  "391FBB2000338641E33C56FD75BF2362BFE28DD263DF56F02D42D4AA29069BCD"
+    },
+    {
+        "path":  "app/src/androidTest/java/com/example/meetomxh/Task11CAuthStorageTest.java",
+        "sha256":  "53E8823BEC4A3D60BD309323E2443B9532F2358FA1D43E9B3DB341E0C81593BA"
+    },
+    {
+        "path":  "app/src/androidTest/java/com/example/meetomxh/Task11CNavigationTest.java",
+        "sha256":  "6C3B461FB16C2E82F3B4B7489D26796EBDD911FC96B3140DEAC7427140774E78"
+    },
+    {
+        "path":  "app/src/androidTest/java/com/example/meetomxh/Task11CGroupUiTest.java",
+        "sha256":  "614ABD92240EDFE710145B204D2B7E7FB5F974B167DBA4AEE66B45AF2AFD852E"
+    },
+    {
+        "path":  "app/src/androidTest/java/com/example/meetomxh/Task11CRecallUiTest.java",
+        "sha256":  "2F6FD7B6949AF7E953BB95FEFB1BDD1FB8A6FCDD310BEC93FFFCA7B84F37FC13"
+    },
+    {
+        "path":  "app/src/androidTest/java/com/example/meetomxh/adapters/MessagePresentationTest.java",
+        "sha256":  "95408C937EF7B91E5F14F6890A0FB9DEFB682E86A715692E581102E8C5630DA5"
+    }
+]

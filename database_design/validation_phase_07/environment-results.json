@@ -1,0 +1,111 @@
+﻿{
+    "date":  "2026-11-01 Asia/Bangkok",
+    "scope":  "LOCAL ONLY; no Cloud connection",
+    "dockerClient":  "Docker version 29.9.2, build a82e528",
+    "dockerServer":  "29.9.2",
+    "dockerCompose":  "Docker Compose version v5.6.1",
+    "dockerContext":  "desktop-linux",
+    "osType":  "linux",
+    "kernel":  "6.18.54.1-microsoft-standard-WSL2",
+    "dockerMemoryBytes":  8230060032,
+    "hostMemoryKiB":  16586160,
+    "hostFreeMemoryKiB":  2789756,
+    "diskFreeBytes":  {
+                          "C":  29423853568,
+                          "F":  190671757312
+                      },
+    "supabaseCli":  "2.122.0",
+    "containers":  [
+                       {
+                           "name":  "supabase_studio_MeetoMXH",
+                           "image":  "public.ecr.aws/supabase/studio:2026.10.19-sha-b375769",
+                           "imageId":  "sha256:7ffd263c9e13b254f2c97b716ff9bccf404b29cbe7886e6652a776b066a9840f",
+                           "running":  true,
+                           "health":  "healthy"
+                       },
+                       {
+                           "name":  "supabase_pg_meta_MeetoMXH",
+                           "image":  "public.ecr.aws/supabase/postgres-meta:v0.100.0",
+                           "imageId":  "sha256:145325b7e39f8ef4931d6e8cfd3f6f4d655de09d72a2ccc96d9513542c2202bd",
+                           "running":  true,
+                           "health":  "healthy"
+                       },
+                       {
+                           "name":  "supabase_storage_MeetoMXH",
+                           "image":  "public.ecr.aws/supabase/storage-api:v1.84.19",
+                           "imageId":  "sha256:a0420573837ee08c0afdc9cd01f90b4b8027579da99e0b9a159fe912ef756c99",
+                           "running":  true,
+                           "health":  "healthy"
+                       },
+                       {
+                           "name":  "supabase_rest_MeetoMXH",
+                           "image":  "public.ecr.aws/supabase/postgrest:v16.5",
+                           "imageId":  "sha256:1347d7552b88f17832912c06afbf7c43209af6eeeb60834b04aae12c9bd9d5cc",
+                           "running":  true,
+                           "health":  null
+                       },
+                       {
+                           "name":  "supabase_realtime_MeetoMXH",
+                           "image":  "public.ecr.aws/supabase/realtime:v2.147.1",
+                           "imageId":  "sha256:b7b0ef84b69d80b9b9c2280c9e9ae0a901175d3035b6b0c3ae22fa6c48bfb272",
+                           "running":  true,
+                           "health":  "healthy"
+                       },
+                       {
+                           "name":  "supabase_inbucket_MeetoMXH",
+                           "image":  "public.ecr.aws/supabase/mailpit:v1.31.3",
+                           "imageId":  "sha256:ed9b00c609e77e99c79b93f1178255ebc271868920f2c69a8d166bd5634ed10d",
+                           "running":  true,
+                           "health":  "healthy"
+                       },
+                       {
+                           "name":  "supabase_auth_MeetoMXH",
+                           "image":  "public.ecr.aws/supabase/gotrue:v2.197.0",
+                           "imageId":  "sha256:1736a63078f5922b198c4cbe50f80ab9a2d3b54fe8b7b6cfb2e9dc5dbbc12c6b",
+                           "running":  true,
+                           "health":  "healthy"
+                       },
+                       {
+                           "name":  "supabase_kong_MeetoMXH",
+                           "image":  "public.ecr.aws/supabase/kong:2.8.1",
+                           "imageId":  "sha256:1b53405d8680a09d6f44494b7990bf7da2ea43f84a258c59717d4539abf09f6d",
+                           "running":  true,
+                           "health":  "healthy"
+                       },
+                       {
+                           "name":  "supabase_db_MeetoMXH",
+                           "image":  "public.ecr.aws/supabase/postgres:17.11.0.006",
+                           "imageId":  "sha256:c141fd17ac6a76c4323e90b3aee8ff1a23d2e89e547c2b963cfadc309c079cc2",
+                           "running":  true,
+                           "health":  "healthy"
+                       }
+                   ],
+    "endpoints":  [
+                      {
+                          "status":  200,
+                          "endpoint":  "/auth/v1/health"
+                      },
+                      {
+                          "status":  200,
+                          "endpoint":  "/rest/v1/"
+                      },
+                      {
+                          "status":  200,
+                          "endpoint":  "/storage/v1/status"
+                      },
+                      {
+                          "status":  200,
+                          "endpoint":  "http://127.0.0.1:54323"
+                      },
+                      {
+                          "status":  200,
+                          "endpoint":  "http://127.0.0.1:54324/api/v1/messages"
+                      },
+                      {
+                          "status":  101,
+                          "endpoint":  "Realtime WebSocket (key omitted)"
+                      }
+                  ],
+    "finalState":  "RUNNING; PostgreSQL portable STOPPED",
+    "jwtExpiry":  3600
+}

@@ -1,0 +1,60 @@
+BÁO CÁO MỚI — NHIỆM VỤ04: KIỂM CHỨNG THIẾT KẾ SUPABASE MEETO
+Ngày01/11/2026, Asia/Bangkok. Workspace F:\MeetoMXH.
+
+1. KẾT LUẬN
+NOT READY để triển khai Supabase project thật.
+DDL/RLS đã được kiểm chứng trên PostgreSQL16.11 local cô lập, có thể giao bước implementation/staging sau review. Chưa có body các RPC nghiệp vụ/worker; chưa chạy Supabase Auth/Storage/Realtime HTTP thực hoặc Android integration.
+
+Giữ nguyên baocao.txt theo yêu cầu người dùng. Báo cáo kỹ thuật chi tiết mới:
+F:\MeetoMXH\database_design\MEETO_PRE_IMPLEMENTATION_AUDIT.md
+
+2. KẾT QUẢ THỰC TẾ
+-36 bảng,267 cột,79 FK,104 CHECK,110 index tổng (50 explicit và60 implicit PK/UNIQUE).
+-36 bảng RLS ON,34 SELECT policy,2 bảng server-only.
+-21 authorization helper, actor-bound/search_path an toàn; mutation RPC không được tính là đã hoàn thành.
+-99 assertion qua (83 baseline+16 regression),0 thất bại ở lần chạy final sạch.
+-3 phép thử2 connection có quan sát lock overlap: pending requests chéo chỉ1 bản ghi, message retry không tạo2 tin cùng request UUID,2 reaction writers giữ counter=2 bằng số rows.
+-EXPLAIN ANALYZE dưới authenticated trên fixture nhỏ đã chạy; không coi là benchmark hay SLA.
+-Guard cả2 draft gốc đã thực sự abortP0001. Rerun bản local không có design guard fail42P07 và rollback; cần version ledger/checksum, không chạy lại CREATE mù.
+
+3. CÁC SỬA ĐỔI CÓ BẰNG CHỨNG
+-Notification preferences: CHECK giới hạn4096 byte, chỉ các loại notification đã định nghĩa, giá trị boolean.
+-Stories: UNIQUE media_asset_id, tránh một asset dùng nhiều Story rồi cleanup chéo.
+-Media read RLS: kiểm purpose/owner phù hợp từng liên kết, tránh ảnh chat đã recall bị đọc lại qua avatar link sai do importer/operator/RPC lỗi. Không tuyên bố đây là exploit hiện có từ Android vì raw attachment writes vốn đã bị chặn.
+-Function default privileges: revoke PUBLIC EXECUTE toàn cục theo migration owner. Per-schema revoke đã được thử và regression chứng minh không đủ.
+-ERD: bỏ4 cạnh FOREIGN giả do parse composite FK; sửa cardinality/nullability;79 cạnh khớp catalogue engine.
+-Roadmap A–E: làm rõ full helper graph cần dependency closure, không cài full bundle khi thiếu bảng; future bảng inert không đồng nghĩa feature hoàn tất.
+-Không đổi tên/thiết kế lại36 bảng chỉ vì phong cách.
+
+4. TÀI LIỆU BÀN GIAO
+Tạo mới:
+-database_design/MEETO_PRE_IMPLEMENTATION_AUDIT.md
+-database_design/MEETO_RPC_IMPLEMENTATION_CATALOG.md (47 nhóm operation; input/output/auth/transaction/lock/error/retry).
+-database_design/validation/ gồm PowerShell/libpq runner, SQL stubs, fixtures/assertions/race scripts, catalogue/EXPLAIN và JSON evidence/README.
+-baocao_nhiemvu04.txt (tệp này).
+
+Cập nhật bản thiết kế:
+-MEETO_SCHEMA_DRAFT.sql, MEETO_RLS_DRAFT.sql
+-MEETO_SCHEMA_DICTIONARY.md, MEETO_ERD.md
+-MEETO_DATABASE_ARCHITECTURE.md, MEETO_RLS_DESIGN.md
+-MEETO_STORAGE_REALTIME.md, MEETO_FIREBASE_MIGRATION.md
+-MEETO_IMPLEMENTATION_ROADMAP.md, MEETO_DESIGN_REVIEW.md
+
+5. GIỚI HẠN VÀ ĐIỀU KIỆN TIẾP THEO
+Local dùng PostgreSQL portable trong Temp, bind127.0.0.1, không Windows service. Auth/Storage/Realtime schemas là stubs tổng hợp, chưa phải service thật; fake users/content chỉ phục vụ kiểm tra local, không dữ liệu Meeto thật.
+Chưa kiểm JWT service, owner assignment/operation helpers trên actual Storage version/HTTP routes, CDN/public URL cũ, channel auth cache và push không FCM, actual migration data/rollback/RPO, load lớn.
+Phải triển khai47 nhóm API/RPC/worker theo phase, kiểm scope/quyền và idempotency thật; không mở direct DML để né.
+Cần chốt public guest, block nhóm chung, history/rejoin chat, xóa tài khoản và admin cuối bị suspend/delete, retention/archives/quota, provider push không Firebase.
+Chỉ sau review, staging integration và kế hoạch recovery được duyệt mới tạo migration triển khai thật. Nhiệm vụ04 không cấp phép deploy production.
+
+6. BẢO TOÀN PROJECT
+Không sửa Java/XML/Manifest/dependencies/local.properties/Firebase code/supabase/storage.sql và baocao.txt.
+Không kết nối/chỉnh sửa Supabase thật, không Firebase Console, không secret/service key production, không deploy/migration remote.
+Portable PostgreSQL được dừng sau kiểm tra. Kết quả đối chiếu hash và kiểm tra UTF-8 được ghi ở cuối báo cáo sau khi xác minh bàn giao.
+
+
+XÁC MINH BÀN GIAO CUỐI NHIỆM VỤ04
+- Đối chiếu SHA-256 đủ131 tệp được bảo vệ:0 thay đổi, gồm baocao.txt và local.properties.
+- Kiểm tra28 tệp thiết kế/validation/báo cáo mới: UTF-8 hợp lệ, không rỗng.
+- PostgreSQL portable đã dừng; pg_ctl status trả3 (không chạy), không còn server thử nghiệm nền.
+- SQL draft gốc vẫn giữ guard DESIGN ONLY và ROLLBACK; không triển khai backend thật.

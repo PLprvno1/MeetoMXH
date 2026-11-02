@@ -1,0 +1,1907 @@
+﻿{
+    "environment":  "LOCAL Supabase Docker; real GoTrue JWT",
+    "passed":  473,
+    "failed":  0,
+    "tests":  [
+                  {
+                      "test":  "signup accepted",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "confirmation required before session",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "unverified login denied",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "signup email verified",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "password login",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "verified access token issued",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "bootstrap with valid JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "metadata did not auto-complete onboarding",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "onboarding with valid JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "signup accepted",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "confirmation required before session",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "unverified login denied",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "signup email verified",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "password login",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "verified access token issued",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "bootstrap with valid JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "metadata did not auto-complete onboarding",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "onboarding with valid JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "signup accepted",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "confirmation required before session",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "unverified login denied",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "signup email verified",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "password login",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "verified access token issued",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "bootstrap with valid JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "metadata did not auto-complete onboarding",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "onboarding with valid JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "signup accepted",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "confirmation required before session",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "unverified login denied",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "signup email verified",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "password login",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "verified access token issued",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "bootstrap with valid JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "metadata did not auto-complete onboarding",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create post",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create post",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create post",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "public post reader",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "nonfriend friends post [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "other private post [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "missing UUID [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "incomplete mutation [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "actor spoof rejected [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "group posting disabled [422]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "empty post [422]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "missing media aborts post transaction [422]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "no partial post survives failed attachment",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "foreign edit [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "foreign delete [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "direct insert denied posts",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "direct insert denied comments",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "direct insert denied post_reactions",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "direct insert denied post_media",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "direct insert denied friend_requests",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "direct insert denied friendships",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "direct insert denied media_assets",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "counter PATCH denied",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "request hash column denied",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "raw private rows filtered",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "self request [422]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send friend request",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "duplicate pair request",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "one pending request per pair",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "crossed request returns incoming",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "cross request direction retained",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "request sender cannot accept [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "unrelated cannot accept [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "missing request accept [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "accept",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "accept retry",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "friend reads friends post",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_friends",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_received_requests",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_sent_requests",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_suggestions",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "unfriend",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "unfriend retry",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "old accepted request cannot restore friend [409]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "unfriend revokes friends post [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "request for decline",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "decline",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "decline retry",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "request for cancel",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "cross receipt fixture",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "cancel",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "cancel retry",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "cross UUID retry after cancel returns original terminal row",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "cross receipt never recreates request",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "cross receipt UUID cannot change target [409]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create lost ACK retry real JWT requests overlap at DB lock",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create lost ACK retry status outcomes 200/200",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "same create ID from concurrent retry",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "request hash conflict [409]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "concurrent likes same user real JWT requests overlap at DB lock",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "concurrent likes same user status outcomes 200/200",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "reaction type switch",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "type switch keeps count",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "concurrent likes different users real JWT requests overlap at DB lock",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "concurrent likes different users status outcomes 200/200",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "read counter",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "two unique users count",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "unset reaction",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "unset retry",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "unset once",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "bad reaction [422]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "private reaction [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create root",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "comment retry",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "comment ID stable",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create reply",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "cross post parent [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "foreign comment edit [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "private comments guessed [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "edit root",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "stale comment edit [409]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "delete root",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "tombstone body redacted",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "delete comment retry",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "replies survive tombstone",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "reply retained",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "depth within eight",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "depth within eight",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "depth within eight",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "depth within eight",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "depth within eight",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "depth within eight",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "depth nine denied [422]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "parent mutation no such parameter [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "share readable original",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "share chain denied [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "private share denied [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "revoke original audience",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "share hidden from third reader after revoke [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "share owner gets unavailable shell",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "shell has no source reference",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "revoked comment creation [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "stale post edit [409]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "publish original again",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "cross friend requests real JWT requests overlap at DB lock",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "cross friend requests status outcomes 200/200",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get pending cross request",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get incoming cross request",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "accept cancel real JWT requests overlap at DB lock",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "accept cancel status outcomes 409/200",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create post",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "delete versus comment real JWT requests overlap at DB lock",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "delete versus comment status outcomes 200/200",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "deleted post read [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "delete post retry",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create post",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create post",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create post",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create post",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create post",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create post",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create post",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create post",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create post",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create post",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create post",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create post",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create post",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create post",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create post",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create post",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create post",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create post",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create post",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create post",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create post",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create post",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create post",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create post",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create post",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create post",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create post",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create post",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create post",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create post",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create post",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create post",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "keyset page",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "page ID never repeated",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "page ID never repeated",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "page ID never repeated",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "page ID never repeated",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "page ID never repeated",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "page ID never repeated",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "page ID never repeated",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "keyset page",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "page ID never repeated",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "page ID never repeated",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "page ID never repeated",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "page ID never repeated",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "page ID never repeated",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "page ID never repeated",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "page ID never repeated",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "keyset page",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "page ID never repeated",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "page ID never repeated",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "page ID never repeated",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "page ID never repeated",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "page ID never repeated",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "page ID never repeated",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "page ID never repeated",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "keyset page",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "page ID never repeated",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "page ID never repeated",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "page ID never repeated",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "page ID never repeated",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "page ID never repeated",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "page ID never repeated",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "page ID never repeated",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "keyset page",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "page ID never repeated",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "page ID never repeated",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "page ID never repeated",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "page ID never repeated",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "all 32 author posts traversed",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "friends feed mode",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "incomplete cursor denied [422]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "overlarge limit denied [422]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "prepare upload",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "prepare upload",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "prepare upload",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "prepare upload",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "future story media denied [422]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "SVG intent denied [422]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "prepare upload",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "profile bucket size limit enforced by HTTP",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "finalize without object [409]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "foreign upload path denied",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "anonymous upload denied",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "PNG upload real bytes",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "video upload real bytes",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "avatar JPEG upload",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "cover WebP upload",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "immutable object duplicate upload denied",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "upsert cannot overwrite pending object",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "other finalize denied [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "worker decoded image and video fixtures",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "same media finalize real JWT requests overlap at DB lock",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "same media finalize status outcomes 200/200",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "finalize verified media",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "finalize verified media",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "finalize verified media",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "ready unattached media denied even owner",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "ordered image and video post",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "attachment order retained",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "authenticated reader downloads media",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "private bucket public URL denied",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "foreign asset attach [422]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "asset cannot attach twice [422]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "signed URL denied",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "batch signing issues no bearer URL",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "client object delete denied",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "client copy denied",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "client move denied",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "authenticated video Range serves 16 bytes",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "object listing reveals no objects",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "revoke media post",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "existing authenticated URL denied after revoke",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "private owner still downloads",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "self for profile media",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "attach avatar cover",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "profile media allowed reader",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "prepare upload",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "replacement upload",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "replacement finalize",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "replace avatar retires old",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "old avatar denied immediately",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "prepare upload",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "declared PNG malformed bytes upload accepted for scan",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "prepare upload",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "bucket rejects disallowed MIME",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "spoofed magic rejected and bytes cleaned",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "rejected media cannot finalize [410]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "delete media parent",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "delete parent denies media before worker",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "delete worker purged linked objects",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "prepare upload",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "orphan upload",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "expired intent [410]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "orphan cleanup deletes physical object",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "prepare upload",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "retry fixture uploaded",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "worker fault injection records retry",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "retry backoff and sanitized failure checkpoint",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "fifth failed delete dead letters",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "expired worker lease reclaimed and Storage delete succeeds",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "Storage API removed object metadata with bytes",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "trusted Storage GET also confirms physical purge",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "prepare upload",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "prepare upload",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "prepare upload",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "prepare upload",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "prepare upload",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "prepare upload",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "prepare upload",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "prepare upload",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "prepare upload",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "prepare upload",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "eleventh pending intent quota [429]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "byte reservations survive failed or deferred deletion [429]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "abandoned intents without objects cleaned idempotently",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "block peer",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "blocked request [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "blocked post read [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "blocked profile media download",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "unblock peer",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "all counters reconcile against actual rows",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "cancel_friend_request missing JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "cancel_friend_request forged JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "cancel_friend_request incomplete identity [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "cancel_friend_request actor parameter forbidden [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "edit_comment missing JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "edit_comment forged JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "edit_comment incomplete identity [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "edit_comment actor parameter forbidden [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_post missing JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_post forged JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_post incomplete identity [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_post actor parameter forbidden [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create_comment missing JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create_comment forged JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create_comment incomplete identity [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create_comment actor parameter forbidden [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "unfriend missing JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "unfriend forged JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "unfriend incomplete identity [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "unfriend actor parameter forbidden [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "list_comments missing JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "list_comments forged JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "list_comments incomplete identity [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "list_comments actor parameter forbidden [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_suggestions missing JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_suggestions forged JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_suggestions incomplete identity [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_suggestions actor parameter forbidden [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "delete_post missing JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "delete_post forged JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "delete_post incomplete identity [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "delete_post actor parameter forbidden [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "delete_comment missing JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "delete_comment forged JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "delete_comment incomplete identity [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "delete_comment actor parameter forbidden [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "prepare_upload missing JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "prepare_upload forged JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "prepare_upload incomplete identity [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "prepare_upload actor parameter forbidden [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_user_posts missing JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_user_posts forged JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_user_posts incomplete identity [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_user_posts actor parameter forbidden [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "decline_friend_request missing JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "decline_friend_request forged JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "decline_friend_request incomplete identity [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "decline_friend_request actor parameter forbidden [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_feed missing JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_feed forged JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_feed incomplete identity [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_feed actor parameter forbidden [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create_post missing JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create_post forged JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create_post incomplete identity [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create_post actor parameter forbidden [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "edit_post missing JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "edit_post forged JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "edit_post incomplete identity [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "edit_post actor parameter forbidden [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_sent_requests missing JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_sent_requests forged JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_sent_requests incomplete identity [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_sent_requests actor parameter forbidden [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send_friend_request missing JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send_friend_request forged JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send_friend_request incomplete identity [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send_friend_request actor parameter forbidden [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "share_post missing JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "share_post forged JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "share_post incomplete identity [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "share_post actor parameter forbidden [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "accept_friend_request missing JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "accept_friend_request forged JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "accept_friend_request incomplete identity [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "accept_friend_request actor parameter forbidden [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_friends missing JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_friends forged JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_friends incomplete identity [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_friends actor parameter forbidden [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_received_requests missing JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_received_requests forged JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_received_requests incomplete identity [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_received_requests actor parameter forbidden [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "set_post_reaction missing JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "set_post_reaction forged JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "set_post_reaction incomplete identity [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "set_post_reaction actor parameter forbidden [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "finalize_upload missing JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "finalize_upload forged JWT",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "finalize_upload incomplete identity [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "finalize_upload actor parameter forbidden [404]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "cancel_friend_request suspended token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "edit_comment suspended token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_post suspended token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create_comment suspended token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "unfriend suspended token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "list_comments suspended token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_suggestions suspended token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "delete_post suspended token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "delete_comment suspended token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "prepare_upload suspended token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_user_posts suspended token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "decline_friend_request suspended token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_feed suspended token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create_post suspended token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "edit_post suspended token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_sent_requests suspended token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send_friend_request suspended token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "share_post suspended token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "accept_friend_request suspended token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_friends suspended token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_received_requests suspended token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "set_post_reaction suspended token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "finalize_upload suspended token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "cancel_friend_request deleting token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "edit_comment deleting token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_post deleting token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create_comment deleting token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "unfriend deleting token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "list_comments deleting token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_suggestions deleting token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "delete_post deleting token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "delete_comment deleting token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "prepare_upload deleting token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_user_posts deleting token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "decline_friend_request deleting token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_feed deleting token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create_post deleting token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "edit_post deleting token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_sent_requests deleting token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send_friend_request deleting token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "share_post deleting token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "accept_friend_request deleting token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_friends deleting token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_received_requests deleting token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "set_post_reaction deleting token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "finalize_upload deleting token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "cancel_friend_request unverified token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "edit_comment unverified token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_post unverified token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create_comment unverified token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "unfriend unverified token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "list_comments unverified token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_suggestions unverified token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "delete_post unverified token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "delete_comment unverified token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "prepare_upload unverified token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_user_posts unverified token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "decline_friend_request unverified token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_feed unverified token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "create_post unverified token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "edit_post unverified token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_sent_requests unverified token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "send_friend_request unverified token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "share_post unverified token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "accept_friend_request unverified token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_friends unverified token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "get_received_requests unverified token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "set_post_reaction unverified token gate [403]",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "finalize_upload unverified token gate [403]",
+                      "passed":  true
+                  }
+              ],
+    "fixtureUsers":  [
+                         "7eefec2e-8d83-4b6c-9264-5fd14adbe8c4",
+                         "36140c9d-d158-4481-b385-ae7a959e1dda",
+                         "d605f815-a021-4814-906f-8e17ad12d454",
+                         "387bb8d4-de9c-4e4d-af5d-8556644ff767"
+                     ],
+    "concurrency":  "7 barriers, real overlapping HTTP JWT requests",
+    "storage":  "synthetic PNG JPEG WebP H264 MP4; decoded by trusted local worker"
+}

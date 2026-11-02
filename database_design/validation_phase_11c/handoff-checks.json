@@ -1,0 +1,15 @@
+{
+    "recordedAt":  "2026-11-02T20:07:55.1151143+07:00",
+    "sourceFiles":  25,
+    "sourceHashCheck":  "PASS",
+    "jsonFilesParsed":  12,
+    "reportUtf8":  "PASS",
+    "reportSha256":  "A1FA01802293EAAE9BC7E88641B69E360151580F917583235F80E004A53D4E38",
+    "migrationChecksumsVerified":  18,
+    "network":  "chain:disabled; app/test:allow",
+    "testForwardRemoved":  true,
+    "finalActivity":  "MainActivity",
+    "finalSession":  "A",
+    "temporaryDiagnosticCleanup":  "Automatic review blocked combined command; temporary diagnostics retained",
+    "credentialDiagnosticIncident":  "Original request attachment was once printed to tool output; no credentials embedded in deliverable source/evidence"
+}

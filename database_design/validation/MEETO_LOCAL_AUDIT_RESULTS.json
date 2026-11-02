@@ -1,0 +1,533 @@
+{
+    "scope":  "PostgreSQL 16.11 local isolated cluster ONLY; managed Auth/Storage/Realtime are SQL stubs. No Supabase service integration or app mutation RPC tested.",
+    "baselineProbes":  {
+                           "unvalidated_preference_accepted":  true,
+                           "recalled_media_readable_via_wrong_avatar_link":  true,
+                           "future_function_public_execute":  true,
+                           "same_story_asset_reused":  true
+                       },
+    "finalAssertions":  {
+                            "passed":  99,
+                            "failed":  0,
+                            "regressions":  16
+                        },
+    "concurrency":  [
+                        {
+                            "test":  "pending_pair_cross_request",
+                            "overlapObserved":  true,
+                            "expectedSQLSTATE":  "23505"
+                        },
+                        {
+                            "test":  "message_retry_same_request",
+                            "overlapObserved":  true,
+                            "expectedSQLSTATE":  "23505"
+                        },
+                        {
+                            "test":  "reaction_counter_two_writers",
+                            "overlapObserved":  true,
+                            "expectedCount":  2
+                        }
+                    ],
+    "catalogue":  {
+                      "version":  "PostgreSQL 16.11, compiled by Visual C++ build 1944, 64-bit",
+                      "tables":  [
+                                     {
+                                         "name":  "account_status",
+                                         "rls":  true,
+                                         "fks":  1,
+                                         "checks":  1,
+                                         "indexes":  1,
+                                         "select_policies":  1
+                                     },
+                                     {
+                                         "name":  "appeals",
+                                         "rls":  true,
+                                         "fks":  3,
+                                         "checks":  2,
+                                         "indexes":  3,
+                                         "select_policies":  1
+                                     },
+                                     {
+                                         "name":  "comment_reactions",
+                                         "rls":  true,
+                                         "fks":  2,
+                                         "checks":  1,
+                                         "indexes":  2,
+                                         "select_policies":  1
+                                     },
+                                     {
+                                         "name":  "comments",
+                                         "rls":  true,
+                                         "fks":  3,
+                                         "checks":  7,
+                                         "indexes":  5,
+                                         "select_policies":  1
+                                     },
+                                     {
+                                         "name":  "conversation_members",
+                                         "rls":  true,
+                                         "fks":  2,
+                                         "checks":  6,
+                                         "indexes":  2,
+                                         "select_policies":  1
+                                     },
+                                     {
+                                         "name":  "conversations",
+                                         "rls":  true,
+                                         "fks":  4,
+                                         "checks":  7,
+                                         "indexes":  4,
+                                         "select_policies":  1
+                                     },
+                                     {
+                                         "name":  "device_subscriptions",
+                                         "rls":  true,
+                                         "fks":  1,
+                                         "checks":  3,
+                                         "indexes":  4,
+                                         "select_policies":  1
+                                     },
+                                     {
+                                         "name":  "event_outbox",
+                                         "rls":  true,
+                                         "fks":  0,
+                                         "checks":  3,
+                                         "indexes":  3,
+                                         "select_policies":  0
+                                     },
+                                     {
+                                         "name":  "friend_requests",
+                                         "rls":  true,
+                                         "fks":  2,
+                                         "checks":  3,
+                                         "indexes":  5,
+                                         "select_policies":  1
+                                     },
+                                     {
+                                         "name":  "friendships",
+                                         "rls":  true,
+                                         "fks":  2,
+                                         "checks":  1,
+                                         "indexes":  2,
+                                         "select_policies":  1
+                                     },
+                                     {
+                                         "name":  "group_join_requests",
+                                         "rls":  true,
+                                         "fks":  3,
+                                         "checks":  2,
+                                         "indexes":  3,
+                                         "select_policies":  1
+                                     },
+                                     {
+                                         "name":  "group_members",
+                                         "rls":  true,
+                                         "fks":  2,
+                                         "checks":  2,
+                                         "indexes":  3,
+                                         "select_policies":  1
+                                     },
+                                     {
+                                         "name":  "groups",
+                                         "rls":  true,
+                                         "fks":  2,
+                                         "checks":  5,
+                                         "indexes":  2,
+                                         "select_policies":  1
+                                     },
+                                     {
+                                         "name":  "hidden_posts",
+                                         "rls":  true,
+                                         "fks":  2,
+                                         "checks":  0,
+                                         "indexes":  1,
+                                         "select_policies":  1
+                                     },
+                                     {
+                                         "name":  "media_assets",
+                                         "rls":  true,
+                                         "fks":  1,
+                                         "checks":  6,
+                                         "indexes":  5,
+                                         "select_policies":  1
+                                     },
+                                     {
+                                         "name":  "message_hidden",
+                                         "rls":  true,
+                                         "fks":  2,
+                                         "checks":  0,
+                                         "indexes":  2,
+                                         "select_policies":  1
+                                     },
+                                     {
+                                         "name":  "message_media",
+                                         "rls":  true,
+                                         "fks":  2,
+                                         "checks":  1,
+                                         "indexes":  3,
+                                         "select_policies":  1
+                                     },
+                                     {
+                                         "name":  "messages",
+                                         "rls":  true,
+                                         "fks":  4,
+                                         "checks":  9,
+                                         "indexes":  8,
+                                         "select_policies":  1
+                                     },
+                                     {
+                                         "name":  "migration_id_map",
+                                         "rls":  true,
+                                         "fks":  0,
+                                         "checks":  1,
+                                         "indexes":  3,
+                                         "select_policies":  0
+                                     },
+                                     {
+                                         "name":  "moderation_actions",
+                                         "rls":  true,
+                                         "fks":  2,
+                                         "checks":  2,
+                                         "indexes":  3,
+                                         "select_policies":  1
+                                     },
+                                     {
+                                         "name":  "moderation_audit",
+                                         "rls":  true,
+                                         "fks":  3,
+                                         "checks":  1,
+                                         "indexes":  3,
+                                         "select_policies":  1
+                                     },
+                                     {
+                                         "name":  "notifications",
+                                         "rls":  true,
+                                         "fks":  2,
+                                         "checks":  2,
+                                         "indexes":  5,
+                                         "select_policies":  1
+                                     },
+                                     {
+                                         "name":  "post_media",
+                                         "rls":  true,
+                                         "fks":  2,
+                                         "checks":  1,
+                                         "indexes":  3,
+                                         "select_policies":  1
+                                     },
+                                     {
+                                         "name":  "post_reactions",
+                                         "rls":  true,
+                                         "fks":  2,
+                                         "checks":  1,
+                                         "indexes":  2,
+                                         "select_policies":  1
+                                     },
+                                     {
+                                         "name":  "posts",
+                                         "rls":  true,
+                                         "fks":  3,
+                                         "checks":  12,
+                                         "indexes":  6,
+                                         "select_policies":  1
+                                     },
+                                     {
+                                         "name":  "profile_private",
+                                         "rls":  true,
+                                         "fks":  1,
+                                         "checks":  2,
+                                         "indexes":  1,
+                                         "select_policies":  1
+                                     },
+                                     {
+                                         "name":  "profiles",
+                                         "rls":  true,
+                                         "fks":  3,
+                                         "checks":  3,
+                                         "indexes":  2,
+                                         "select_policies":  1
+                                     },
+                                     {
+                                         "name":  "reports",
+                                         "rls":  true,
+                                         "fks":  8,
+                                         "checks":  6,
+                                         "indexes":  6,
+                                         "select_policies":  1
+                                     },
+                                     {
+                                         "name":  "saved_posts",
+                                         "rls":  true,
+                                         "fks":  2,
+                                         "checks":  0,
+                                         "indexes":  2,
+                                         "select_policies":  1
+                                     },
+                                     {
+                                         "name":  "stories",
+                                         "rls":  true,
+                                         "fks":  2,
+                                         "checks":  4,
+                                         "indexes":  6,
+                                         "select_policies":  1
+                                     },
+                                     {
+                                         "name":  "story_reactions",
+                                         "rls":  true,
+                                         "fks":  2,
+                                         "checks":  1,
+                                         "indexes":  2,
+                                         "select_policies":  1
+                                     },
+                                     {
+                                         "name":  "story_views",
+                                         "rls":  true,
+                                         "fks":  2,
+                                         "checks":  0,
+                                         "indexes":  2,
+                                         "select_policies":  1
+                                     },
+                                     {
+                                         "name":  "system_roles",
+                                         "rls":  true,
+                                         "fks":  2,
+                                         "checks":  1,
+                                         "indexes":  1,
+                                         "select_policies":  1
+                                     },
+                                     {
+                                         "name":  "user_blocks",
+                                         "rls":  true,
+                                         "fks":  2,
+                                         "checks":  1,
+                                         "indexes":  2,
+                                         "select_policies":  1
+                                     },
+                                     {
+                                         "name":  "user_follows",
+                                         "rls":  true,
+                                         "fks":  2,
+                                         "checks":  1,
+                                         "indexes":  2,
+                                         "select_policies":  1
+                                     },
+                                     {
+                                         "name":  "user_settings",
+                                         "rls":  true,
+                                         "fks":  1,
+                                         "checks":  6,
+                                         "indexes":  1,
+                                         "select_policies":  1
+                                     }
+                                 ],
+                      "fk_index_review":  [
+                                              {
+                                                  "table_name":  "appeals",
+                                                  "constraint_name":  "appeals_appellant_id_fkey",
+                                                  "definition":  "FOREIGN KEY (appellant_id) REFERENCES profiles(id) ON DELETE SET NULL"
+                                              },
+                                              {
+                                                  "table_name":  "conversations",
+                                                  "constraint_name":  "conversations_direct_high_fkey",
+                                                  "definition":  "FOREIGN KEY (direct_high) REFERENCES profiles(id) ON DELETE RESTRICT"
+                                              },
+                                              {
+                                                  "table_name":  "conversations",
+                                                  "constraint_name":  "conversations_direct_low_fkey",
+                                                  "definition":  "FOREIGN KEY (direct_low) REFERENCES profiles(id) ON DELETE RESTRICT"
+                                              },
+                                              {
+                                                  "table_name":  "conversations",
+                                                  "constraint_name":  "conversations_last_message_fk",
+                                                  "definition":  "FOREIGN KEY (last_message_id, id) REFERENCES messages(id, conversation_id) DEFERRABLE INITIALLY DEFERRED"
+                                              },
+                                              {
+                                                  "table_name":  "group_join_requests",
+                                                  "constraint_name":  "group_join_requests_reviewed_by_fkey",
+                                                  "definition":  "FOREIGN KEY (reviewed_by) REFERENCES profiles(id) ON DELETE SET NULL"
+                                              },
+                                              {
+                                                  "table_name":  "group_join_requests",
+                                                  "constraint_name":  "group_join_requests_user_id_fkey",
+                                                  "definition":  "FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE"
+                                              },
+                                              {
+                                                  "table_name":  "groups",
+                                                  "constraint_name":  "groups_cover_fk",
+                                                  "definition":  "FOREIGN KEY (cover_asset_id) REFERENCES media_assets(id) ON DELETE SET NULL"
+                                              },
+                                              {
+                                                  "table_name":  "hidden_posts",
+                                                  "constraint_name":  "hidden_posts_post_id_fkey",
+                                                  "definition":  "FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE"
+                                              },
+                                              {
+                                                  "table_name":  "message_hidden",
+                                                  "constraint_name":  "message_hidden_message_id_conversation_id_fkey",
+                                                  "definition":  "FOREIGN KEY (message_id, conversation_id) REFERENCES messages(id, conversation_id) ON DELETE CASCADE"
+                                              },
+                                              {
+                                                  "table_name":  "messages",
+                                                  "constraint_name":  "messages_reply_story_id_fkey",
+                                                  "definition":  "FOREIGN KEY (reply_story_id) REFERENCES stories(id) ON DELETE SET NULL"
+                                              },
+                                              {
+                                                  "table_name":  "messages",
+                                                  "constraint_name":  "messages_reply_to_message_id_conversation_id_fkey",
+                                                  "definition":  "FOREIGN KEY (reply_to_message_id, conversation_id) REFERENCES messages(id, conversation_id) ON DELETE RESTRICT"
+                                              },
+                                              {
+                                                  "table_name":  "moderation_audit",
+                                                  "constraint_name":  "moderation_audit_action_id_fkey",
+                                                  "definition":  "FOREIGN KEY (action_id) REFERENCES moderation_actions(id) ON DELETE SET NULL"
+                                              },
+                                              {
+                                                  "table_name":  "posts",
+                                                  "constraint_name":  "posts_group_id_fkey",
+                                                  "definition":  "FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE RESTRICT"
+                                              },
+                                              {
+                                                  "table_name":  "posts",
+                                                  "constraint_name":  "posts_original_post_id_fkey",
+                                                  "definition":  "FOREIGN KEY (original_post_id) REFERENCES posts(id) ON DELETE RESTRICT"
+                                              },
+                                              {
+                                                  "table_name":  "profiles",
+                                                  "constraint_name":  "profiles_avatar_fk",
+                                                  "definition":  "FOREIGN KEY (avatar_asset_id) REFERENCES media_assets(id) ON DELETE SET NULL"
+                                              },
+                                              {
+                                                  "table_name":  "profiles",
+                                                  "constraint_name":  "profiles_cover_fk",
+                                                  "definition":  "FOREIGN KEY (cover_asset_id) REFERENCES media_assets(id) ON DELETE SET NULL"
+                                              },
+                                              {
+                                                  "table_name":  "reports",
+                                                  "constraint_name":  "reports_comment_id_fkey",
+                                                  "definition":  "FOREIGN KEY (comment_id) REFERENCES comments(id) ON DELETE SET NULL"
+                                              },
+                                              {
+                                                  "table_name":  "reports",
+                                                  "constraint_name":  "reports_group_id_fkey",
+                                                  "definition":  "FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE SET NULL"
+                                              },
+                                              {
+                                                  "table_name":  "reports",
+                                                  "constraint_name":  "reports_message_id_fkey",
+                                                  "definition":  "FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE SET NULL"
+                                              },
+                                              {
+                                                  "table_name":  "reports",
+                                                  "constraint_name":  "reports_post_id_fkey",
+                                                  "definition":  "FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE SET NULL"
+                                              },
+                                              {
+                                                  "table_name":  "reports",
+                                                  "constraint_name":  "reports_profile_id_fkey",
+                                                  "definition":  "FOREIGN KEY (profile_id) REFERENCES profiles(id) ON DELETE SET NULL"
+                                              },
+                                              {
+                                                  "table_name":  "reports",
+                                                  "constraint_name":  "reports_story_id_fkey",
+                                                  "definition":  "FOREIGN KEY (story_id) REFERENCES stories(id) ON DELETE SET NULL"
+                                              },
+                                              {
+                                                  "table_name":  "saved_posts",
+                                                  "constraint_name":  "saved_posts_post_id_fkey",
+                                                  "definition":  "FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE"
+                                              },
+                                              {
+                                                  "table_name":  "system_roles",
+                                                  "constraint_name":  "system_roles_granted_by_fkey",
+                                                  "definition":  "FOREIGN KEY (granted_by) REFERENCES profiles(id) ON DELETE SET NULL"
+                                              }
+                                          ]
+                  },
+    "smallFixtureExplain":  [
+                                {
+                                    "Plan":  {
+                                                 "Node Type":  "Limit",
+                                                 "Parallel Aware":  false,
+                                                 "Async Capable":  false,
+                                                 "Startup Cost":  0.15,
+                                                 "Total Cost":  8.42,
+                                                 "Plan Rows":  1,
+                                                 "Plan Width":  56,
+                                                 "Actual Startup Time":  10.852,
+                                                 "Actual Total Time":  12.681,
+                                                 "Actual Rows":  4,
+                                                 "Actual Loops":  1,
+                                                 "Shared Hit Blocks":  873,
+                                                 "Shared Read Blocks":  0,
+                                                 "Shared Dirtied Blocks":  0,
+                                                 "Shared Written Blocks":  0,
+                                                 "Local Hit Blocks":  0,
+                                                 "Local Read Blocks":  0,
+                                                 "Local Dirtied Blocks":  0,
+                                                 "Local Written Blocks":  0,
+                                                 "Temp Read Blocks":  0,
+                                                 "Temp Written Blocks":  0,
+                                                 "Plans":  [
+                                                               {
+                                                                   "Node Type":  "Index Scan",
+                                                                   "Parent Relationship":  "Outer",
+                                                                   "Parallel Aware":  false,
+                                                                   "Async Capable":  false,
+                                                                   "Scan Direction":  "Backward",
+                                                                   "Index Name":  "messages_conversation_id_seq_key",
+                                                                   "Relation Name":  "messages",
+                                                                   "Alias":  "messages",
+                                                                   "Startup Cost":  0.15,
+                                                                   "Total Cost":  8.42,
+                                                                   "Plan Rows":  1,
+                                                                   "Plan Width":  56,
+                                                                   "Actual Startup Time":  10.851,
+                                                                   "Actual Total Time":  12.678,
+                                                                   "Actual Rows":  4,
+                                                                   "Actual Loops":  1,
+                                                                   "Index Cond":  "((conversation_id = \u002700000000-0000-0000-0000-000000000401\u0027::uuid) AND (seq \u003c 100))",
+                                                                   "Rows Removed by Index Recheck":  0,
+                                                                   "Filter":  "private.can_read_message(id)",
+                                                                   "Rows Removed by Filter":  0,
+                                                                   "Shared Hit Blocks":  873,
+                                                                   "Shared Read Blocks":  0,
+                                                                   "Shared Dirtied Blocks":  0,
+                                                                   "Shared Written Blocks":  0,
+                                                                   "Local Hit Blocks":  0,
+                                                                   "Local Read Blocks":  0,
+                                                                   "Local Dirtied Blocks":  0,
+                                                                   "Local Written Blocks":  0,
+                                                                   "Temp Read Blocks":  0,
+                                                                   "Temp Written Blocks":  0
+                                                               }
+                                                           ]
+                                             },
+                                    "Planning":  {
+                                                     "Shared Hit Blocks":  231,
+                                                     "Shared Read Blocks":  0,
+                                                     "Shared Dirtied Blocks":  0,
+                                                     "Shared Written Blocks":  0,
+                                                     "Local Hit Blocks":  0,
+                                                     "Local Read Blocks":  0,
+                                                     "Local Dirtied Blocks":  0,
+                                                     "Local Written Blocks":  0,
+                                                     "Temp Read Blocks":  0,
+                                                     "Temp Written Blocks":  0
+                                                 },
+                                    "Planning Time":  4.825,
+                                    "Triggers":  [
+
+                                                 ],
+                                    "Execution Time":  12.729
+                                }
+                            ],
+    "originalDraftGuards":  "Both aborted with P0001 before DDL",
+    "replayWithoutGuard":  "42P07 table profiles already exists; transaction rolled back",
+    "handoff":  {
+                    "protectedFilesCompared":  131,
+                    "protectedFilesChanged":  0,
+                    "utf8NonemptyFiles":  28,
+                    "portableServerStopped":  true,
+                    "pgCtlStatusExitCode":  3
+                }
+}

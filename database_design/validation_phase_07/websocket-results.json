@@ -1,0 +1,169 @@
+﻿{
+    "environment":  "three actual Realtime Phoenix WebSocket clients; private-only local tenant",
+    "passed":  40,
+    "failed":  0,
+    "tests":  [
+                  {
+                      "test":  "A own private user channel joins",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "B own private user channel joins",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "C own private user channel joins",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "nonmember cannot join another user channel",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "raw conversation channel not allowed",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "public channel mode rejected",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "forged JWT private channel rejected",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "missing access JWT private channel rejected",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "worker actually publishes private Broadcast",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "A received business invalidation",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "B received business invalidation",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "C received no private chat event",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "Broadcast payload exactly event ID and generic scope",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "event causes RLS refetch of content",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "client cannot inject Broadcast",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "receive client rejoins after denied send",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "B reconnect private channel authorized",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "missed event loses no durable message",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "valid JWT refresh sent to live channel",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "business event arrives after token refresh",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "real socket delivered newer then older then duplicate",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "client reducer deduplicates event IDs",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "authoritative messages remain sequence ordered",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "read receipt invalidation delivered to sender",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "recall invalidation delivered",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "recall refetch contains no stale body",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "publish fault checkpointed for retry",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "publish retry has bounded backoff and sanitized error",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "publish fifth failure dead letters",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "expired publish lease reclaimed with real delivery",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "queued private event suppressed after block",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "membership change delivered to added user",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "group business event delivered to active member",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "stale socket receives no business event when suspended",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "queued group event suppressed for kicked user",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "removed user receives generic membership clear hint",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "leave invalidation delivered to departing user",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "departed socket gets no new group activity",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "conversation status invalidation delivered",
+                      "passed":  true
+                  },
+                  {
+                      "test":  "invalid token refresh rejected or connection closes",
+                      "passed":  true
+                  }
+              ],
+    "transport":  "Node ws in verified local Docker Storage container -\u003e local Kong:8000",
+    "worker":  "actual local HTTP private Broadcast; fault injection distinguished"
+}

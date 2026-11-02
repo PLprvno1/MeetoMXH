@@ -60,14 +60,14 @@ public class Inbox {
         this.avatarUrl = avatarUrl;
     }
 
-    public String getTimestamp() {
+    public String getServerTime() {
         return timestamp;
     }
 
     public boolean isUnread() { return unread; }
     public void setUnread(boolean unread) { this.unread = unread; }
 
-    public void setTimestamp(String timestamp) {
+    public void setServerTime(String timestamp) {
         this.timestamp = timestamp;
     }
 }

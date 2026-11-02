@@ -1,0 +1,69 @@
+﻿{
+    "date":  "2026-11-02T15:07:10.5776267+07:00",
+    "protectedFiles":  34,
+    "historicalChanges":  0,
+    "configOnlyLocalCallback":  true,
+    "ttl":  3600,
+    "ledger":  15,
+    "publicTables":  36,
+    "authenticatedPublicRpc":  49,
+    "privateOnly":  true,
+    "portableListener55439":  0,
+    "emulatorBoot":  "1",
+    "containers":  [
+                       {
+                           "name":  "supabase_studio_MeetoMXH",
+                           "running":  true,
+                           "health":  "healthy",
+                           "image":  "sha256:7ffd263c9e13b254f2c97b716ff9bccf404b29cbe7886e6652a776b066a9840f"
+                       },
+                       {
+                           "name":  "supabase_pg_meta_MeetoMXH",
+                           "running":  true,
+                           "health":  "healthy",
+                           "image":  "sha256:145325b7e39f8ef4931d6e8cfd3f6f4d655de09d72a2ccc96d9513542c2202bd"
+                       },
+                       {
+                           "name":  "supabase_storage_MeetoMXH",
+                           "running":  true,
+                           "health":  "healthy",
+                           "image":  "sha256:a0420573837ee08c0afdc9cd01f90b4b8027579da99e0b9a159fe912ef756c99"
+                       },
+                       {
+                           "name":  "supabase_rest_MeetoMXH",
+                           "running":  true,
+                           "health":  "no-healthcheck",
+                           "image":  "sha256:1347d7552b88f17832912c06afbf7c43209af6eeeb60834b04aae12c9bd9d5cc"
+                       },
+                       {
+                           "name":  "supabase_realtime_MeetoMXH",
+                           "running":  true,
+                           "health":  "healthy",
+                           "image":  "sha256:b7b0ef84b69d80b9b9c2280c9e9ae0a901175d3035b6b0c3ae22fa6c48bfb272"
+                       },
+                       {
+                           "name":  "supabase_inbucket_MeetoMXH",
+                           "running":  true,
+                           "health":  "healthy",
+                           "image":  "sha256:ed9b00c609e77e99c79b93f1178255ebc271868920f2c69a8d166bd5634ed10d"
+                       },
+                       {
+                           "name":  "supabase_auth_MeetoMXH",
+                           "running":  true,
+                           "health":  "healthy",
+                           "image":  "sha256:1736a63078f5922b198c4cbe50f80ab9a2d3b54fe8b7b6cfb2e9dc5dbbc12c6b"
+                       },
+                       {
+                           "name":  "supabase_kong_MeetoMXH",
+                           "running":  true,
+                           "health":  "healthy",
+                           "image":  "sha256:1b53405d8680a09d6f44494b7990bf7da2ea43f84a258c59717d4539abf09f6d"
+                       },
+                       {
+                           "name":  "supabase_db_MeetoMXH",
+                           "running":  true,
+                           "health":  "healthy",
+                           "image":  "sha256:c141fd17ac6a76c4323e90b3aee8ff1a23d2e89e547c2b963cfadc309c079cc2"
+                       }
+                   ]
+}
