@@ -1,0 +1,45 @@
+MEETO — TASK 21.5: CORE UX FOUNDATION & POLISH
+Ngày: 03/11/2026
+
+ĐÃ LÀM
+- Reaction bar ngang vẽ icon riêng, vuốt/chạm để chọn, animation và optimistic rollback; reaction dùng chung FeedAdapter, gồm group post và Memories.
+- Comments: reply thread, reaction/comment RPC mới, pagination cursor; giữ idempotency key khi gửi lại.
+- Chat: bỏ hai nút kỹ thuật; tải trang cũ tự động gần đầu và giữ anchor; pull-to-refresh; retry outbox bằng idempotency key; tên/avatar mở Conversation Details.
+- Conversation Details nối mute, block, report; Shared Media Gallery lấy ảnh/video bằng RPC có kiểm tra quyền thành viên, lọc tab và cursor pagination.
+- Feed chính có pull-to-refresh, load-more và phục hồi vị trí bài đang đọc.
+
+MIGRATION
+- Candidate mới: `supabase/migrations/20261103001000_messenger_ux.sql` (028), chưa deploy.
+- Bổ sung comment reactions/list projection; cho reaction/comment hoạt động trên group posts qua `can_interact_post`; bảng mute riêng theo user; thông báo message được bỏ qua khi mute; RPC gallery chỉ trả media mà caller còn quyền đọc.
+- Không sửa migrations 001–027. Chạy thủ công 028 sau khi xác nhận schema 001–027 đã có.
+- SHA-256: `53E1801044D5D2FFDD19675FD577C56C323842A4F6D8BC52C6C9DD009769A1D3`.
+- Manifest: PASS, xác minh 28 checksum. PostgreSQL parser/server không có trong môi trường; SQL mới được static-reviewed, chưa được execute trên Cloud.
+
+KIỂM THỬ
+- `:app:assembleDebug`: PASS.
+- `:app:testDebugUnitTest`: PASS, 10 tests, 0 failures.
+- Emulator smoke: BLOCKED, không có adb/emulator.
+- Cloud E2E: BLOCKED, không triển khai migration hoặc truy cập Cloud.
+
+ACCEPTANCE MATRIX
+REACTION BAR: PARTIAL (đã triển khai; emulator smoke chưa chạy)
+REACTION ANIMATIONS: PARTIAL (chưa kiểm tra reduce-motion/emulator)
+COMMENTS UX: PARTIAL (chưa E2E)
+CHAT OLD MESSAGE PAGING: PARTIAL (chưa E2E)
+CHAT PULL-TO-REFRESH: PARTIAL (chưa E2E)
+CHAT MESSAGE RETRY: PARTIAL (inline retry cho outbox; chưa có trạng thái riêng trên từng bubble)
+CHAT REALTIME/RECONNECT: PARTIAL (giữ Observer hiện tại; chưa smoke)
+CONVERSATION DETAILS: PARTIAL (migration/backend chưa áp dụng)
+SHARED MEDIA GALLERY: PARTIAL (migration/backend chưa áp dụng)
+CONVERSATION MUTE: PARTIAL (có hiệu lực sau migration 028)
+BLOCK/REPORT: PARTIAL (RPC hiện hữu; chưa E2E)
+FEED PULL-TO-REFRESH: PARTIAL (đã triển khai; emulator smoke chưa chạy)
+UI/DARK MODE: PARTIAL
+ACCESSIBILITY: PARTIAL
+ANDROID BUILD: PASS
+MIGRATION REQUIRED: YES (028)
+CLOUD DEPLOYED: NO
+EMULATOR SMOKE: BLOCKED
+CLOUD E2E: BLOCKED
+CRITICAL REGRESSIONS: NOT TESTED
+READY FOR TASK 22: NO — cần chạy 028 và kiểm chứng trên emulator/Cloud trước.

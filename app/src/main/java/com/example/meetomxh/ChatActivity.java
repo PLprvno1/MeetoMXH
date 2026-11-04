@@ -1,6 +1,11 @@
 package com.example.meetomxh;
 
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.media.AudioAttributes;
+import android.media.AudioManager;
+import android.media.MediaPlayer;
+import android.media.MediaRecorder;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
@@ -8,6 +13,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.Manifest;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
@@ -23,10 +29,12 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.graphics.Insets;
+import androidx.core.content.ContextCompat;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 
 import com.bumptech.glide.Glide;
 import com.example.meetomxh.adapters.ChatMessageAdapter;
@@ -47,6 +55,9 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
+import java.io.File;
+import java.io.IOException;
+import java.util.Locale;
 
 import okhttp3.Call;
 
@@ -57,17 +68,25 @@ public class ChatActivity extends AppCompatActivity {
     private ActivityChatBinding binding;
     private ChatRepository chatRepository;
     private int historyLimit=50; private Subscription messagesRegistration;
+    private boolean loadingOlder,hasMoreOlder=true,preserveAnchor;
+    private String anchorMessageId;
+    private int anchorOffset;
     private Subscription chatStateRegistration;
     private ChatMessageAdapter adapter;
     private String currentUid;
     private String chatId;
+    private String failedRequestId;
+    private boolean failedVoiceMatchesPreview;
     private String otherUid;
     private boolean started;
     private boolean hasLoadedMessages;
     private boolean sending;
     private boolean imeVisible;
     private String messageToScrollTo;
+    private String pendingReplyScrollId;
+    private long pendingReplyScrollSeq;
     private ChatMessage replyTarget;
+    private ChatMessage editingTarget;
     private ActivityResultLauncher<PickVisualMediaRequest> imagePickerLauncher;
     private Uri pendingImageUri;
     private SupabaseStorage.Transfer activeUploadCall;
@@ -85,6 +104,31 @@ public class ChatActivity extends AppCompatActivity {
     private final Set<String> readRequestsInFlight = new HashSet<>();
     private final Set<String> readMessagesAcknowledged = new HashSet<>();
     private boolean readCheckScheduled;
+    private ActivityResultLauncher<String> audioPermissionLauncher;
+    private MediaRecorder recorder;
+    private MediaPlayer previewPlayer;
+    private MediaPlayer voicePlayer;
+    private AudioManager audioManager;
+    private File voiceFile;
+    private String uploadedVoiceReference;
+    private boolean recordingVoice, voiceLocked, uploadingVoice, previewPrepared, remoteVoicePrepared;
+    private long voiceRecordingStartedAt;
+    private String playingVoiceMessageId;
+    private final Handler voiceHandler = new Handler(Looper.getMainLooper());
+    private final Runnable voiceTick = new Runnable() {
+        @Override public void run() {
+            if (previewPlayer != null && previewPlayer.isPlaying() && binding != null) {
+                int duration = Math.max(1, previewPlayer.getDuration());
+                binding.seekVoicePreview.setProgress(previewPlayer.getCurrentPosition() * 1000 / duration);
+                binding.tvVoicePreviewDuration.setText(formatDuration(previewPlayer.getCurrentPosition()) + " / " + formatDuration(duration));
+                voiceHandler.postDelayed(this, 200);
+            } else if (voicePlayer != null && voicePlayer.isPlaying() && adapter != null) {
+                int duration = Math.max(1, voicePlayer.getDuration());
+                adapter.setVoicePlayback(playingVoiceMessageId, voicePlayer.getCurrentPosition(), duration, true);
+                voiceHandler.postDelayed(this, 200);
+            }
+        }
+    };
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -110,13 +154,16 @@ public class ChatActivity extends AppCompatActivity {
         });
         ViewCompat.requestApplyInsets(binding.getRoot());
         chatRepository = ChatRepository.getInstance();
-        android.widget.Button older=new android.widget.Button(this); older.setText("Tải tin nhắn cũ hơn"); ((android.widget.LinearLayout)binding.getRoot()).addView(older,1); older.setOnClickListener(v->{historyLimit=Math.max(historyLimit,currentMessages.size())+50;removeMessagesListener();attachMessagesListenerIfNeeded();});        android.widget.Button retry=new android.widget.Button(this); retry.setText("Thử gửi lại tin đang chờ");((android.widget.LinearLayout)binding.getRoot()).addView(retry,2);retry.setOnClickListener(v->com.example.meetomxh.supabase.Api.run(()->com.example.meetomxh.supabase.MessageOutbox.retry(chatId),new com.example.meetomxh.supabase.Api.Callback<Integer>(){public void success(Integer count){Toast.makeText(ChatActivity.this,"Đã gửi lại "+count+" tin nhắn",Toast.LENGTH_LONG).show();removeMessagesListener();attachMessagesListenerIfNeeded();}public void error(String error){Toast.makeText(ChatActivity.this,error,Toast.LENGTH_LONG).show();}}));
+        audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+        audioPermissionLauncher = registerForActivityResult(new ActivityResultContracts.RequestPermission(), granted -> {
+            if (granted) Toast.makeText(this, "Giữ nút micro để ghi âm.", Toast.LENGTH_SHORT).show();
+            else Toast.makeText(this, "Cần quyền micro để ghi tin nhắn thoại.", Toast.LENGTH_LONG).show();
+        });
         imagePickerLauncher = registerForActivityResult(new ActivityResultContracts.PickVisualMedia(), uri -> {
             if (uri == null || binding == null) return;
             pendingImageUri = uri;
             uploadedImageUrl = null;
-            followImageAfterSend = isAtBottom();
-            startOrRetryImageSend();
+            previewSelectedMedia(uri);
         });
         SessionUser currentUser = SessionManager.getInstance().getCurrentUser();
         currentUid = currentUser == null ? null : currentUser.getUid();
@@ -126,23 +173,31 @@ public class ChatActivity extends AppCompatActivity {
         }
 
         binding.btnChatBack.setOnClickListener(v -> finish());
+        binding.tvFailedMessageRetry.setOnClickListener(v->retryFailedMessage());
         binding.rvMessages.setLayoutManager(new LinearLayoutManager(this));
         adapter = new ChatMessageAdapter(currentUid);
         adapter.setInteractionListener(new ChatMessageAdapter.OnMessageInteractionListener() {
             @Override public void onLongPress(ChatMessage message) { showMessageActions(message); }
-            @Override public void onReplyTap(String messageId) { scrollToMessage(messageId); }
+            @Override public void onReplyTap(String messageId, long seq) { scrollToMessage(messageId, seq); }
             @Override public void onImageTap(String imageUrl) {
                 Intent intent = new Intent(ChatActivity.this, ChatImageViewerActivity.class);
                 intent.putExtra(ChatImageViewerActivity.EXTRA_IMAGE_URL, imageUrl);
                 startActivity(intent);
             }
+            @Override public void onVoiceTap(ChatMessage message) { playVoiceMessage(message); }
         });
         binding.rvMessages.setAdapter(adapter);
         binding.rvMessages.addOnScrollListener(new androidx.recyclerview.widget.RecyclerView.OnScrollListener() {
             @Override public void onScrolled(@androidx.annotation.NonNull androidx.recyclerview.widget.RecyclerView recyclerView,
                                              int dx, int dy) {
                 maybeMarkLatestIncomingRead();
+                androidx.recyclerview.widget.LinearLayoutManager lm=(androidx.recyclerview.widget.LinearLayoutManager)recyclerView.getLayoutManager();
+                if(dy<0&&lm!=null&&lm.findFirstVisibleItemPosition()<=2)loadOlderMessages();
             }
+        });
+        binding.swipeChatRefresh.setOnRefreshListener(()->{
+            if(adapter!=null&&adapter.getItemCount()>0){androidx.recyclerview.widget.LinearLayoutManager lm=(androidx.recyclerview.widget.LinearLayoutManager)binding.rvMessages.getLayoutManager();int pos=lm==null?0:lm.findFirstVisibleItemPosition();if(pos>=0){anchorMessageId=adapter.messageIdAt(pos);android.view.View child=lm.findViewByPosition(pos);anchorOffset=child==null?0:child.getTop();preserveAnchor=true;}}
+            removeMessagesListener();attachMessagesListenerIfNeeded();
         });
         searchResultAdapter = new ChatSearchResultAdapter(this::onSearchResultSelected);
         binding.rvMessageSearchResults.setLayoutManager(new LinearLayoutManager(this));
@@ -155,10 +210,15 @@ public class ChatActivity extends AppCompatActivity {
                     .setMediaType(ActivityResultContracts.PickVisualMedia.ImageAndVideo.INSTANCE).build());
         });
         binding.btnCancelImageUpload.setOnClickListener(v -> {
-            if (uploadingImage) return;
+            if (uploadingImage && activeUploadCall != null) {
+                activeUploadCall.cancel();
+                activeUploadCall = null;
+                uploadingImage = false;
+            }
             pendingImageUri = null;
             uploadedImageUrl = null;
             binding.layoutImageUploadStatus.setVisibility(View.GONE);
+            binding.btnAttachImage.setEnabled(true);
         });
         binding.btnChatSearch.setOnClickListener(v -> openMessageSearch());
         binding.btnCloseSearch.setOnClickListener(v -> closeMessageSearch());
@@ -168,6 +228,24 @@ public class ChatActivity extends AppCompatActivity {
             @Override public void afterTextChanged(Editable s) { }
         });
         binding.btnSendMessage.setOnClickListener(v -> sendCurrentMessage());
+        binding.btnVoiceRecord.setOnTouchListener((view, event) -> handleVoiceTouch(event));
+        binding.btnVoiceStop.setOnClickListener(v -> stopVoiceRecording());
+        binding.btnVoiceCancel.setOnClickListener(v -> discardVoiceRecording());
+        binding.btnVoiceDiscard.setOnClickListener(v -> discardVoicePreview());
+        binding.btnVoicePreviewPlay.setOnClickListener(v -> toggleVoicePreview());
+        binding.btnVoiceSend.setOnClickListener(v -> sendVoicePreview());
+        binding.seekVoicePreview.setOnSeekBarChangeListener(new android.widget.SeekBar.OnSeekBarChangeListener() {
+            @Override public void onProgressChanged(android.widget.SeekBar seekBar, int progress, boolean fromUser) {
+                if (fromUser && previewPlayer != null && previewPlayer.getDuration() > 0)
+                    binding.tvVoicePreviewDuration.setText(formatDuration(previewPlayer.getDuration() * progress / 1000)
+                            + " / " + formatDuration(previewPlayer.getDuration()));
+            }
+            @Override public void onStartTrackingTouch(android.widget.SeekBar seekBar) { }
+            @Override public void onStopTrackingTouch(android.widget.SeekBar seekBar) {
+                if (previewPlayer != null && previewPlayer.getDuration() > 0)
+                    previewPlayer.seekTo(previewPlayer.getDuration() * seekBar.getProgress() / 1000);
+            }
+        });
         binding.etMessage.setOnEditorActionListener((view, actionId, event) -> {
             boolean sendAction = actionId == EditorInfo.IME_ACTION_SEND
                     || (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER
@@ -181,9 +259,9 @@ public class ChatActivity extends AppCompatActivity {
 
         chatId = clean(getIntent().getStringExtra(EXTRA_CHAT_ID));
         otherUid = clean(getIntent().getStringExtra(EXTRA_OTHER_UID));
-        View.OnClickListener openProfile = v -> openOtherProfile();
-        binding.ivChatAvatar.setOnClickListener(openProfile);
-        binding.tvChatTitle.setOnClickListener(openProfile);
+        View.OnClickListener openDetails = v -> openConversationDetails();
+        binding.ivChatAvatar.setOnClickListener(openDetails);
+        binding.tvChatTitle.setOnClickListener(openDetails);
         if (chatId != null) {
             if (otherUid != null) loadOtherProfile(otherUid);
             else findOtherParticipant(chatId);
@@ -216,6 +294,7 @@ public class ChatActivity extends AppCompatActivity {
         started = true;
         attachMessagesListenerIfNeeded();
         attachChatStateListenerIfNeeded();
+        showFailedOutbox();
     }
 
     @Override
@@ -223,6 +302,8 @@ public class ChatActivity extends AppCompatActivity {
         started = false;
         removeMessagesListener();
         removeChatStateListener();
+        if (recordingVoice) discardVoiceRecording();
+        stopAllVoicePlayback();
         super.onStop();
     }
 
@@ -233,6 +314,9 @@ public class ChatActivity extends AppCompatActivity {
         searchGeneration++;
         if (pendingSearch != null) searchHandler.removeCallbacks(pendingSearch);
         if (activeUploadCall != null) activeUploadCall.cancel();
+        stopAllVoicePlayback();
+        releaseRecorder();
+        if (voiceFile != null && voiceFile.exists()) voiceFile.delete();
         binding = null;
         super.onDestroy();
     }
@@ -245,8 +329,13 @@ public class ChatActivity extends AppCompatActivity {
             public void onMessages(List<ChatMessage> messages) {
                 if (binding == null || !started || isFinishing() || isDestroyed()) return;
                 boolean wasAtBottom = isAtBottom();
+                String restoreId=preserveAnchor?anchorMessageId:null; int restoreOffset=anchorOffset; preserveAnchor=false;
                 currentMessages = messages == null ? new ArrayList<>() : new ArrayList<>(messages);
+                if (playingVoiceMessageId != null && currentMessages.stream().noneMatch(m ->
+                        m != null && playingVoiceMessageId.equals(m.getMessageId()) && !m.isRecalled()))
+                    stopVoicePlayback();
                 adapter.submitList(messages);
+                hasMoreOlder=currentMessages.size()>=historyLimit;loadingOlder=false;binding.progressOlderMessages.setVisibility(View.GONE);binding.swipeChatRefresh.setRefreshing(false);
                 messageLoadError = null;
                 if (searchVisible) scheduleLocalMessageSearch(binding.etSearchMessages.getText().toString());
                 hasLoadedMessages = true;
@@ -257,7 +346,34 @@ public class ChatActivity extends AppCompatActivity {
                 }
                 binding.rvMessages.setVisibility(View.VISIBLE);
                 int sentPosition = adapter.indexOfMessage(messageToScrollTo);
-                if (wasAtBottom || sentPosition >= 0) {
+                boolean handledReplyJump = false;
+                if (pendingReplyScrollId != null) {
+                    int replyPosition = adapter.indexOfMessage(pendingReplyScrollId);
+                    if (replyPosition >= 0) {
+                        String targetId = pendingReplyScrollId;
+                        pendingReplyScrollId = null; pendingReplyScrollSeq = 0;
+                        handledReplyJump = true;
+                        binding.rvMessages.post(() -> {
+                            if (binding != null) {
+                                int position = adapter.indexOfMessage(targetId);
+                                if (position >= 0) binding.rvMessages.smoothScrollToPosition(position);
+                            }
+                        });
+                    } else if (pendingReplyScrollSeq > 0 && !currentMessages.isEmpty()
+                            && currentMessages.get(0).seq > pendingReplyScrollSeq
+                            && currentMessages.size() >= historyLimit && historyLimit < 5000) {
+                        historyLimit += 50; loadingOlder = true;
+                        binding.progressOlderMessages.setVisibility(View.VISIBLE);
+                        removeMessagesListener(); attachMessagesListenerIfNeeded();
+                        return;
+                    } else {
+                        pendingReplyScrollId = null; pendingReplyScrollSeq = 0;
+                        Toast.makeText(ChatActivity.this, "Tin nhắn gốc không còn khả dụng.", Toast.LENGTH_SHORT).show();
+                    }
+                }
+                if (!handledReplyJump && restoreId!=null) {
+                    binding.rvMessages.post(()->{if(binding==null)return;int p=adapter.indexOfMessage(restoreId);if(p>=0)((androidx.recyclerview.widget.LinearLayoutManager)binding.rvMessages.getLayoutManager()).scrollToPositionWithOffset(p,restoreOffset);});
+                } else if (!handledReplyJump && (wasAtBottom || sentPosition >= 0)) {
                     binding.rvMessages.post(() -> {
                         if (binding != null && adapter.getItemCount() > 0) {
                             int lastSentPosition = adapter.indexOfMessage(messageToScrollTo);
@@ -273,6 +389,7 @@ public class ChatActivity extends AppCompatActivity {
             @Override
             public void onError(String error) {
                 if (binding == null || !started || isFinishing() || isDestroyed()) return;
+                loadingOlder=false;binding.progressOlderMessages.setVisibility(View.GONE);binding.swipeChatRefresh.setRefreshing(false);
                 binding.progressMessages.setVisibility(View.GONE);
                 if (searchVisible) {
                     messageLoadError = error;
@@ -286,6 +403,14 @@ public class ChatActivity extends AppCompatActivity {
                 }
             }
         });
+    }
+
+    private void loadOlderMessages(){
+        if(!started||binding==null||loadingOlder||!hasMoreOlder||adapter==null||adapter.getItemCount()==0)return;
+        androidx.recyclerview.widget.LinearLayoutManager lm=(androidx.recyclerview.widget.LinearLayoutManager)binding.rvMessages.getLayoutManager();
+        int first=lm==null?0:lm.findFirstVisibleItemPosition();if(first<0)return;
+        anchorMessageId=adapter.messageIdAt(first);View child=lm.findViewByPosition(first);anchorOffset=child==null?0:child.getTop();preserveAnchor=true;
+        loadingOlder=true;historyLimit+=50;binding.progressOlderMessages.setVisibility(View.VISIBLE);removeMessagesListener();attachMessagesListenerIfNeeded();
     }
 
     private void removeMessagesListener() {
@@ -346,6 +471,8 @@ public class ChatActivity extends AppCompatActivity {
         binding.btnSendMessage.setEnabled(active && !sending);
         binding.etMessage.setEnabled(active && !sending);
         binding.btnAttachImage.setEnabled(active && !uploadingImage);
+        binding.btnVoiceRecord.setEnabled(active && !uploadingVoice);
+        binding.btnVoiceSend.setEnabled(active && !uploadingVoice);
     }
 
     private void maybeMarkLatestIncomingRead() {
@@ -405,9 +532,346 @@ public class ChatActivity extends AppCompatActivity {
         });
     }
 
-    private void findOtherParticipant(String id) {chatRepository.getChat(id,new ChatRepository.OnChatListener(){public void onSuccess(Chat chat){if(isFinishing()||binding==null)return;if("group".equals(chat.getType())){currentChatState=chat;binding.tvChatTitle.setText(chat.title);binding.tvChatTitle.setOnClickListener(v->ChatControls.show(ChatActivity.this,chat));}else for(String participant:chat.getParticipants())if(!participant.equals(currentUid)){otherUid=participant;loadOtherProfile(participant);break;}}public void onError(String e){failAndClose(e);}});}
+    private void findOtherParticipant(String id) {chatRepository.getChat(id,new ChatRepository.OnChatListener(){public void onSuccess(Chat chat){if(isFinishing()||binding==null)return;if("group".equals(chat.getType())){currentChatState=chat;binding.tvChatTitle.setText(chat.title);binding.tvChatTitle.setOnClickListener(v->openConversationDetails());}else for(String participant:chat.getParticipants())if(!participant.equals(currentUid)){otherUid=participant;loadOtherProfile(participant);break;}}public void onError(String e){failAndClose(e);}});}
 
-    private void loadOtherProfile(String uid) {if(uid==null)return;otherUid=uid;ProfileClient.get(uid,new Api.Callback<User>(){public void success(User user){if(binding==null||isFinishing())return;binding.tvChatTitle.setText(user.getFullName());Glide.with(ChatActivity.this).applyDefaultRequestOptions(new com.bumptech.glide.request.RequestOptions().diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.NONE).skipMemoryCache(true)).load(user.getAvatarUrl()).placeholder(R.drawable.ic_home).into(binding.ivChatAvatar);}public void error(String e){if(binding!=null)binding.tvChatTitle.setText("NgÆ°á»i dÃ¹ng khÃ´ng kháº£ dá»¥ng");}});}
+    private boolean handleVoiceTouch(android.view.MotionEvent event) {
+        if (binding == null || uploadingVoice) return true;
+        switch (event.getActionMasked()) {
+            case android.view.MotionEvent.ACTION_DOWN:
+                if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
+                        != PackageManager.PERMISSION_GRANTED) {
+                    audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO);
+                    return true;
+                }
+                beginVoiceRecording();
+                return true;
+            case android.view.MotionEvent.ACTION_MOVE:
+                if (recordingVoice) {
+                    float density = getResources().getDisplayMetrics().density;
+                    if (event.getX() < -80 * density) {
+                        binding.tvVoiceRecordingStatus.setText("Thả để hủy");
+                        binding.tvVoiceRecordingStatus.setTextColor(ContextCompat.getColor(this, R.color.status_error));
+                    } else if (event.getY() < -80 * density) {
+                        voiceLocked = true;
+                        binding.tvVoiceRecordingStatus.setText("Đã khóa · ghi âm");
+                        binding.tvVoiceRecordingStatus.setTextColor(ContextCompat.getColor(this, R.color.brand_blue));
+                    } else if (!voiceLocked) {
+                        binding.tvVoiceRecordingStatus.setText("Đang ghi · thả để xem trước");
+                        binding.tvVoiceRecordingStatus.setTextColor(ContextCompat.getColor(this, R.color.status_error));
+                    }
+                }
+                return true;
+            case android.view.MotionEvent.ACTION_UP:
+            case android.view.MotionEvent.ACTION_CANCEL:
+                if (recordingVoice) {
+                    float density = getResources().getDisplayMetrics().density;
+                    if (event.getActionMasked() == android.view.MotionEvent.ACTION_CANCEL || event.getX() < -80 * density)
+                        discardVoiceRecording();
+                    else if (!voiceLocked) stopVoiceRecording();
+                }
+                return true;
+            default: return true;
+        }
+    }
+
+    private void beginVoiceRecording() {
+        if (binding == null || chatId == null || recordingVoice || uploadingVoice) return;
+        discardVoicePreview();
+        try {
+            voiceFile = File.createTempFile("meeto-voice-", ".m4a", getCacheDir());
+            recorder = new MediaRecorder();
+            recorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+            recorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
+            recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
+            recorder.setAudioChannels(1);
+            recorder.setAudioSamplingRate(44100);
+            recorder.setAudioEncodingBitRate(64000);
+            recorder.setOutputFile(voiceFile.getAbsolutePath());
+            recorder.prepare();
+            recorder.start();
+            recordingVoice = true;
+            voiceLocked = false;
+            voiceRecordingStartedAt = android.os.SystemClock.elapsedRealtime();
+            binding.layoutVoiceRecording.setVisibility(View.VISIBLE);
+            binding.layoutVoicePreview.setVisibility(View.GONE);
+            binding.tvVoiceRecordingStatus.setText("Đang ghi · thả để xem trước");
+            binding.progressVoiceLevel.setProgress(0);
+            voiceHandler.post(voiceMeterTick);
+        } catch (Exception error) {
+            releaseRecorder();
+            if (voiceFile != null) voiceFile.delete();
+            voiceFile = null;
+            Toast.makeText(this, "Không thể bắt đầu ghi âm.", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private final Runnable voiceMeterTick = new Runnable() {
+        @Override public void run() {
+            if (!recordingVoice || binding == null || recorder == null) return;
+            long elapsed = android.os.SystemClock.elapsedRealtime() - voiceRecordingStartedAt;
+            int amplitude;
+            try { amplitude = recorder.getMaxAmplitude(); } catch (RuntimeException ignored) { amplitude = 0; }
+            binding.progressVoiceLevel.setProgress(Math.min(32767, amplitude));
+            binding.tvVoiceRecordingStatus.setText((voiceLocked ? "Đã khóa · " : "Đang ghi · ")
+                    + formatDuration(elapsed));
+            if (elapsed >= 119500) { stopVoiceRecording(); return; }
+            voiceHandler.postDelayed(this, 120);
+        }
+    };
+
+    private void stopVoiceRecording() {
+        if (!recordingVoice) return;
+        recordingVoice = false;
+        voiceHandler.removeCallbacks(voiceMeterTick);
+        try { recorder.stop(); } catch (RuntimeException ignored) { }
+        releaseRecorder();
+        voiceLocked = false;
+        if (binding != null) binding.layoutVoiceRecording.setVisibility(View.GONE);
+        if (voiceFile == null || !voiceFile.isFile() || voiceFile.length() == 0) {
+            discardVoicePreview();
+            Toast.makeText(this, "Bản ghi quá ngắn, hãy thử lại.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        showVoicePreview();
+    }
+
+    private void discardVoiceRecording() {
+        recordingVoice = false;
+        voiceLocked = false;
+        voiceHandler.removeCallbacks(voiceMeterTick);
+        try { if (recorder != null) recorder.stop(); } catch (RuntimeException ignored) { }
+        releaseRecorder();
+        if (voiceFile != null) voiceFile.delete();
+        voiceFile = null;
+        if (binding != null) binding.layoutVoiceRecording.setVisibility(View.GONE);
+    }
+
+    private void releaseRecorder() {
+        if (recorder != null) {
+            try { recorder.reset(); } catch (RuntimeException ignored) { }
+            try { recorder.release(); } catch (RuntimeException ignored) { }
+            recorder = null;
+        }
+    }
+
+    private void showVoicePreview() {
+        if (binding == null || voiceFile == null) return;
+        uploadedVoiceReference = null;
+        binding.layoutVoicePreview.setVisibility(View.VISIBLE);
+        binding.seekVoicePreview.setProgress(0);
+        binding.btnVoiceSend.setEnabled(!uploadingVoice);
+        binding.btnVoicePreviewPlay.setEnabled(false);
+        binding.tvVoicePreviewDuration.setText(formatDuration(voiceFile.length() / 8));
+        releasePreviewPlayer();
+        try {
+            previewPlayer = new MediaPlayer();
+            previewPlayer.setDataSource(voiceFile.getAbsolutePath());
+            previewPlayer.setOnPreparedListener(player -> {
+                if (binding == null) return;
+                previewPrepared = true;
+                binding.btnVoicePreviewPlay.setEnabled(true);
+                binding.tvVoicePreviewDuration.setText(formatDuration(player.getDuration()));
+            });
+            previewPlayer.setOnCompletionListener(player -> {
+                if (binding != null) {
+                    player.seekTo(0);
+                    binding.seekVoicePreview.setProgress(0);
+                    binding.tvVoicePreviewDuration.setText(formatDuration(player.getDuration()));
+                    binding.btnVoicePreviewPlay.setImageResource(R.drawable.ic_play);
+                }
+            });
+            previewPlayer.prepareAsync();
+        } catch (IOException | RuntimeException error) {
+            releasePreviewPlayer();
+            if (binding != null) binding.btnVoicePreviewPlay.setEnabled(false);
+            Toast.makeText(this, "Không thể nghe thử bản ghi.", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void toggleVoicePreview() {
+        if (previewPlayer == null || !previewPrepared || binding == null) return;
+        requestVoiceFocus();
+        if (previewPlayer.isPlaying()) {
+            previewPlayer.pause();
+            binding.btnVoicePreviewPlay.setImageResource(R.drawable.ic_play);
+        } else {
+            if (voicePlayer != null) stopVoicePlayback();
+            previewPlayer.start();
+            binding.btnVoicePreviewPlay.setImageResource(R.drawable.ic_pause);
+            voiceHandler.removeCallbacks(voiceTick);
+            voiceHandler.post(voiceTick);
+        }
+    }
+
+    private void discardVoicePreview() {
+        if (uploadingVoice && activeUploadCall != null) {
+            activeUploadCall.cancel();
+            activeUploadCall = null;
+        }
+        uploadingVoice = false;
+        releasePreviewPlayer();
+        if (voiceFile != null) voiceFile.delete();
+        voiceFile = null;
+        uploadedVoiceReference = null;
+        if (binding != null) binding.layoutVoicePreview.setVisibility(View.GONE);
+        updateComposerPermissions();
+    }
+
+    private void releasePreviewPlayer() {
+        voiceHandler.removeCallbacks(voiceTick);
+        if (previewPlayer != null) {
+            try { previewPlayer.stop(); } catch (RuntimeException ignored) { }
+            previewPlayer.release();
+            previewPlayer = null;
+        }
+        previewPrepared = false;
+        if (binding != null) binding.btnVoicePreviewPlay.setEnabled(false);
+        if (binding != null) binding.btnVoicePreviewPlay.setImageResource(R.drawable.ic_play);
+        abandonVoiceFocus();
+    }
+
+    private void sendVoicePreview() {
+        if (binding == null || uploadingVoice || voiceFile == null || chatId == null) return;
+        if (uploadedVoiceReference != null) { sendUploadedVoice(); return; }
+        uploadingVoice = true;
+        binding.btnVoiceSend.setEnabled(false);
+        binding.btnVoiceDiscard.setEnabled(false);
+        binding.btnVoiceRecord.setEnabled(false);
+        binding.tvVoicePreviewDuration.setText("Đang tải lên…");
+        activeUploadCall = SupabaseStorage.uploadVoice(getContentResolver(), voiceFile, "chats/" + chatId, currentUid,
+                new SupabaseStorage.UploadListener() {
+                    @Override public void onProgress(int percent) {
+                        if (binding != null) binding.tvVoicePreviewDuration.setText("Tải lên " + percent + "%");
+                    }
+                    @Override public void onSuccess(String reference) {
+                        if (binding == null) return;
+                        uploadedVoiceReference = reference;
+                        activeUploadCall = null;
+                        sendUploadedVoice();
+                    }
+                    @Override public void onFailure(String message) {
+                        activeUploadCall = null;
+                        uploadingVoice = false;
+                        if (binding != null) {
+                            binding.btnVoiceSend.setEnabled(true);
+                            binding.btnVoiceDiscard.setEnabled(true);
+                            updateComposerPermissions();
+                            binding.tvVoicePreviewDuration.setText("Tải lên lỗi · nhấn gửi để thử lại");
+                        }
+                        Toast.makeText(ChatActivity.this, message, Toast.LENGTH_LONG).show();
+                    }
+                });
+    }
+
+    private void sendUploadedVoice() {
+        if (binding == null || uploadedVoiceReference == null || chatId == null) return;
+        uploadingVoice = true;
+        if (binding != null) {
+            binding.btnVoiceSend.setEnabled(false);
+            binding.btnVoiceDiscard.setEnabled(false);
+            binding.btnVoiceRecord.setEnabled(false);
+        }
+        ChatRepository.ReplyData reply = replyTarget == null ? null : new ChatRepository.ReplyData(
+                replyTarget.getMessageId(), replyTarget.getSenderId(), replyTarget.getDisplayText());
+        chatRepository.sendVoiceMessage(chatId, uploadedVoiceReference, reply, new ChatRepository.OnMessageSentListener() {
+            @Override public void onSuccess(String messageId) {
+                if (binding == null) return;
+                uploadingVoice = false;
+                String sentId = messageId;
+                discardVoicePreview();
+                clearReplyTarget();
+                refetchMessages();
+                int position = adapter.indexOfMessage(sentId);
+                if (position >= 0) binding.rvMessages.post(() -> {
+                    if (binding != null) binding.rvMessages.scrollToPosition(adapter.indexOfMessage(sentId));
+                });
+            }
+            @Override public void onError(String error) {
+                uploadingVoice = false;
+                if (binding != null) {
+                    binding.btnVoiceSend.setEnabled(true);
+                    binding.btnVoiceDiscard.setEnabled(true);
+                    updateComposerPermissions();
+                    binding.tvVoicePreviewDuration.setText("Gửi lỗi · bản ghi được giữ để thử lại");
+                }
+                Toast.makeText(ChatActivity.this, error, Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+    private void playVoiceMessage(ChatMessage message) {
+        if (message == null || message.isRecalled() || !ChatRepository.isValidStorageMediaReference(message.getImageUrl())) return;
+        if (message.getMessageId().equals(playingVoiceMessageId) && voicePlayer != null) {
+            if (!remoteVoicePrepared) return;
+            if (voicePlayer.isPlaying()) { voicePlayer.pause(); adapter.setVoicePlayback(playingVoiceMessageId, voicePlayer.getCurrentPosition(), voicePlayer.getDuration(), false); }
+            else { requestVoiceFocus(); voicePlayer.start(); voiceHandler.post(voiceTick); }
+            return;
+        }
+        stopVoicePlayback();
+        releasePreviewPlayer();
+        playingVoiceMessageId = message.getMessageId();
+        adapter.setVoicePlayback(playingVoiceMessageId, 0, Math.max(1, (int) message.getVoiceDurationMs()), true);
+        Api.run(() -> SupabaseStorage.info(message.getImageUrl()), new Api.Callback<org.json.JSONObject>() {
+            @Override public void success(org.json.JSONObject asset) {
+                if (binding == null || !message.getMessageId().equals(playingVoiceMessageId)) return;
+                try {
+                    voicePlayer = new MediaPlayer();
+                    voicePlayer.setAudioAttributes(new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA)
+                            .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build());
+                    java.util.Map<String, String> headers = new java.util.HashMap<>();
+                    headers.put("apikey", SupabaseConfig.KEY);
+                    headers.put("Authorization", "Bearer " + SessionManager.getInstance().access(false));
+                    voicePlayer.setDataSource(ChatActivity.this, Uri.parse(SupabaseStorage.url(asset)), headers);
+                    voicePlayer.setOnPreparedListener(player -> {
+                        if (binding == null) { stopVoicePlayback(); return; }
+                        remoteVoicePrepared = true;
+                        requestVoiceFocus(); player.start(); voiceHandler.removeCallbacks(voiceTick); voiceHandler.post(voiceTick);
+                    });
+                    voicePlayer.setOnCompletionListener(player -> stopVoicePlayback());
+                    voicePlayer.setOnErrorListener((player, what, extra) -> { stopVoicePlayback(); Toast.makeText(ChatActivity.this, "Không phát được tin nhắn thoại.", Toast.LENGTH_SHORT).show(); return true; });
+                    voicePlayer.prepareAsync();
+                } catch (Exception error) { stopVoicePlayback(); }
+            }
+            @Override public void error(String error) { stopVoicePlayback(); Toast.makeText(ChatActivity.this, "Tin nhắn thoại không còn khả dụng.", Toast.LENGTH_SHORT).show(); }
+        });
+    }
+
+    private void stopVoicePlayback() {
+        voiceHandler.removeCallbacks(voiceTick);
+        String previous = playingVoiceMessageId;
+        if (voicePlayer != null) {
+            try { voicePlayer.stop(); } catch (RuntimeException ignored) { }
+            voicePlayer.release(); voicePlayer = null;
+        }
+        playingVoiceMessageId = null;
+        remoteVoicePrepared = false;
+        if (adapter != null && previous != null) adapter.setVoicePlayback(previous, 0, 1, false);
+        abandonVoiceFocus();
+    }
+
+    private void stopAllVoicePlayback() {
+        releasePreviewPlayer();
+        stopVoicePlayback();
+    }
+
+    private void requestVoiceFocus() {
+        if (audioManager != null) audioManager.requestAudioFocus(focusListener, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT);
+    }
+    private final AudioManager.OnAudioFocusChangeListener focusListener = change -> {
+        if (change <= AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) {
+            if (previewPlayer != null && previewPlayer.isPlaying()) previewPlayer.pause();
+            if (voicePlayer != null && voicePlayer.isPlaying()) voicePlayer.pause();
+            if (adapter != null && playingVoiceMessageId != null && voicePlayer != null)
+                adapter.setVoicePlayback(playingVoiceMessageId, voicePlayer.getCurrentPosition(), voicePlayer.getDuration(), false);
+        }
+    };
+    private void abandonVoiceFocus() { if (audioManager != null) audioManager.abandonAudioFocus(focusListener); }
+    private static String formatDuration(long millis) {
+        long seconds = Math.max(0, millis / 1000);
+        return String.format(Locale.getDefault(), "%d:%02d", seconds / 60, seconds % 60);
+    }
+
+    private void loadOtherProfile(String uid) {if(uid==null)return;otherUid=uid;ProfileClient.get(uid,new Api.Callback<User>(){public void success(User user){if(binding==null||isFinishing())return;binding.tvChatTitle.setText(user.getFullName());com.example.meetomxh.ui.AvatarViews.load(binding.ivChatAvatar,user.getAvatarUrl(),user.getAvatarPreset());}public void error(String e){if(binding!=null)binding.tvChatTitle.setText("Người dùng không khả dụng");}});}
 
     private void sendCurrentMessage() {
         if (sending || binding == null) return;
@@ -421,6 +885,30 @@ public class ChatActivity extends AppCompatActivity {
             return;
         }
         boolean shouldFollowSentMessage = isAtBottom();
+        if (editingTarget != null) {
+            ChatMessage target = editingTarget;
+            sending = true;
+            updateSendingState(true);
+            chatRepository.editMessage(target, text, new ChatRepository.OnMessageActionListener() {
+                @Override public void onSuccess() {
+                    if (binding == null || isFinishing() || isDestroyed()) return;
+                    if (text.equals(binding.etMessage.getText().toString())) binding.etMessage.setText("");
+                    editingTarget = null;
+                    clearReplyTarget();
+                    sending = false;
+                    updateSendingState(false);
+                    refetchMessages();
+                    Toast.makeText(ChatActivity.this, "Đã cập nhật tin nhắn.", Toast.LENGTH_SHORT).show();
+                }
+                @Override public void onError(String error) {
+                    if (binding == null || isFinishing() || isDestroyed()) return;
+                    sending = false;
+                    updateSendingState(false);
+                    Toast.makeText(ChatActivity.this, error, Toast.LENGTH_LONG).show();
+                }
+            });
+            return;
+        }
         sending = true;
         updateSendingState(true);
         ChatRepository.ReplyData reply = replyTarget == null ? null : new ChatRepository.ReplyData(
@@ -457,6 +945,7 @@ public class ChatActivity extends AppCompatActivity {
                 sending = false;
                 updateSendingState(false);
                 Toast.makeText(ChatActivity.this, error, Toast.LENGTH_LONG).show();
+                showFailedOutbox();
             }
         });
     }
@@ -469,14 +958,19 @@ public class ChatActivity extends AppCompatActivity {
         }
         if (pendingImageUri == null) return;
         uploadingImage = true;
-        setImageUploadStatus("Uploading image…", true);
+        setImageUploadStatus("Preparing image…", true);
         activeUploadCall = SupabaseStorage.upload(getContentResolver(), pendingImageUri, "chats/" + chatId, currentUid,
                 new SupabaseStorage.UploadListener() {
+                    @Override public void onProgress(int percent) {
+                        if (!canUpdateImageUi()) return;
+                        binding.tvImageUploadStatus.setText("Uploading image " + percent + "%");
+                    }
                     @Override public void onSuccess(String url) {
                         runOnUiThread(() -> {
                             activeUploadCall = null;
                             if (!canUpdateImageUi()) return;
                             uploadedImageUrl = url;
+                            uploadingImage = false;
                             sendUploadedImageMessage();
                         });
                     }
@@ -489,10 +983,32 @@ public class ChatActivity extends AppCompatActivity {
                 });
     }
 
+    private void previewSelectedMedia(Uri uri) {
+        android.widget.ImageView preview = new android.widget.ImageView(this);
+        int height = (int) (220 * getResources().getDisplayMetrics().density);
+        preview.setLayoutParams(new android.view.ViewGroup.LayoutParams(
+                android.view.ViewGroup.LayoutParams.MATCH_PARENT, height));
+        preview.setScaleType(android.widget.ImageView.ScaleType.CENTER_CROP);
+        String mime = getContentResolver().getType(uri);
+        if (mime != null && mime.startsWith("video/")) {
+            Api.run(() -> SupabaseStorage.videoThumbnail(getContentResolver(), uri),
+                    new Api.Callback<android.graphics.Bitmap>() {
+                        @Override public void success(android.graphics.Bitmap bitmap) { if (binding != null) Glide.with(ChatActivity.this).load(bitmap).centerCrop().into(preview); }
+                        @Override public void error(String error) { if (binding != null) preview.setImageResource(R.drawable.ic_photo); }
+                    });
+        } else Glide.with(this).load(uri).centerCrop().into(preview);
+        new AlertDialog.Builder(this).setTitle("Xem trước tệp đính kèm")
+                .setMessage(mime != null && mime.startsWith("video/") ? "Video MP4 sẽ được gửi trong cuộc trò chuyện." : "Ảnh sẽ được gửi trong cuộc trò chuyện.")
+                .setView(preview).setNegativeButton("Hủy", (dialog, which) -> { pendingImageUri = null; })
+                .setPositiveButton("Tải lên và gửi", (dialog, which) -> {
+                    followImageAfterSend = isAtBottom(); startOrRetryImageSend();
+                }).show();
+    }
+
     private void sendUploadedImageMessage() {
         if (binding == null || uploadingImage || uploadedImageUrl == null || chatId == null) return;
-        if (!ChatRepository.isValidStorageImageUrl(uploadedImageUrl)) {
-            showImageFailure("Image URL is invalid.");
+        if (!ChatRepository.isValidStorageMediaReference(uploadedImageUrl)) {
+            showImageFailure("Media reference is invalid.");
             return;
         }
         uploadingImage = true;
@@ -528,6 +1044,7 @@ public class ChatActivity extends AppCompatActivity {
 
     private void showImageFailure(String message) {
         if (!canUpdateImageUi()) return;
+        activeUploadCall = null;
         uploadingImage = false;
         binding.progressImageUpload.setVisibility(View.GONE);
         binding.layoutImageUploadStatus.setVisibility(View.VISIBLE);
@@ -612,26 +1129,125 @@ public class ChatActivity extends AppCompatActivity {
     private void showMessageActions(ChatMessage message) {
         if (binding == null || message == null || message.getMessageId() == null
                 || message.isDeletedFor(currentUid)) return;
-        List<String> labels = new ArrayList<>();
-        List<Integer> actions = new ArrayList<>();
-        labels.add("Trả lời"); actions.add(0);
-        if (!message.isRecalled() && message.getText() != null && !message.getText().trim().isEmpty()) {
-            labels.add("Sao chép"); actions.add(1);
-        }
+        BottomSheetDialog sheet = new BottomSheetDialog(this);
+        android.widget.LinearLayout list = new android.widget.LinearLayout(this);
+        list.setOrientation(android.widget.LinearLayout.VERTICAL);
+        int pad = (int) (20 * getResources().getDisplayMetrics().density);
+        list.setPadding(pad, pad, pad, pad);
+        android.widget.TextView title = new android.widget.TextView(this);
+        title.setText("Tùy chọn tin nhắn"); title.setTextSize(18); title.setTypeface(null, android.graphics.Typeface.BOLD);
+        title.setTextColor(androidx.core.content.ContextCompat.getColor(this, com.example.meetomxh.R.color.text_primary));
+        title.setPadding(0, 0, 0, pad / 2); list.addView(title);
+        addMessageAction(list, "Trả lời", () -> { sheet.dismiss(); setReplyTarget(message); });
+        boolean canForwardText = !message.isRecalled() && "text".equals(message.getType())
+                && message.getText() != null && !message.getText().trim().isEmpty() && !message.hasSharedPost();
+        if (canForwardText) addMessageAction(list, "Chuyển tiếp văn bản", () -> { sheet.dismiss(); chooseForwardTarget(message); });
+        if (!message.isRecalled() && "text".equals(message.getType()) && message.getText() != null
+                && !message.getText().trim().isEmpty())
+            addMessageAction(list, "Sao chép", () -> { sheet.dismiss(); copyMessage(message); });
         boolean mine = currentUid.equals(message.getSenderId());
-        if (mine) { labels.add("Trạng thái giao / đọc"); actions.add(4); }
-        if (mine && !message.isRecalled()) { labels.add("Thu hồi tin nhắn"); actions.add(2); }
-        labels.add("Xóa khỏi phía tôi"); actions.add(3);
-        String[] options = labels.toArray(new String[0]);
-        new AlertDialog.Builder(this).setItems(options, (dialog, index) -> {
-            switch (actions.get(index)) {
-                case 0: setReplyTarget(message); break;
-                case 1: copyMessage(message); break;
-                case 2: confirmMessageAction(message, true); break;
-                case 3: confirmMessageAction(message, false); break;
-                case 4: com.example.meetomxh.supabase.ChatControls.receipts(this, chatId, message.getMessageId()); break;
+        if (mine && !message.isRecalled() && "text".equals(message.getType()) && !message.hasSharedPost()) {
+            long age = message.getCreatedAt() == null ? Long.MAX_VALUE
+                    : System.currentTimeMillis() - message.getCreatedAt().toDate().getTime();
+            if (age >= 0 && age <= 15L * 60L * 1000L)
+                addMessageAction(list, "Chỉnh sửa", () -> { sheet.dismiss(); beginMessageEdit(message); });
+        }
+        if (!mine) addMessageAction(list, "Báo cáo tin nhắn", () -> {
+            sheet.dismiss(); startActivity(new Intent(this, ReportContentActivity.class)
+                    .putExtra(ReportContentActivity.EXTRA_TARGET_TYPE, "message")
+                    .putExtra(ReportContentActivity.EXTRA_TARGET_ID, message.getMessageId()));
+        });
+        if (mine) addMessageAction(list, "Trạng thái giao / đọc", () -> {
+            sheet.dismiss(); com.example.meetomxh.supabase.ChatControls.receipts(this, chatId, message.getMessageId());
+        });
+        if (mine && !message.isRecalled()) addMessageAction(list, "Thu hồi tin nhắn", () -> {
+            sheet.dismiss(); confirmMessageAction(message, true);
+        });
+        addMessageAction(list, "Xóa khỏi phía tôi", () -> { sheet.dismiss(); confirmMessageAction(message, false); });
+        sheet.setContentView(list);
+        sheet.show();
+    }
+
+    private void addMessageAction(android.widget.LinearLayout list, String label, Runnable action) {
+        android.widget.TextView row = new android.widget.TextView(this);
+        row.setText(label); row.setTextSize(16);
+        row.setTextColor(androidx.core.content.ContextCompat.getColor(this, com.example.meetomxh.R.color.text_primary));
+        row.setGravity(android.view.Gravity.CENTER_VERTICAL); row.setMinHeight((int) (52 * getResources().getDisplayMetrics().density));
+        row.setPadding((int) (8 * getResources().getDisplayMetrics().density), 0, 0, 0);
+        row.setBackgroundResource(android.R.drawable.list_selector_background);
+        row.setOnClickListener(v -> action.run()); list.addView(row);
+    }
+
+    private void beginMessageEdit(ChatMessage message) {
+        if (message == null || binding == null) return;
+        editingTarget = message; replyTarget = null;
+        binding.layoutReplyComposer.setVisibility(View.VISIBLE);
+        binding.tvReplyComposer.setText("Chỉnh sửa tin nhắn · tối đa 15 phút");
+        binding.btnSendMessage.setText("Lưu");
+        binding.etMessage.setText(message.getText());
+        binding.etMessage.setSelection(binding.etMessage.length());
+        binding.etMessage.requestFocus();
+    }
+
+    private void chooseForwardTarget(ChatMessage message) {
+        if (binding == null || message == null) return;
+        chatRepository.loadCurrentUserChats(new ChatRepository.OnChatsListener() {
+            @Override public void onChats(List<Chat> chats) {
+                if (binding == null || isFinishing() || isDestroyed()) return;
+                List<Chat> targets = new ArrayList<>(); List<String> labels = new ArrayList<>();
+                if (chats != null) for (Chat chat : chats) {
+                    if (chat == null || chat.getChatId() == null || chat.getChatId().equals(chatId)
+                            || !"active".equals(chat.state)) continue;
+                    if (targets.size() >= 20) break;
+                    targets.add(chat);
+                    labels.add("group".equals(chat.getType()) && chat.title != null && !chat.title.trim().isEmpty()
+                            ? chat.title : "Cuộc trò chuyện riêng");
+                }
+                if (targets.isEmpty()) { Toast.makeText(ChatActivity.this, "Không có cuộc trò chuyện đích khả dụng.", Toast.LENGTH_SHORT).show(); return; }
+                int[] pendingNames = {0};
+                for (int i = 0; i < targets.size(); i++) {
+                    Chat target = targets.get(i);
+                    if ("group".equals(target.getType())) continue;
+                    String peer = null;
+                    if (target.getParticipants() != null) for (String participant : target.getParticipants())
+                        if (participant != null && !participant.equals(currentUid)) { peer = participant; break; }
+                    if (peer == null) continue;
+                    final int index = i; pendingNames[0]++;
+                    ProfileClient.get(peer, new Api.Callback<User>() {
+                        @Override public void success(User user) {
+                            if (binding == null) return;
+                            labels.set(index, user.getFullName());
+                            if (--pendingNames[0] == 0) showForwardChooser(message, targets, labels);
+                        }
+                        @Override public void error(String error) {
+                            if (binding == null) return;
+                            labels.set(index, "Cuộc trò chuyện riêng");
+                            if (--pendingNames[0] == 0) showForwardChooser(message, targets, labels);
+                        }
+                    });
+                }
+                if (pendingNames[0] == 0) showForwardChooser(message, targets, labels);
             }
-        }).show();
+            @Override public void onError(String error) {
+                if (binding != null) Toast.makeText(ChatActivity.this, error, Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+    private void showForwardChooser(ChatMessage message, List<Chat> targets, List<String> labels) {
+        if (binding == null || isFinishing() || isDestroyed()) return;
+        String preview = message.getText().length() > 140 ? message.getText().substring(0, 140) + "…" : message.getText();
+        new AlertDialog.Builder(this).setTitle("Chuyển tiếp văn bản")
+                .setMessage(preview).setItems(labels.toArray(new String[0]), (dialog, index) -> {
+                    Chat target = targets.get(index);
+                    new AlertDialog.Builder(this).setTitle("Gửi đến " + labels.get(index))
+                            .setMessage(preview).setNegativeButton("Hủy", null)
+                            .setPositiveButton("Gửi", (d, w) -> chatRepository.forwardTextMessage(
+                                    message.getMessageId(), target.getChatId(), new ChatRepository.OnMessageActionListener() {
+                                        @Override public void onSuccess() { Toast.makeText(ChatActivity.this, "Đã chuyển tiếp.", Toast.LENGTH_SHORT).show(); }
+                                        @Override public void onError(String error) { Toast.makeText(ChatActivity.this, error, Toast.LENGTH_LONG).show(); }
+                                    })).show();
+                }).show();
     }
 
     private void copyMessage(ChatMessage message) {
@@ -673,7 +1289,9 @@ public class ChatActivity extends AppCompatActivity {
 
     private void setReplyTarget(ChatMessage message) {
         if (binding == null || message == null) return;
+        editingTarget = null;
         replyTarget = message;
+        binding.btnSendMessage.setText("Gửi");
         binding.tvReplyComposer.setText("Trả lời: " + message.getDisplayText());
         binding.layoutReplyComposer.setVisibility(View.VISIBLE);
         binding.etMessage.requestFocus();
@@ -684,24 +1302,42 @@ public class ChatActivity extends AppCompatActivity {
             ((com.example.meetomxh.supabase.Observer<?>) messagesRegistration).refresh();
     }
 
+    private void showFailedOutbox(){if(chatId==null||binding==null)return;Api.run(()->MessageOutbox.forConversation(chatId),new Api.Callback<org.json.JSONArray>(){public void success(org.json.JSONArray rows){if(binding==null)return;failedRequestId=rows.length()==0?null:rows.optJSONObject(rows.length()-1).optString("p_client_request_id");binding.tvFailedMessageRetry.setVisibility(failedRequestId==null?View.GONE:View.VISIBLE);failedVoiceMatchesPreview=false;if(failedRequestId!=null){org.json.JSONObject row=rows.optJSONObject(rows.length()-1);String body=row.optString("p_body","");org.json.JSONArray assets=row.optJSONArray("p_assets");failedVoiceMatchesPreview="voice".equals(row.optString("p_kind"))&&uploadedVoiceReference!=null&&assets!=null&&assets.length()==1&&com.example.meetomxh.supabase.Dto.assetId(uploadedVoiceReference).equals(assets.optString(0));binding.tvFailedMessageRetry.setText("Message failed · "+("voice".equals(row.optString("p_kind"))?"Tap to retry voice message":body.isEmpty()?"Tap to retry attachment":"Tap to retry: "+(body.length()>48?body.substring(0,48)+"…":body)));}}public void error(String e){android.util.Log.w("ChatActivity","Outbox unavailable",new IllegalStateException(e));}});}
+    private void retryFailedMessage(){if(failedRequestId==null||chatId==null)return;String request=failedRequestId;boolean clearVoice=failedVoiceMatchesPreview;binding.tvFailedMessageRetry.setEnabled(false);Api.run(()->MessageOutbox.retryOne(chatId,request),new Api.Callback<String>(){public void success(String messageId){if(binding==null)return;binding.tvFailedMessageRetry.setEnabled(true);if(clearVoice){discardVoicePreview();clearReplyTarget();}messageToScrollTo=isAtBottom()?messageId:null;refetchMessages();showFailedOutbox();}public void error(String e){if(binding!=null){binding.tvFailedMessageRetry.setEnabled(true);Toast.makeText(ChatActivity.this,e,Toast.LENGTH_LONG).show();showFailedOutbox();}}});}
+
     private void clearReplyTarget() {
         replyTarget = null;
+        editingTarget = null;
         if (binding != null) {
             binding.layoutReplyComposer.setVisibility(View.GONE);
             binding.tvReplyComposer.setText("");
+            binding.btnSendMessage.setText("Gửi");
         }
     }
 
-    private void scrollToMessage(String messageId) {
+    private void scrollToMessage(String messageId, long seq) {
         if (binding == null || adapter == null) return;
         int position = adapter.indexOfMessage(messageId);
         if (position >= 0) binding.rvMessages.smoothScrollToPosition(position);
-        else Toast.makeText(this, "Tin nhắn gốc không còn trong danh sách hiện tại.", Toast.LENGTH_SHORT).show();
+        else if (seq > 0) {
+            pendingReplyScrollId = messageId; pendingReplyScrollSeq = seq;
+            historyLimit = Math.max(historyLimit, currentMessages.size());
+            if (historyLimit < 5000) {
+                historyLimit += 50; loadingOlder = true;
+                binding.progressOlderMessages.setVisibility(View.VISIBLE);
+                removeMessagesListener(); attachMessagesListenerIfNeeded();
+            } else {
+                pendingReplyScrollId = null; pendingReplyScrollSeq = 0;
+                Toast.makeText(this, "Không thể tải thêm lịch sử.", Toast.LENGTH_SHORT).show();
+            }
+        } else Toast.makeText(this, "Tin nhắn gốc không còn khả dụng.", Toast.LENGTH_SHORT).show();
     }
+
+    private void scrollToMessage(String messageId) { scrollToMessage(messageId, 0); }
 
     private void updateSendingState(boolean isSending) {
         updateComposerPermissions();
-        binding.btnSendMessage.setText(isSending ? "" : "Gửi");
+        binding.btnSendMessage.setText(isSending ? "" : editingTarget != null ? "Lưu" : "Gửi");
         binding.progressSending.setVisibility(isSending ? View.VISIBLE : View.GONE);
     }
 
@@ -714,6 +1350,8 @@ public class ChatActivity extends AppCompatActivity {
         return binding == null || adapter == null || adapter.getItemCount() == 0
                 || !binding.rvMessages.canScrollVertically(1);
     }
+
+    private void openConversationDetails(){if(chatId==null)return;startActivity(new Intent(this,ConversationDetailsActivity.class).putExtra(ConversationDetailsActivity.EXTRA_CHAT_ID,chatId));}
 
     private void openOtherProfile() {
         if (binding == null || otherUid == null || otherUid.trim().isEmpty()

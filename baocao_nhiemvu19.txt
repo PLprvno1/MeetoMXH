@@ -1,0 +1,70 @@
+﻿MEETO — BÁO CÁO TASK 19: ACCOUNT SETTINGS, PRIVACY & PLATFORM MODERATION
+Ngày: 03/11/2026
+Workspace: D:\Android\MeetoMXH
+
+TÓM TẮT
+Đã thay các dialog demo quan trọng bằng luồng RPC có kiểm tra quyền: lưu privacy, quản lý danh sách block, gửi report, yêu cầu xử lý xóa tài khoản và hàng đợi kiểm duyệt nền tảng. Bổ sung migration forward 025, không sửa migration cũ, không cấp role quản trị. Android build và manifest PASS; Cloud và E2E chưa xác minh.
+
+1. SETTINGS / ACCOUNT
+- Theme Light/Dark/System được lưu cục bộ và khôi phục khi mở ứng dụng; có nút System qua nhấn giữ điều khiển theme.
+- Account Info lấy trạng thái xác minh email từ hồ sơ Supabase; đổi mật khẩu dùng Supabase Auth hiện hữu; quên mật khẩu dùng luồng recovery PKCE đang có.
+- Logout gọi signOut hiện hữu và xóa session cục bộ trước khi kết thúc phiên phía server.
+- Yêu cầu xóa tài khoản ghi nhận timestamp qua RPC và audit event. Đây là yêu cầu chờ xử lý; không đổi account_status, không xóa Auth user hoặc dữ liệu.
+- Không có workflow vô hiệu hóa tài khoản an toàn trong schema; không hiển thị nó như tính năng đã thực hiện.
+
+2. PRIVACY / BLOCKS
+- Privacy Center lưu profile audience, last-seen audience và location audience bằng RPC server-side; cập nhật avatar public preset qua RPC hiện hữu.
+- Posts hiện được điều khiển audience theo từng bài; không thêm cài đặt giả cho audience mặc định. Schema/UI hiện không cung cấp cài đặt toàn cục riêng cho Stories hoặc friend requests.
+- Danh sách blocked users trả ID và thời điểm block của chính người dùng; có thao tác bỏ chặn qua set_block. Unblock không tự khôi phục friendship/follow.
+- Menu hồ sơ có block/unblock và report profile. Quy tắc truy cập nội dung vẫn do helper/RLS hiện hữu quyết định.
+
+3. REPORTS
+- Báo cáo profile/post/comment/story/message đi qua submit_content_report, xác thực phiên, kiểm tra target có thể đọc, idempotency theo client request ID và chống report trùng cùng target/lý do trong 24 giờ.
+- Báo cáo group tiếp tục dùng RPC group-specific hiện tại.
+- UI nối report cho post, comment (nhấn giữ), story (nhấn giữ), message (menu nhấn giữ) và profile. Không trả reporter_id trong phản hồi gửi report hoặc hàng đợi client.
+- Nội dung giao diện làm rõ rằng người bị báo cáo không thấy danh tính; moderator được phân quyền có thể xem thông tin xử lý.
+
+4. PLATFORM MODERATION / AUDIT
+- Dashboard gọi list_platform_reports; server yêu cầu system_admin hoặc moderator trong system_roles. Moderator nhận assignment theo hàng đợi; system_admin xem toàn bộ.
+- Có thể dismiss hoặc ghi nhận warn, bắt buộc lý do; mỗi quyết định tạo moderation_action và moderation_audit.
+- Audit view gọi RPC giới hạn role và theo khả năng xem case; không cấp quyền từ group role, không tạo admin mặc định, không có service-role key ở Android.
+- Backend hiện chỉ hỗ trợ các action dismiss/warn trong module này. Hide/remove/suspend/restore không được bật vì chưa có contract platform-safe được xác minh.
+
+5. MIGRATION / RLS
+- File mới: supabase/migrations/20261103000700_account_privacy_moderation.sql (025), cập nhật migrations.sha256.json.
+- Tái sử dụng user_settings, profile_private, user_blocks, account_status, reports, moderation_actions, moderation_audit và system_roles. Candidate phụ thuộc schema nền đến migration 021 (cần profile_private.location_audience), không tham chiếu migration 024.
+- Các RPC đặc quyền dùng SECURITY DEFINER, search_path rỗng, identity/active checks và platform role checks. Không cấp table grant rộng, không sửa Storage/Realtime, không cho client cập nhật account_status.
+- Đã static-review SQL; chưa chạy migration trên PostgreSQL/Supabase Cloud, nên chưa xác minh syntax/runtime hoặc RLS thực tế trên project.
+
+6. KIỂM THỬ / CLOUD
+- Android :app:assembleDebug: PASS.
+- Test-MigrationManifest.ps1: PASS, 25 migration checksum hợp lệ.
+- Supabase CLI, psql và adb không có trong PATH; không có emulator/configured A/B sessions để chạy E2E.
+- Cloud migration deployed: NO / chưa xác minh. Không chạy deploy, không đánh dấu migration applied, không reset database.
+- Regression/Auth/Feed/Friends/Messenger/Stories/Saved/Follow/Notifications/Groups: NOT TESTED ngoài compile build.
+
+BLOCKERS / GIỚI HẠN
+- Trước khi apply 025 cần xác nhận Cloud ledger/schema có đủ migrations 001–021 và migration 025 chưa được apply; trạng thái 021–024 vẫn chưa xác minh.
+- Cần chạy SQL migration và adversarial probes A/B trên Cloud trước khi đánh giá privacy/RLS PASS.
+- Chưa có UI riêng xem báo cáo của chính người gửi, moderation history đầy đủ ngoài audit events giới hạn 50 dòng, hay hành động platform hide/remove/suspend/restore.
+- Không có workflow backend xóa Auth user an toàn; app chỉ ghi nhận yêu cầu chờ xử lý.
+
+ACCEPTANCE MATRIX
+ACCOUNT SETTINGS: PARTIAL
+PASSWORD/RECOVERY: PASS (dùng luồng Supabase Auth hiện hữu; Cloud chưa E2E)
+PRIVACY CENTER: PARTIAL
+BLOCK/UNBLOCK: PARTIAL (RPC hiện hữu; Cloud chưa E2E)
+BLOCKED USERS LIST: PARTIAL
+REPORT USER/POST: PARTIAL
+REPORT COMMENT/STORY: PARTIAL
+REPORT PRIVACY: PARTIAL (server không trả reporter identity; Cloud chưa kiểm chứng)
+PLATFORM ADMIN: PARTIAL (role gate server-side; chưa có tài khoản role để kiểm thử)
+REPORT QUEUE: PARTIAL
+MODERATION ACTIONS: PARTIAL (dismiss/warn)
+AUDIT LOG: PARTIAL
+SECURITY/RLS: PARTIAL (static review, chưa chạy Cloud adversarial probes)
+ANDROID BUILD: PASS
+CLOUD DEPLOYED: NO
+EMULATOR E2E: BLOCKED / NOT RUN
+CRITICAL REGRESSIONS: NOT TESTED
+READY FOR TASK 20: NO

@@ -1,0 +1,82 @@
+MEETO — BÁO CÁO NHIỆM VỤ 14
+Thay verifier bắt buộc bằng direct Supabase Storage upload
+Ngày: 03/11/2026 · Workspace: D:\Android\MeetoMXH
+
+1. Kết luận triển khai
+- Android đã được chuyển sang luồng upload trực tiếp: tạo upload intent có marker phiên bản mới, gửi object tới Storage, rồi xác nhận object/metadata bằng finalize RPC. Client không chờ media verifier hoặc polling trạng thái verified.
+- Candidate migration forward đã được tạo tại `supabase/migrations/20261103000100_direct_storage_upload.sql`; CHƯA áp dụng lên Cloud vì không có quyền/kết nối đọc live schema và migration ledger. Không suy đoán Cloud giống local.
+- Vì các RPC mới chưa được xác nhận tồn tại trên Cloud, không chạy upload E2E thật, không tạo intent/object/profile/post/message trên hai tài khoản test. Khi migration chưa áp dụng, bản app mới có thể báo direct upload chưa được bật trên server.
+- Luồng cũ của upload intent chưa có marker được giữ nguyên qua finalize cũ để tránh chuyển pending cũ thành ready hoặc làm hỏng file đang dùng. Worker/verifier cũ có thể vẫn cần cho intent cũ; không có worker local nào được dùng.
+
+2. Kiến trúc và bảo mật
+Luồng cũ:
+- Android gọi prepare_upload/prepare_message_upload → registry pending → Storage object upload → finalize lặp tối đa khoảng 120 giây → chờ worker ghi metadata.verified/object_id/size → registry ready → attach.
+- Attachment/profile/chat và quyền đọc vốn đã yêu cầu state ready; Storage buckets private, RLS phân quyền owner/object path và content target.
+
+Luồng mới (sau khi migration được triển khai):
+- URI được stream sang cache file tạm có giới hạn dung lượng, MIME/signature và decode tối thiểu phía Android.
+- Android nhận intent direct gắn nhãn upload_flow=direct_storage_v1, upload tới Storage, rồi gọi finalize_upload một lần với retry giới hạn cho lỗi mạng/5xx.
+- Backend chỉ ghi ready nếu xác thực owner, purpose/bucket/path chuẩn, object tồn tại, Storage owner id, size, mimetype, bucket private, MIME allowlist và giới hạn dung lượng. Attachment vẫn chạy qua RPC hiện có và chỉ chấp nhận asset ready.
+- `ready` nghĩa là object tồn tại và vượt kiểm tra metadata/storage tối thiểu; không tuyên bố đã full-decode hoặc kiểm duyệt nội dung. Không client nào ghi `verified=true`.
+- Object private và các chính sách Storage/RLS hiện có không bị sửa. Hàm can_read_media hiện dựa trên owner/attachment/target permission và state ready, không bắt buộc metadata.verified.
+- Pending intents không attach được; intent bị hủy/lỗi được xử lý bởi cleanup hiện có. Không xóa hoặc nâng cấp dữ liệu cũ tự động.
+
+3. Tệp thay đổi
+- `app/src/main/java/com/example/meetomxh/storage/SupabaseStorage.java`: kiểm tra MIME/signature, stream file qua buffer xuống cache (không nạp toàn bộ vào RAM), giới hạn file, decode mẫu ảnh/video trên worker thread, standard upload và TUS resumable, progress/cancel, finalize xác nhận server và idempotency.
+- `app/build.gradle.kts`: thêm thư viện tus-java-client tương thích Android.
+- `app/src/main/java/com/example/meetomxh/ProfileEditActivity.java` và `app/src/main/res/layout/activity_profile_edit.xml`: trạng thái tiến độ, retry/cancel, preview giữ nguyên ảnh Cloud khi thất bại/hủy; lưu tham chiếu avatar/cover qua recreation.
+- `app/src/main/java/com/example/meetomxh/CreatePostActivity.java`: upload tuần tự từng media, progress, giữ các tệp chưa upload để retry, không tạo post trước khi tất cả upload thành công.
+- `app/src/main/java/com/example/meetomxh/ChatActivity.java`: picker chỉ chọn ảnh (không giả hỗ trợ video), progress/cancel/retry cho ảnh chat.
+- `app/src/main/java/com/example/meetomxh/supabase/ErrorMapper.java`: lỗi intent cũ, object thiếu, metadata không hợp lệ, reservation hết hạn và server chưa có RPC được báo rõ.
+- Candidate migration tạo hai prepare RPC direct và nhánh finalize direct; giữ nguyên finalize legacy/cleanup. Chưa sửa migrations 001–018.
+- `supabase/migrations.sha256.json`: thêm migration mới và đồng bộ hash các migration hiện có với bytes trong working tree; nội dung SQL cũ không thay đổi. `Test-MigrationManifest.ps1` xác nhận 19 checksum.
+- Không thay đổi cấu hình Auth, Cloud DB, RLS/Storage policies, bucket, Dashboard hoặc service-role credentials.
+
+4. Giới hạn upload đã cài ở client/candidate
+- Avatar/cover: PNG, JPEG, WebP; tối đa 10 MiB.
+- Post: PNG, JPEG, WebP, MP4; tối đa 50 MiB.
+- Messenger: ảnh PNG, JPEG, WebP tối đa 50 MiB; chat video hiện chưa được triển khai trong UI/backend client contract.
+- Ảnh kiểm tra header/signature và decode ở kích thước mẫu; giới hạn 100 triệu pixel. MP4 kiểm tra container và đọc metadata/frame đầu trên worker thread. Đây không phải full content verification.
+- File dưới hoặc bằng 6 MiB dùng standard upload; file lớn hơn dùng TUS với chunk 6 MiB, retry có giới hạn và URL resume được lưu trong EncryptedVault. Tiến độ không báo 100% trước khi finalize thành công.
+- Bucket/global limits trên Cloud không được đọc trực tiếp trong lượt này; các con số trên là giới hạn cục bộ và kiểm tra candidate migration, không xác nhận cấu hình thật hiện tại của project.
+- Không có benchmark thời gian/tốc độ, vì không chạy upload Cloud thật.
+
+5. Kết quả kiểm thử
+- `assembleDebug`: PASS.
+- `assembleDebugAndroidTest`: PASS.
+- `testDebugUnitTest`: PASS.
+- `connectedDebugAndroidTest` chỉ chạy `Task13SelectorUiTest`: PASS, 1 test trên Pixel_4 AVD/API 37; test này không truy cập media/Cloud.
+- `Test-MigrationManifest.ps1`: PASS, 19 migration checksums.
+- Emulator Pixel 4 API 37 đã được phát hiện. Không chạy `MediaAndMessengerTest`: test hiện có tạo peer/friend, thay avatar/cover và thông tin riêng, tạo bài viết/video/message; không an toàn để chạy khi chưa xác nhận schema/RPC Cloud và không có cleanup xác nhận cho toàn bộ thay đổi.
+- Không chạy profile/post/chat media thật; không upload object, không gửi message, không thay profile, không tạo nội dung Cloud.
+- SQL migration chưa được chạy trên PostgreSQL/Cloud; không có Supabase CLI, psql hoặc admin connection trong môi trường hiện tại. Kiểm tra checksum không phải kiểm tra cú pháp/triển khai SQL.
+
+6. Trạng thái nghiệm thu
+MEDIA VERIFIER DEPENDENCY REMOVED: PARTIAL (client direct; legacy backend route còn giữ và Cloud migration chưa triển khai)
+DIRECT IMAGE UPLOAD: PARTIAL (code/build; chưa kiểm thử Cloud)
+DIRECT VIDEO UPLOAD: PARTIAL (post upload code; chưa kiểm thử Cloud)
+AVATAR UPLOAD + ATTACH: PARTIAL (UI/client code; không đổi profile Cloud)
+COVER UPLOAD + ATTACH: PARTIAL (UI/client code; không đổi profile Cloud)
+POST IMAGE: PARTIAL (client flow; chưa tạo post Cloud)
+POST VIDEO: PARTIAL (client flow; playback chưa kiểm thử)
+VIDEO PLAYBACK: PARTIAL (không chạy media E2E)
+CHAT IMAGE: PARTIAL (client flow; không gửi message Cloud)
+CHAT VIDEO: NOT IMPLEMENTED
+UPLOAD PROGRESS: PARTIAL (implemented/compiled; không đo network upload thật)
+RETRY/RESUME: PARTIAL (retry/cancel/TUS resume implemented; chưa test mất mạng/restart trên Cloud)
+STORAGE RLS: PARTIAL (giữ nguyên policy code cục bộ; live policy chưa đọc/xác minh)
+PRIVATE MEDIA ACCESS: PARTIAL (authorization code path giữ nguyên; không chạy cross-user Cloud check)
+ANDROID BUILD: PASS
+EMULATOR E2E MEDIA TESTS: BLOCKED (Cloud schema/ledger/RPC chưa xác minh và migration chưa deploy)
+CRITICAL REGRESSIONS: 0 phát hiện trong phạm vi build + UI-only test; Cloud chưa nghiệm thu
+CLOUD FREE COMPATIBLE: PARTIAL (không thêm dịch vụ trả phí; global/bucket limit hiện tại chưa xác minh)
+LOCAL WORKER REQUIRED: NO
+APK/AAB EXPORTED AS DELIVERABLE: NO
+
+7. Việc cần operator thực hiện
+1. Cấp kết nối Supabase admin/read-only đủ để kiểm tra migration ledger, function signatures, bucket limits/allowlist/private flags và Storage RLS hiện tại; hoặc chủ dự án tự xác minh các mục này trên Cloud.
+2. So sánh live schema/ledger với preconditions trong candidate migration. Chỉ sau khi đối chiếu thành công mới áp dụng migration forward; không chạy reset và không sửa migrations cũ.
+3. Build/cài lại app sau khi migration có mặt, rồi chạy media E2E bằng tài khoản test với fixture nhỏ và cleanup được xác nhận. Cần kiểm tra object ready/attach, restart, quyền người xem hợp lệ và từ chối truy cập chéo-user.
+4. Sau E2E, mới kết luận PASS cho avatar/cover, post image/video, Messenger image, playback, retry/resume và private access.
+
+Không gửi email recovery, không thay đổi mật khẩu/tài khoản test, không dùng Docker/local worker, không thay đổi Dashboard hoặc Cloud schema trong lượt này.

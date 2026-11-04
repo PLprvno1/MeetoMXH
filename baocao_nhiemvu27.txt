@@ -1,0 +1,49 @@
+MEETO — TASK 27: REELS & SHORT VIDEOS
+
+Implemented in the existing Android Java/XML and Supabase RPC architecture. Migration 034 is forward-only and has not been deployed.
+
+Components reused
+- Existing private media upload/verification lifecycle (`SupabaseStorage`), MP4 limits, authenticated storage access, Media3/ExoPlayer, Posts, reactions, comments, saves, sharing, follows and profile media.
+- Reel video is an original post with Reel metadata; likes/comments/saves/shares continue to use the existing post contracts.
+
+New components
+- `ReelsFragment` and vertical snap-paged feed, Discover/Following mode, refresh by tapping the header, cursor paging, empty/error/retry UI, one ExoPlayer attached to the visible page, muted initial playback, progress seek, pause/resume, follow, caption expand, and current page position retention.
+- `CreateReelActivity`: Android Photo Picker, MP4 and 50 MiB validation, duration validation, keyframe-aware local trim/remux, optional audio removal, frame selection, caption and audience, upload progress, retry retention and idempotent `create_reel` call.
+- Reel cover is uploaded as a private image asset and stored separately from post media. `can_read_media` only exposes it while its Reel post is readable; deleting a Reel schedules cover retirement.
+- Existing Profile Videos query includes the video attached to the Reel post; no separate profile-media system was added.
+
+Migration 034
+- Adds Reel metadata to `posts`, `list_reels`, `get_user_reels`, and `create_reel`; the feed uses public Reels for Discover and currently readable followed/own Reels for Following.
+- Validates ready, owned, verified MP4 and cover assets, audience, length, idempotency, and asset reuse. Existing visibility and block checks remain in `can_read_post`/`can_read_media`.
+- Grants only the authenticated RPC surface; no new direct table grants. Transaction and PostgREST schema reload are included.
+- SHA-256 recorded in `supabase/migrations.sha256.json`.
+
+Checks
+- `:app:assembleDebug`: PASS.
+- `:app:testDebugUnitTest`: PASS (14 existing unit tests, 0 failures). These do not exercise Reels playback or cloud RPCs.
+- Static migration structure check: one BEGIN/COMMIT pair, balanced dollar-quote blocks, dependency/signature/grant review, and checksum verification. No PostgreSQL parser, Cloud execution, or local database was used.
+- Emulator smoke: BLOCKED; `adb` and Android SDK environment variables are unavailable in this workspace.
+- Cloud migration / upload verification: NOT RUN; deploy is intentionally left to the project owner.
+
+Acceptance matrix
+REELS FEED: PARTIAL
+VERTICAL SWIPE: PARTIAL
+VIDEO PLAYBACK: PARTIAL
+VIDEO PRELOAD/CACHE: PARTIAL — only the current item is prepared; no next-item preload or persistent cache was added.
+CREATE REEL: PARTIAL — requires migration 034 and deployed upload/verifier RPC contract.
+VIDEO TRIM: PARTIAL — keyframe-based remux is implemented; not exercised on device media.
+COVER SELECTION: PARTIAL — uploaded and privacy-gated in migration 034; not exercised on device/Cloud.
+LIKE/COMMENT: PARTIAL — reuses existing RPCs; not exercised against Cloud.
+SAVE/SHARE: PARTIAL — reuses existing RPCs; not exercised against Cloud.
+PROFILE INTEGRATION: PARTIAL — existing Videos tab includes Reel media; not device-verified.
+UI/UX: PARTIAL — compiled; emulator accessibility, dark mode and gesture behavior remain unobserved.
+ANDROID BUILD: PASS
+MIGRATION REQUIRED: YES
+CLOUD DEPLOYED: NO
+EMULATOR SMOKE: BLOCKED
+READY FOR TASK 28: CONDITIONAL — first deploy migration 034, then verify authorized playback/upload and the acceptance scenarios on an emulator.
+
+Remaining limitations
+- Next-item preload and bounded disk caching are not implemented; a single visible player is used to limit decoder and memory use. Persistent caching was omitted so revoked private media is not served from a stale local cache.
+- The uploaded cover is separate from `post_media`; its access is explicitly tied to the readable Reel post. Orphan ready assets after an abandoned creation rely on the existing media cleanup lifecycle.
+- Cloud schema, media verifier acceptance, RPC response mapping and actual playback remain unverified until deployment and emulator smoke.

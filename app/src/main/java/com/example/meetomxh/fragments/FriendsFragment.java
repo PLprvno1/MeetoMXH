@@ -295,6 +295,12 @@ public class FriendsFragment extends Fragment implements FriendItemAdapter.OnFri
     @Override
     public void onSecondaryActionClick(FriendItem item) {
         if (item == null || item.getUser() == null) return;
+        FriendItem.RelationshipStatus status = item.getRelationshipStatus();
+        if (status == FriendItem.RelationshipStatus.NO_RELATION) {
+            adapter.removeItem(item);
+            Toast.makeText(requireContext(), "Đã gỡ gợi ý kết bạn", Toast.LENGTH_SHORT).show();
+            return;
+        }
         friendRepository.removeFriendRelation(item.getUser().getUid(), new FriendRepository.OnFriendActionListener() {
             @Override
             public void onSuccess(String message) {
@@ -313,9 +319,9 @@ public class FriendsFragment extends Fragment implements FriendItemAdapter.OnFri
     @Override
     public void onDestroyView() {
         requestVersion++;
-        searchHandler.removeCallbacksAndMessages(null);
-        binding = null;
+        if (searchRunnable != null) searchHandler.removeCallbacks(searchRunnable);
         super.onDestroyView();
+        binding = null;
     }
 
     private void refreshCurrentView() {
@@ -324,8 +330,7 @@ public class FriendsFragment extends Fragment implements FriendItemAdapter.OnFri
         if (query.isEmpty()) {
             loadDataForMode(currentMode);
         } else {
-            long version = ++requestVersion;
-            searchUsers(query, version);
+            searchUsers(query, requestVersion);
         }
     }
 }

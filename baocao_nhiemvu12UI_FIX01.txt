@@ -1,0 +1,55 @@
+MEETO — BÁO CÁO NHIỆM VỤ 12UI-FIX01
+Khắc phục regression đăng nhập và quên mật khẩu sau redesign
+Ngày: 02/11/2026 · Workspace: D:\Android\MeetoMXH
+
+1. Xác minh workspace
+- Android Studio đang mở D:\Android\MeetoMXH; package/applicationId: com.example.meetomxh.
+- F:\MeetoMXH không tồn tại. Không đồng bộ hoặc ghi đè workspace khác.
+- Git branch main đang có các thay đổi redesign chưa commit. Các layout và thay đổi UI đó được giữ nguyên.
+- supabase.debug.properties là file local bị ignore và hiện không có trong workspace.
+
+2. Nguyên nhân gốc
+- app/build.gradle.kts mặc định build debug bằng http://10.0.2.2:54321 và anon key rỗng nếu thiếu supabase.debug.properties. Đây là endpoint local, không phải Supabase Cloud; ứng dụng vì thế không thể đăng nhập/recover trên Cloud. SupabaseConfig chỉ báo lỗi cấu hình chung.
+- Emulator đang mở màn Quên mật khẩu và hiển thị lỗi chung. Luồng login và recover đều gọi qua cấu hình trên nên chưa có bằng chứng request nào đến Cloud trong workspace này.
+- ForgotPasswordActivity trước sửa gửi request kể cả email trống, không khóa nút khi đang gửi, và phản hồi thành công diễn đạt như email đã được gửi dù Supabase chỉ xác nhận request được chấp nhận.
+- LoginActivity chưa validate email/mật khẩu trước khi gọi API; lỗi network/auth được báo chung, khó phân biệt sai credentials với cấu hình kết nối.
+
+3. Thay đổi
+- app/build.gradle.kts: URL debug dự phòng đổi sang HTTPS URL của project ref đã cung cấp; anon key tiếp tục lấy từ file cấu hình local, không thêm key vào source.
+- SupabaseConfig.java: kiểm tra HTTPS và báo rõ khi thiếu URL/anon key.
+- LoginActivity.java: validate email/mật khẩu, chống double-submit, hiển thị trạng thái loading, mở lại nút khi lỗi và hỗ trợ submit bằng IME Done.
+- ForgotPasswordActivity.java: validate email/mật khẩu mới, chặn double-submit, trạng thái loading/retry, phản hồi không khẳng định email đã được gửi.
+- SupabaseAuthClient.java: trả Subscription cho recovery và cập nhật mật khẩu để lifecycle hủy request đúng cách.
+- ErrorMapper.java: thông báo riêng cho invalid credentials, giới hạn gửi email và thiếu cấu hình.
+- Không sửa XML, manifest, API contract, migrations, RLS hay cấu hình Dashboard Supabase.
+
+4. Kiểm thử và trạng thái
+- Android build `assembleDebug`: PASS.
+- Unit tests `testDebugUnitTest`: PASS (task hiện up-to-date; 10 unit tests hiện có).
+- Emulator Pixel API 37: cài bản debug thành công; login mở được, liên kết Quên mật khẩu mở form đúng; email trống bị chặn và hiện validation; email login trống bị chặn và hiện validation.
+- Login A/B, logout, sai mật khẩu qua Cloud, session restore: BLOCKED — thiếu supabase.debug.properties/anonKey. Không dùng credentials thật trong lượt này.
+- Recovery API, delivery email/SMTP, PKCE callback thật: BLOCKED — request không được gửi; chưa xác minh allowlist Redirect URL trên Dashboard. Không đổi mật khẩu, không gửi email, không tạo session giả.
+- Feed/Profile/Friends/Messenger smoke sau login: BLOCKED vì chưa đăng nhập được.
+- Docker/local worker: không dùng. APK/AAB không xuất thành deliverable; APK debug chỉ được build/cài để kiểm tra emulator.
+
+5. Cấu hình cần có để chạy kiểm thử Cloud tiếp
+Tạo file local `supabase.debug.properties` (file này đã nằm trong .gitignore) với hai thuộc tính:
+url=https://qjpohzpapiwdrxsionyr.supabase.co
+anonKey=<publishable/anon key của project>
+Sau đó build/cài lại để chạy login và recovery thật. Không dùng service-role key trên Android. Redirect URI cần được xác nhận trong Auth URL Configuration của Supabase là meeto://auth/callback.
+
+6. Kết luận
+SOURCE WORKSPACE VERIFIED: YES
+ANDROID BUILD: PASS
+LOGIN UI / VALIDATION: PASS
+LOGIN A / LOGIN B / LOGOUT / SESSION RESTORE: BLOCKED (thiếu Cloud anon key)
+FORGOT PASSWORD NAVIGATION / FORM VALIDATION: PASS
+RECOVERY API / EMAIL DELIVERY / DEEP LINK E2E: BLOCKED (chưa gửi request/email)
+MAIN/FEED/PROFILE SMOKE: BLOCKED (chưa có Cloud session)
+DESIGN SYSTEM PRESERVED: YES
+SUPABASE DASHBOARD CONFIG CHANGED: NO
+NEW P0/P1 REGRESSIONS: chưa xác nhận; phần Cloud chưa chạy
+DOCKER/LOCAL WORKER REQUIRED: NO
+APK/AAB EXPORTED AS DELIVERABLE: NO
+
+Không đánh dấu PASS cho các luồng Cloud chưa chạy. Sau khi bổ sung local anon key, cần chạy lại A/B, logout, session restore, recovery request và callback thật để hoàn tất nghiệm thu.

@@ -31,7 +31,7 @@ android {
 
     buildTypes {
         debug {
-            buildConfigField("String", "SUPABASE_URL", quotedBuildConfigValue(debugProperties.getProperty("url", "http://10.0.2.2:54321")))
+            buildConfigField("String", "SUPABASE_URL", quotedBuildConfigValue(debugProperties.getProperty("url", "https://qjpohzpapiwdrxsionyr.supabase.co")))
             buildConfigField("String", "SUPABASE_ANON_KEY", quotedBuildConfigValue(debugProperties.getProperty("anonKey", "")))
         }
         release {
@@ -61,6 +61,10 @@ dependencies {
     androidTestImplementation(libs.espresso.core)
     androidTestImplementation(libs.ext.junit)
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
+    implementation("io.tus.java.client:tus-java-client:0.5.1")
+    implementation("androidx.media3:media3-exoplayer:1.11.1")
+    implementation("androidx.media3:media3-ui:1.11.1")
     // Glide
     implementation("com.github.bumptech.glide:glide:4.16.0")
     // Facebook Shimmer

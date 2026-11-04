@@ -5,6 +5,10 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.os.Handler;
+import android.os.Looper;
+import android.text.Editable;
+import android.text.TextWatcher;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -42,9 +46,14 @@ public class InboxFragment extends Fragment {
     private final Map<String, UserProfile> profiles = new HashMap<>();
     private final Set<String> profilesLoading = new HashSet<>();
     private List<Chat> chats = new ArrayList<>();
+    private List<Chat> allChats = new ArrayList<>();
     private String currentUid;
     private boolean chatsLoaded;
     private long chatsListenerGeneration;
+    private final Handler searchHandler = new Handler(Looper.getMainLooper());
+    private Runnable pendingConversationSearch;
+    private long searchGeneration;
+    private boolean searchingConversations;
 
     @Nullable
     @Override
@@ -64,6 +73,11 @@ public class InboxFragment extends Fragment {
         binding.rvInbox.setLayoutManager(new LinearLayoutManager(requireContext()));
         adapter = new InboxAdapter(this::openChat);
         binding.rvInbox.setAdapter(adapter);
+        binding.etSearchConversations.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) { scheduleConversationSearch(s.toString()); }
+            @Override public void afterTextChanged(Editable s) { }
+        });
         if (currentUid == null || currentUid.trim().isEmpty()) {
             showState("Đăng nhập để xem cuộc trò chuyện.");
         } else {
@@ -81,9 +95,10 @@ public class InboxFragment extends Fragment {
             public void onChats(List<Chat> items) {
                 if (!isCurrentChatsListener(listenerGeneration)) return;
                 chatsLoaded = true;
-                chats = items == null ? new ArrayList<>() : new ArrayList<>(items);
+                allChats = items == null ? new ArrayList<>() : new ArrayList<>(items);
+                if (!searchingConversations) chats = new ArrayList<>(allChats);
                 sortChatsNewestFirst();
-                for (Chat chat : chats) {
+                for (Chat chat : allChats) {
                     String otherUid = getOtherUid(chat);
                     if (otherUid != null) loadProfileOnce(otherUid);
                 }
@@ -115,6 +130,9 @@ public class InboxFragment extends Fragment {
         profiles.clear();
         profilesLoading.clear();
         chats.clear();
+        allChats.clear();
+        searchGeneration++;
+        if (pendingConversationSearch != null) searchHandler.removeCallbacks(pendingConversationSearch);
         chatsLoaded = false;
         super.onDestroyView();
     }
@@ -131,7 +149,7 @@ public class InboxFragment extends Fragment {
         return binding != null && isAdded() && generation == chatsListenerGeneration;
     }
 
-    private void loadProfileOnce(String uid) {if(profiles.containsKey(uid)||!profilesLoading.add(uid))return;ProfileClient.get(uid,new Api.Callback<com.example.meetomxh.models.User>(){public void success(com.example.meetomxh.models.User user){profilesLoading.remove(uid);if(binding==null)return;profiles.put(uid,new UserProfile(user.getFullName(),user.getAvatarUrl()));renderChats();}public void error(String e){profilesLoading.remove(uid);if(binding!=null){profiles.put(uid,new UserProfile("NgÆ°á»i dÃ¹ng khÃ´ng kháº£ dá»¥ng",null));renderChats();}}});}
+    private void loadProfileOnce(String uid) {if(profiles.containsKey(uid)||!profilesLoading.add(uid))return;ProfileClient.get(uid,new Api.Callback<com.example.meetomxh.models.User>(){public void success(com.example.meetomxh.models.User user){profilesLoading.remove(uid);if(binding==null)return;profiles.put(uid,new UserProfile(user.getFullName(),user.getAvatarUrl()));renderChats();}public void error(String e){profilesLoading.remove(uid);if(binding!=null){profiles.put(uid,new UserProfile("Người dùng không khả dụng",null));renderChats();}}});}
 
     private void renderChats() {
         if (binding == null || adapter == null) return;
@@ -152,7 +170,7 @@ public class InboxFragment extends Fragment {
         for (Chat chat : chats) {
             String otherUid = getOtherUid(chat);
             if (otherUid == null) continue;
-            UserProfile profile = "group".equals(chat.getType()) ? new UserProfile(chat.title + ("archived".equals(chat.state)?" (lÆ°u trá»¯)":""),null) : profiles.get(otherUid);
+            UserProfile profile = "group".equals(chat.getType()) ? new UserProfile(chat.title + ("archived".equals(chat.state)?" (lưu trữ)":""),null) : profiles.get(otherUid);
             String preview = chat.getLastMessage();
             if (chat.getLastMessageHiddenFor() != null && currentUid != null
                     && chat.getLastMessageHiddenFor().contains(currentUid)) preview = "Tin nhắn đã xóa";
@@ -171,6 +189,41 @@ public class InboxFragment extends Fragment {
         binding.tvInboxState.setVisibility(View.GONE);
         binding.rvInbox.setVisibility(rows.isEmpty() ? View.GONE : View.VISIBLE);
         if (rows.isEmpty()) showState("Không thể hiển thị các cuộc trò chuyện.");
+    }
+
+    private void scheduleConversationSearch(String value) {
+        if (binding == null) return;
+        if (pendingConversationSearch != null) searchHandler.removeCallbacks(pendingConversationSearch);
+        String query = value == null ? "" : value.trim();
+        long generation = ++searchGeneration;
+        if (query.isEmpty()) {
+            searchingConversations = false;
+            chats = new ArrayList<>(allChats);
+            sortChatsNewestFirst(); renderChats();
+            return;
+        }
+        if (query.length() > 80) {
+            showState("Tối đa 80 ký tự."); return;
+        }
+        searchingConversations = true;
+        pendingConversationSearch = () -> chatRepository.searchConversations(query, new ChatRepository.OnChatsListener() {
+            @Override public void onChats(List<Chat> result) {
+                if (binding == null || generation != searchGeneration) return;
+                chats = result == null ? new ArrayList<>() : new ArrayList<>(result);
+                sortChatsNewestFirst();
+                for (Chat chat : chats) {
+                    String other = getOtherUid(chat);
+                    if (other != null) loadProfileOnce(other);
+                }
+                renderChats();
+                if (chats.isEmpty()) showState("Không tìm thấy cuộc trò chuyện.");
+            }
+            @Override public void onError(String error) {
+                if (binding == null || generation != searchGeneration) return;
+                showState(error == null ? "Không thể tìm kiếm. Thử lại." : error);
+            }
+        });
+        searchHandler.postDelayed(pendingConversationSearch, 250);
     }
 
     private void sortChatsNewestFirst() {

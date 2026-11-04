@@ -1,0 +1,40 @@
+# MEETO — Task 25: Advanced Messenger
+
+## Reused foundations
+
+- Existing reply RPC validates that the source message is visible and belongs to the same conversation; existing reply preview, recall, delete-for-me, delivery/read receipts and message pagination remain in use.
+- Existing private Realtime invalidation, event outbox, retry/idempotency, image/video upload and private media authorization remain in use.
+- Existing `search_messages` RPC is retained. Migration 032 adds edit, text-forward and authorized inbox search RPCs.
+
+## Changes
+
+- Added migration `20261103001400_advanced_messenger.sql`: a forwarded marker, versioned server-side text edits with a 15-minute server timestamp window, idempotent text forwarding between authorized conversations, and search over conversations visible to the current member.
+- Added a Material bottom sheet for message actions, edit composer state, text-forward target selection with preview, conversation search, and attachment preview before upload.
+- Reply previews now carry the authorized source sequence, load older history until the source is found, and show a placeholder when it is no longer available.
+- Extended chat attachment UI to select photos and MP4 video. Existing private media pipeline and video playback are used. Media references stay `asset://` IDs; storage paths and signed URLs are not exposed.
+- Added focused model tests for edited/forwarded/recalled message state.
+
+## Acceptance matrix
+
+REPLY: PARTIAL — existing same-conversation contract retained; no Cloud E2E.
+FORWARD: PARTIAL — text forwarding implemented; media forwarding is unsupported because one-use asset ownership and conversation-bound authorization do not permit safe reuse.
+UNSEND: PARTIAL — existing server recall retained; no Cloud E2E.
+DELETE FOR ME: PARTIAL — existing persisted per-user hiding retained; no Cloud E2E.
+EDIT MESSAGE: PARTIAL — migration 032 and Android flow implemented; migration not deployed.
+CONVERSATION SEARCH: PARTIAL — authorized RPC and debounced UI; first 30 matches only, no search pagination UI.
+MESSAGE SEARCH: PARTIAL — existing per-conversation RPC retained; UI currently caps results at 100.
+VOICE MESSAGE: BLOCKED — current bucket and media verification worker accept image/video formats, not audio. No unverified recording/send control was added.
+MEDIA MESSAGING: PARTIAL — photo/MP4 selection, preview, upload and authorized playback; Cloud flow not verified.
+MESSAGE ACTION SHEET: PARTIAL — bottom sheet provides reply, forward, edit, copy, recall, delete-for-me, report and receipt actions; no Cloud E2E.
+REALTIME: PARTIAL — existing private invalidation is reused for edit/forward; Cloud delivery not verified.
+MEDIA SECURITY: PARTIAL — existing private asset authorization reused; not verified against deployed Cloud policies.
+UI/UX: PARTIAL — targeted chat/inbox changes implemented; no emulator was available.
+ANDROID BUILD: PASS — `:app:assembleDebug` and `:app:testDebugUnitTest` succeeded.
+MIGRATION REQUIRED: YES — migration 032 is required for edit, text-forward and conversation search.
+CLOUD DEPLOYED: NO.
+EMULATOR E2E: BLOCKED — ADB/emulator unavailable and migration 032 is not deployed.
+READY FOR TASK 26: NO — voice messaging and Cloud verification remain outstanding.
+
+## Limits
+
+No Cloud SQL was run or deployed. No Docker, PostgreSQL client/server, local worker, APK/AAB handoff or service-role credential was used. Migration syntax/dependencies/grants were reviewed statically; database execution and two-account functional scenarios remain unverified. Migration checksum is recorded in `supabase/migrations.sha256.json`.

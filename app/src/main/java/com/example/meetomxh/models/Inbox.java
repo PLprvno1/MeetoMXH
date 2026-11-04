@@ -6,6 +6,7 @@ public class Inbox {
     private String chatName;
     private String lastMessage;
     private String avatarUrl;
+    private String avatarPreset = "neutral";
     private String timestamp;
     private boolean unread;
 
@@ -58,6 +59,12 @@ public class Inbox {
 
     public void setAvatarUrl(String avatarUrl) {
         this.avatarUrl = avatarUrl;
+    }
+
+    public String getAvatarPreset() { return avatarPreset; }
+
+    public void setAvatarPreset(String value) {
+        avatarPreset = "male".equals(value) || "female".equals(value) ? value : "neutral";
     }
 
     public String getServerTime() {

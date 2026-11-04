@@ -1,0 +1,77 @@
+MEETO — BÁO CÁO NHIỆM VỤ 12UI-FIX02
+Kiểm thử Cloud Auth sau khi khôi phục cấu hình
+Ngày: 02/11/2026 · Workspace: D:\Android\MeetoMXH
+
+1. Cloud configuration
+- Workspace: D:\Android\MeetoMXH; applicationId: com.example.meetomxh.
+- `supabase.debug.properties` tồn tại tại project root và được Git ignore.
+- Xác minh bằng so sánh nội bộ (không in key): URL trong file khớp project Cloud HTTPS; anonKey không rỗng, có prefix `sb_publishable_`, không phải service_role/secret.
+- Debug BuildConfig khớp URL/key trong file; dùng HTTPS Cloud và không trỏ tới 10.0.2.2.
+- Emulator AVD Pixel_4, Android API 37. Không thay đổi Supabase Dashboard settings.
+
+2. Login, logout và smoke qua UI
+Chạy `AuthCloudSmokeTest` trên Activity thật với Espresso. Hai email/password được gửi đúng lúc tới receiver localhost tạm thời, giữ trong RAM, không nằm trong source/test/config/log/báo cáo. Test output chỉ chứa trạng thái tổng hợp.
+
+- Login A bằng UI: PASS; email Auth khớp tài khoản yêu cầu, Cloud self-profile có cùng Auth identity.
+- Logout A: PASS; local identity được xóa qua thao tác UI.
+- Login B bằng UI: PASS; email Auth và Cloud self-profile khớp identity B.
+- Logout B, đăng nhập lại A: PASS.
+- Sai mật khẩu: PASS; không tạo identity, request lỗi kết thúc và nút Đăng nhập mở lại để retry. Kiểm tra mapping `invalid_credentials` cho thông báo dễ hiểu.
+- Feed/Profile/Friends/Messenger: PASS; mở được qua UI/navigation và identity còn giữ nguyên. Messenger được smoke ở Inbox, không gửi tin nhắn.
+- Dark Mode/navigation: PASS; đổi theme, Activity recreate, khôi phục theme ban đầu, session vẫn còn.
+- Session Restore: PASS; đăng nhập lại A, force-stop, launch LoginActivity và app vào Main. `SessionRestoreTest` PASS: self-profile đúng identity, session trên đĩa không ở dạng plaintext, refresh token Cloud hoạt động.
+- Instrumentation: `AuthCloudSmokeTest` PASS (1 test cho flow A/B, 1 test seed session); `SessionRestoreTest` PASS (1 test).
+
+3. Quên mật khẩu / recovery
+- Forgot Password UI: PASS; điều hướng và nhập email bằng UI. Email rỗng đã bị validation chặn trong lần kiểm thử FIX01; source không thay đổi từ đó.
+- Loading/submit: request duy nhất kết thúc ở UI response; code khóa nút trong lúc đang gửi. Retry recovery không được lặp lại trong lượt này vì request đầu thành công và tránh gửi thư thêm.
+- Recovery API: PASS — request từ UI tới Supabase Cloud `/auth/v1/recover` được API chấp nhận. Trong lượt chạy lại này gửi đúng một request. API 2xx không được coi là bằng chứng email đã giao.
+- Báo cáo FIX02 trước đó cũng có một request được chấp nhận; tổng cộng hai request qua hai lượt chạy riêng, không có retry liên tục trong từng lượt.
+- Recovery Email Delivery: PASS (user-confirmed) — chủ dự án xác nhận Gmail Test User A nhận email recovery thật; mailbox không được đọc trực tiếp trong phiên này.
+- Android deep-link routing: PASS — package resolver ánh xạ `meeto://auth/callback` tới `AuthCallbackActivity`; manifest có VIEW/BROWSABLE intent filter.
+- URI callback không có code thật: PASS — mở URI không token vào AuthCallbackActivity; callback báo link thiếu/hết hạn, Back trở về màn trước. SessionRestoreTest chạy lại PASS, phiên Auth không đổi.
+- Recovery Token/PKCE Exchange: BLOCKED — chưa mở link thật nên chưa gửi auth code/verifier tới exchange endpoint.
+- Reset Password Form: BLOCKED — form chỉ được mở khi code exchange thành công; chưa mở link thật.
+- Password Update: NOT RUN BY DESIGN — không gọi update password.
+- Không đổi mật khẩu A/B. Một recovery request duy nhất được gửi trong lượt chạy lại; không retry/spam.
+
+4. Build, cấu hình và thay đổi
+- `assembleDebug` và `assembleDebugAndroidTest` đã PASS ngay trước instrumentation; source/config không đổi sau build nên không lặp build.
+- Cấu hình trước đó thiếu `supabase.debug.properties`; file local đã được khôi phục và debug BuildConfig xác nhận lấy đúng Cloud URL/public key.
+- FIX01 Java changes và redesign UI được giữ nguyên. Test harness có tại `app/src/androidTest/java/com/example/meetomxh/AuthCloudSmokeTest.java`; không chứa credentials.
+- Không sửa XML redesign, Android API contract, database, migrations 001–018, RLS, Realtime hay Auth Dashboard.
+- Không dùng Docker/local worker; không xuất APK/AAB làm sản phẩm bàn giao.
+
+5. Trạng thái cuối
+CLOUD CONFIGURATION: PASS
+LOGIN A/B: PASS
+LOGOUT: PASS
+SESSION RESTORE: PASS
+WRONG-PASSWORD HANDLING: PASS
+FORGOT PASSWORD UI: PASS
+RECOVERY API: PASS (Supabase accepted)
+RECOVERY EMAIL DELIVERY: PASS (user confirmed received)
+ANDROID DEEP LINK ROUTING: PASS (manifest, package resolver và URI không token)
+RECOVERY TOKEN/PKCE EXCHANGE: BLOCKED (link thật chưa mở)
+RESET PASSWORD FORM: BLOCKED (callback thật chưa mở)
+PASSWORD UPDATE: NOT RUN BY DESIGN
+MAIN/FEED/PROFILE/FRIENDS/MESSENGER SMOKE: PASS (Inbox mở, không gửi message)
+DESIGN SYSTEM PRESERVED: YES
+SUPABASE DASHBOARD CONFIG CHANGED: NO
+NEW P0/P1 AUTH REGRESSIONS: 0 phát hiện trong phạm vi đã chạy
+APK/AAB EXPORTED AS DELIVERABLE: NO
+
+6. Việc còn lại
+- Chưa có Supabase Dashboard connector/session trong môi trường này (plugin Supabase hiện chưa cài), nên allowlist Redirect URLs chưa được đọc/xác nhận và không có Dashboard setting nào bị thay đổi.
+- Trước khi mở email trên Emulator, chủ tài khoản cần tự xác nhận `meeto://auth/callback` có trong Auth > URL Configuration > Redirect URLs. Mở email recovery mới nhất trực tiếp trong Gmail của Emulator, không copy/in URL ra log.
+- AuthCallbackActivity hiện không cập nhật mật khẩu và không gọi remote sign-out. Tuy nhiên, với callback có code và PKCE verifier hợp lệ, nó gọi `SessionManager.clear()` trước exchange, xóa phiên local hiện tại, rồi exchange nhận session recovery mới và ghi session đó. Đây là thay thế session trên thiết bị (không phải logout endpoint); nếu exchange lỗi sau bước clear thì phiên trước cũng đã bị xóa. Phiên A đã được khôi phục trong lượt test gần nhất, nên email A phù hợp với identity test hiện tại; nếu Meeto đang dùng tài khoản khác, không mở link cho tới khi chuyển về A.
+- Sau khi URI allowlist được xác nhận, mở link recovery thật trên Emulator. Khi màn Đặt lại mật khẩu xuất hiện, dừng tại đó; không nhập mật khẩu mới và không bấm Lưu mật khẩu mới. Password Update vẫn NOT RUN BY DESIGN.
+- Không gửi recovery request/email mới.
+
+7. FIX02 follow-up — Recovery callback review
+- Source review: AuthCallbackActivity chỉ kiểm tra scheme/host/path/query `code`, PKCE verifier và cờ recovery; callback không gọi `SupabaseAuthClient.password()`.
+- `SupabaseAuthClient.exchange()` gửi code + verifier tới PKCE token endpoint, sau đó `SessionManager.accept()` lưu session trả về. Password chỉ được cập nhật khi người dùng bấm Lưu mật khẩu mới ở ForgotPasswordActivity; thành công ở form đó mới gọi `signOut()`.
+- Vì callback chủ động clear phiên trước exchange và exchange thành công ghi session recovery, session cũ được thay thế như nêu trên. Không sửa source vì chưa có bằng chứng code exchange lỗi; hướng dẫn mở link thật chờ allowlist được xác nhận.
+- Android routing kiểm thử bằng URI `meeto://auth/callback` không có code/token thật; callback dừng ở guard invalid/missing-code trước mọi thao tác session.
+- Recovery Email Delivery: PASS theo xác nhận của chủ dự án. Dashboard Redirect URL allowlist: BLOCKED do không có quyền/kết nối đọc.
+- Recovery Token/PKCE Exchange: BLOCKED; Reset Password Form: BLOCKED; Password Update: NOT RUN BY DESIGN.

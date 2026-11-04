@@ -14,18 +14,25 @@ import androidx.appcompat.app.AppCompatDelegate;
 import androidx.fragment.app.Fragment;
 
 import com.bumptech.glide.Glide;
+import com.example.meetomxh.GroupsHomeActivity;
 import com.example.meetomxh.LoginActivity;
+import com.example.meetomxh.MarketplaceActivity;
+import com.example.meetomxh.MemoriesActivity;
+import com.example.meetomxh.ProfileActivity;
 import com.example.meetomxh.R;
+import com.example.meetomxh.SavedPostsActivity;
+import com.example.meetomxh.SettingsActivity;
 import com.example.meetomxh.databinding.FragmentProfileBinding;
+import com.example.meetomxh.supabase.Api;
+import com.example.meetomxh.supabase.ProfileClient;
+import com.example.meetomxh.ui.AvatarViews;
 import com.example.meetomxh.supabase.SessionManager;
 import com.example.meetomxh.supabase.SessionUser;
-import com.example.meetomxh.supabase.*;
 
 public class ProfileFragment extends Fragment {
 
     private FragmentProfileBinding binding;
     private SessionManager mAuth;
-
 
     @Nullable
     @Override
@@ -40,9 +47,8 @@ public class ProfileFragment extends Fragment {
 
         mAuth = SessionManager.getInstance();
 
-
         binding.cardProfile.setOnClickListener(v -> startActivity(new Intent(requireContext(),
-                com.example.meetomxh.ProfileActivity.class).putExtra("target_uid", mAuth.uid())));
+                ProfileActivity.class).putExtra("target_uid", mAuth.uid())));
         setupDarkModeSwitch();
 
         // Xử lý nút Đăng xuất
@@ -50,12 +56,36 @@ public class ProfileFragment extends Fragment {
 
         // Xử lý các shortcut
         binding.cardFriendsShortcut.setOnClickListener(v ->
-                getParentFragmentManager().beginTransaction().replace(com.example.meetomxh.R.id.fragment_container,new FriendsFragment()).addToBackStack("friends").commit()
+                getParentFragmentManager().beginTransaction().replace(R.id.fragment_container, new FriendsFragment()).addToBackStack("friends").commit()
         );
 
         binding.cardSavedShortcut.setOnClickListener(v ->
-                Toast.makeText(requireContext(), "Đã lưu chưa được hỗ trợ trên Supabase", Toast.LENGTH_SHORT).show()
+                startActivity(new Intent(requireContext(), SavedPostsActivity.class))
         );
+
+        if (binding.cardSettingsShortcut != null) {
+            binding.cardSettingsShortcut.setOnClickListener(v ->
+                    startActivity(new Intent(requireContext(), SettingsActivity.class))
+            );
+        }
+
+        if (binding.cardGroupsShortcut != null) {
+            binding.cardGroupsShortcut.setOnClickListener(v ->
+                    startActivity(new Intent(requireContext(), GroupsHomeActivity.class))
+            );
+        }
+
+        if (binding.cardMemoriesShortcut != null) {
+            binding.cardMemoriesShortcut.setOnClickListener(v ->
+                    startActivity(new Intent(requireContext(), MemoriesActivity.class))
+            );
+        }
+
+        if (binding.cardMarketplaceShortcut != null) {
+            binding.cardMarketplaceShortcut.setOnClickListener(v ->
+                    startActivity(new Intent(requireContext(), MarketplaceActivity.class))
+            );
+        }
     }
 
     private void setupDarkModeSwitch() {
@@ -72,7 +102,8 @@ public class ProfileFragment extends Fragment {
         });
     }
 
-    @Override public void onResume() {
+    @Override
+    public void onResume() {
         super.onResume();
         if (binding != null && mAuth != null) loadUserProfile();
     }
@@ -85,7 +116,20 @@ public class ProfileFragment extends Fragment {
         AppCompatDelegate.setDefaultNightMode(mode);
     }
 
-    private void loadUserProfile() {if(mAuth.getCurrentUser()==null)return;ProfileClient.get(mAuth.uid(),new Api.Callback<com.example.meetomxh.models.User>(){public void success(com.example.meetomxh.models.User user){if(binding==null||!isAdded())return;binding.tvFullName.setText(user.getFullName());Glide.with(requireContext()).applyDefaultRequestOptions(new com.bumptech.glide.request.RequestOptions().diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.NONE).skipMemoryCache(true)).load(user.getAvatarUrl()).placeholder(R.drawable.ic_home).into(binding.ivAvatar);binding.ivAvatar.setOnClickListener(v->startActivity(new Intent(requireContext(),com.example.meetomxh.ProfileActivity.class).putExtra("target_uid",mAuth.uid())));}public void error(String e){if(isAdded())Toast.makeText(requireContext(),e,Toast.LENGTH_LONG).show();}});}
+    private void loadUserProfile() {
+        if (mAuth.getCurrentUser() == null) return;
+        ProfileClient.get(mAuth.uid(), new Api.Callback<com.example.meetomxh.models.User>() {
+            public void success(com.example.meetomxh.models.User user) {
+                if (binding == null || !isAdded()) return;
+                binding.tvFullName.setText(user.getFullName());
+                AvatarViews.load(binding.ivAvatar, user.getAvatarUrl(), user.getAvatarPreset());
+                binding.ivAvatar.setOnClickListener(v -> startActivity(new Intent(requireContext(), ProfileActivity.class).putExtra("target_uid", mAuth.uid())));
+            }
+            public void error(String e) {
+                if (isAdded()) Toast.makeText(requireContext(), e, Toast.LENGTH_LONG).show();
+            }
+        });
+    }
 
     private void handleLogout() {
         mAuth.signOut();

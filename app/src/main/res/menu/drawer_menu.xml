@@ -6,6 +6,10 @@
             android:icon="@drawable/ic_friends"
             android:title="Bạn bè" />
         <item
+            android:id="@+id/drawer_groups"
+            android:icon="@drawable/ic_groups"
+            android:title="Nhóm cộng đồng" />
+        <item
             android:id="@+id/drawer_saved"
             android:icon="@drawable/ic_bookmark"
             android:title="Đã lưu" />
@@ -17,9 +21,13 @@
             android:id="@+id/drawer_marketplace"
             android:icon="@drawable/ic_marketplace"
             android:title="Marketplace" />
+        <item
+            android:id="@+id/drawer_settings"
+            android:icon="@drawable/ic_settings"
+            android:title="Cài đặt &amp; Quyền riêng tư" />
     </group>
 
-    <item android:title="Khác">
+    <item android:title="Tài khoản">
         <menu>
             <item
                 android:id="@+id/drawer_logout"

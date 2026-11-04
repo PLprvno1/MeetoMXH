@@ -1,0 +1,91 @@
+MEETO Ã¢â‚¬â€ TASK 28: ADMIN PANEL & CONTENT MODERATION
+NgÃƒÂ y: 2026-11-04
+
+1. Backend Admin hiÃ¡Â»â€¡n cÃƒÂ³
+- Migrations nÃ¡Â»Ân Ã„â€˜ÃƒÂ£ cÃƒÂ³ system_roles vÃ¡Â»â€ºi system_admin/moderator, account_status, reports, moderation_actions, moderation_audit.
+- CÃƒÂ¡c RPC report hiÃ¡Â»â€¡n cÃƒÂ³: list_platform_reports, claim_platform_report, resolve_platform_report (warn/dismiss), get_platform_audit. Report review Ã„â€˜ÃƒÂ£ kiÃ¡Â»Æ’m tra role Ã¡Â»Å¸ server.
+- ChÃ†Â°a cÃƒÂ³ dashboard tÃ¡Â»â€¢ng hÃ¡Â»Â£p, user/content admin search, suspension/admin moderation RPC.
+
+2. Android Admin components
+- ThÃƒÂªm AdminPanelActivity vÃƒÂ  activity_admin_panel.xml.
+- ThÃƒÂªm mÃ¡Â»Â¥c Ã¢â‚¬Å“QuÃ¡ÂºÂ£n trÃ¡Â»â€¹ hÃ¡Â»â€¡ thÃ¡Â»â€˜ngÃ¢â‚¬Â vÃƒÂ o drawer; mÃ¡ÂºÂ·c Ã„â€˜Ã¡Â»â€¹nh Ã¡ÂºÂ©n, chÃ¡Â»â€° hiÃ¡Â»â€¡n sau khi admin_dashboard xÃƒÂ¡c nhÃ¡ÂºÂ­n system_admin tÃ¡Â»Â« server.
+- GiÃ¡Â»Â¯ ModerationDashboardActivity hiÃ¡Â»â€¡n cÃƒÂ³ cho report moderator; Settings chÃ¡Â»â€° hiÃ¡Â»Æ’n thÃ¡Â»â€¹ lÃ¡Â»â€˜i vÃƒÂ o sau khi list_platform_reports cho phÃƒÂ©p.
+- Admin Panel kiÃ¡Â»Æ’m tra lÃ¡ÂºÂ¡i quyÃ¡Â»Ân khi quay lÃ¡ÂºÂ¡i foreground; lÃ¡Â»â€”i quyÃ¡Â»Ân 403 Ã„â€˜ÃƒÂ³ng panel.
+
+3. Dashboard
+- SÃ¡Â»â€˜ liÃ¡Â»â€¡u thÃ¡ÂºÂ­t tÃ¡Â»Â« RPC: tÃ¡Â»â€¢ng/active user, posts, Reels, groups, bÃƒÂ¡o cÃƒÂ¡o chÃ¡Â»Â vÃƒÂ  Ã„â€˜ÃƒÂ£ xÃ¡Â»Â­ lÃƒÂ½.
+- Recent reports/actions, refresh, loading, empty/error/retry. KhÃƒÂ´ng tÃ¡ÂºÂ£i nhiÃ¡Â»Âu bÃ¡ÂºÂ£n ghi vÃ¡Â»Â client Ã„â€˜Ã¡Â»Æ’ Ã„â€˜Ã¡ÂºÂ¿m.
+
+4. User Management
+- RPC tÃƒÂ¬m theo display name hoÃ¡ÂºÂ·c UUID, cursor theo created_at/id, trÃ¡ÂºÂ£ trÃ¡ÂºÂ¡ng thÃƒÂ¡i tÃƒÂ i khoÃ¡ÂºÂ£n.
+- HÃ¡Â»â€œ sÃ†Â¡ mÃ¡Â»Å¸ qua ProfileActivity; suspend/restore cÃ¡ÂºÂ§n lÃƒÂ½ do vÃƒÂ  Ã„â€˜Ã†Â°Ã¡Â»Â£c audit.
+- RPC tÃ¡Â»Â« chÃ¡Â»â€˜i tÃ¡Â»Â± khÃƒÂ³a System Admin vÃƒÂ  khÃƒÂ´ng cho khÃƒÂ³a mÃ¡Â»â„¢t tÃƒÂ i khoÃ¡ÂºÂ£n system_admin khÃƒÂ¡c.
+
+5. Content Moderation
+- Danh sÃƒÂ¡ch/tÃƒÂ¬m kiÃ¡ÂºÂ¿m/phÃƒÂ¢n trang posts, Reels (cÃƒÂ¹ng posts), comments vÃƒÂ  groups.
+- Hide/remove/restore kiÃ¡Â»Æ’m tra role phÃƒÂ­a server vÃƒÂ  ghi moderation action/audit.
+- Remove post/Reel dÃƒÂ¹ng retire_asset/outbox hiÃ¡Â»â€¡n cÃƒÂ³; khÃƒÂ´ng xÃƒÂ³a trÃ¡Â»Â±c tiÃ¡ÂºÂ¿p Storage object. Reels dÃƒÂ¹ng cÃƒÂ¹ng state/moderation cÃ¡Â»Â§a posts.
+- Restore chÃ¡Â»â€° nhÃ¡ÂºÂ­n hidden/archived; khÃƒÂ´ng phÃ¡Â»Â¥c hÃ¡Â»â€œi nÃ¡Â»â„¢i dung deleted.
+
+6. Report Center
+- LÃ¡Â»Âc open/assigned, resolved, dismissed qua trÃ¡ÂºÂ¡ng thÃƒÂ¡i schema cÃƒÂ³ thÃ¡ÂºÂ­t.
+- CÃƒÂ³ claim report atomic qua RPC cÃ…Â©; report detail mÃ¡Â»â€ºi trÃ¡ÂºÂ£ preview target vÃƒÂ  thÃƒÂ´ng tin tÃ¡Â»â€˜i thiÃ¡Â»Æ’u, khÃƒÂ´ng trÃ¡ÂºÂ£ reporter.
+- Message report chÃ¡Â»â€° hiÃ¡Â»â€¡n placeholder bÃ¡ÂºÂ£o vÃ¡Â»â€¡ nÃ¡Â»â„¢i dung riÃƒÂªng tÃ†Â°. HÃƒÂ nh Ã„â€˜Ã¡Â»â„¢ng report hiÃ¡Â»â€¡n cÃƒÂ³ warn/dismiss; Ã¡ÂºÂ©n/gÃ¡Â»Â¡ thÃ¡Â»Â±c hiÃ¡Â»â€¡n tÃ¡Â»Â« mÃ¡Â»Â¥c content tÃ†Â°Ã†Â¡ng Ã¡Â»Â©ng.
+
+7. Group Management
+- TÃƒÂ¬m/xem nhÃƒÂ³m, trÃ¡ÂºÂ¡ng thÃƒÂ¡i, privacy vÃƒÂ  member_count.
+- Admin archive/remove/restore bÃ¡ÂºÂ±ng state cÃƒÂ³ sÃ¡ÂºÂµn, khÃƒÂ´ng nhÃ¡ÂºÂ§m group admin vÃ¡Â»â€ºi system admin.
+
+8. Audit Log
+- RPC audit mÃ¡Â»â€ºi dÃƒÂ¹ng cursor, tÃ¡Â»â€˜i Ã„â€˜a 50 mÃ¡Â»Â¥c/trang theo b_page; dÃ¡Â»Â¯ liÃ¡Â»â€¡u tÃ¡Â»Â« moderation_audit sÃ¡ÂºÂµn cÃƒÂ³.
+
+9. UI/UX
+- Material card, theme colors hiÃ¡Â»â€¡n tÃ¡ÂºÂ¡i (Light/Dark), tab cuÃ¡Â»â„¢n ngang, tÃƒÂ¬m kiÃ¡ÂºÂ¿m debounce, pull-to-refresh, load more, xÃƒÂ¡c nhÃ¡ÂºÂ­n hÃƒÂ nh Ã„â€˜Ã¡Â»â„¢ng vÃƒÂ  lÃƒÂ½ do bÃ¡ÂºÂ¯t buÃ¡Â»â„¢c.
+- TrÃ¡ÂºÂ¡ng thÃƒÂ¡i lÃ¡Â»Âc/query Ã„â€˜Ã†Â°Ã¡Â»Â£c giÃ¡Â»Â¯ khi Activity Ã„â€˜Ã†Â°Ã¡Â»Â£c khÃƒÂ´i phÃ¡Â»Â¥c.
+
+10. Database/RPC
+- Migration mÃ¡Â»â€ºi: supabase/migrations/20261104000100_admin_panel.sql (migration 035).
+- Forward-only, BEGIN/COMMIT, pinned search_path cho SECURITY DEFINER, role check system_admin trong mÃ¡Â»Âi RPC Admin, khÃƒÂ´ng thÃƒÂªm direct table grants.
+- NÃ¡Â»â€ºi moderation_actions.report_id thÃƒÂ nh nullable Ã„â€˜Ã¡Â»Æ’ dÃƒÂ¹ng chung action table cho thao tÃƒÂ¡c khÃƒÂ´ng phÃƒÂ¡t sinh tÃ¡Â»Â« report; audit vÃ¡ÂºÂ«n ghi Ã„â€˜Ã¡ÂºÂ§y Ã„â€˜Ã¡Â»Â§.
+- Hash migration trong supabase/migrations.sha256.json: 7AD2150AA05F3BDFB8484844CEB185AE047ECAEB5FF5EE5F4006124F944C5A84.
+
+11. Build/Tests
+- :app:assembleDebug: PASS.
+- :app:testDebugUnitTest: PASS.
+- KiÃ¡Â»Æ’m tra tÃ„Â©nh transaction, dollar-quote, RPC signatures, role guards, cleanup call vÃƒÂ  checksum: PASS.
+- KhÃƒÂ´ng chÃ¡ÂºÂ¡y PostgreSQL parser/database. KhÃƒÂ´ng chÃ¡ÂºÂ¡y Cloud permission/E2E tests.
+- Emulator smoke: BLOCKED; adb khÃƒÂ´ng cÃƒÂ³ trong PATH vÃƒÂ  khÃƒÂ´ng cÃƒÂ³ emulator quan sÃƒÂ¡t Ã„â€˜Ã†Â°Ã¡Â»Â£c.
+
+12. Cloud deployment instructions
+1) XÃƒÂ¡c nhÃ¡ÂºÂ­n vÃƒÂ  triÃ¡Â»Æ’n khai migration 034 trÃ†Â°Ã¡Â»â€ºc; migration 035 cÃ¡ÂºÂ§n posts.is_reel vÃƒÂ  private.retire_asset.
+2) ChÃ¡ÂºÂ¡y 20261104000100_admin_panel.sql sau migration 034 trong Supabase SQL Editor; kiÃ¡Â»Æ’m tra kÃ¡ÂºÂ¿t quÃ¡ÂºÂ£ transaction vÃƒÂ  API schema reload.
+3) Project owner cÃ¡ÂºÂ¥p role thÃ¡Â»Â§ cÃƒÂ´ng, thay UUID bÃ¡ÂºÂ±ng auth.users.id cÃ¡Â»Â§a tÃƒÂ i khoÃ¡ÂºÂ£n Ã„â€˜ÃƒÂ£ Ã„â€˜Ã†Â°Ã¡Â»Â£c duyÃ¡Â»â€¡t:
+   INSERT INTO public.system_roles(user_id,role,granted_by)
+   VALUES ('<approved-user-uuid>','system_admin',NULL)
+   ON CONFLICT (user_id,role) DO NOTHING;
+4) Ã„ÂÃ„Æ’ng nhÃ¡ÂºÂ­p tÃƒÂ i khoÃ¡ÂºÂ£n Ã„â€˜ÃƒÂ³ Ã„â€˜Ã¡Â»Æ’ xÃƒÂ¡c minh menu, RPC, audit vÃƒÂ  cÃƒÂ¡c thao tÃƒÂ¡c theo tÃƒÂ i khoÃ¡ÂºÂ£n thÃ¡Â»Â­ nghiÃ¡Â»â€¡m.
+- KhÃƒÂ´ng cÃƒÂ³ tÃ¡Â»Â± bootstrap admin; khÃƒÂ´ng gÃƒÂ¡n role cho tÃƒÂ i khoÃ¡ÂºÂ£n mÃ¡Â»â€ºi Ã„â€˜Ã„Æ’ng kÃƒÂ½.
+- KhÃƒÂ´ng deploy Cloud trong Task 28.
+
+13. HÃ¡ÂºÂ¡n chÃ¡ÂºÂ¿ cÃƒÂ²n lÃ¡ÂºÂ¡i
+- Migration 034 hiÃ¡Â»â€¡n chÃ†Â°a Ã„â€˜Ã†Â°Ã¡Â»Â£c xÃƒÂ¡c nhÃ¡ÂºÂ­n Cloud PASS; vÃƒÂ¬ vÃ¡ÂºÂ­y migration 035 chÃ¡Â»â€° sÃ¡ÂºÂµn sÃƒÂ ng triÃ¡Â»Æ’n khai theo thÃ¡Â»Â© tÃ¡Â»Â±, chÃ†Â°a thÃ¡Â»Æ’ xÃƒÂ¡c nhÃ¡ÂºÂ­n schema Cloud tÃ†Â°Ã†Â¡ng thÃƒÂ­ch.
+- KhÃƒÂ´ng cÃƒÂ³ Cloud/E2E hoÃ¡ÂºÂ·c emulator Ã„â€˜Ã¡Â»Æ’ xÃƒÂ¡c nhÃ¡ÂºÂ­n thao tÃƒÂ¡c thÃ¡Â»Â±c tÃ¡ÂºÂ¿.
+- Report action trÃ¡Â»Â±c tiÃ¡ÂºÂ¿p chÃ¡Â»â€° hÃ¡Â»â€” trÃ¡Â»Â£ warn/dismiss nhÃ†Â° backend cÃ…Â©; viÃ¡Â»â€¡c hide/remove lÃƒÂ  thao tÃƒÂ¡c riÃƒÂªng trong content manager.
+- Reels vÃƒÂ  comment/group/report flows cÃ¡ÂºÂ§n xÃƒÂ¡c minh sau khi migrations Ã„â€˜Ã†Â°Ã¡Â»Â£c ÃƒÂ¡p dÃ¡Â»Â¥ng lÃƒÂªn Cloud.
+
+ACCEPTANCE MATRIX
+ADMIN ACCESS: PARTIAL (server gate + drawer; Cloud chÃ†Â°a xÃƒÂ¡c minh)
+DASHBOARD: PARTIAL (RPC/UI implement; Cloud chÃ†Â°a xÃƒÂ¡c minh)
+USER MANAGEMENT: PARTIAL (RPC/UI implement; Cloud chÃ†Â°a xÃƒÂ¡c minh)
+POST MODERATION: PARTIAL
+REELS MODERATION: PARTIAL
+COMMENT MODERATION: PARTIAL
+GROUP MANAGEMENT: PARTIAL
+REPORT CENTER: PARTIAL
+AUDIT LOG: PARTIAL
+UI/UX: PARTIAL (build pass; emulator smoke blocked)
+ANDROID BUILD: PASS
+MIGRATION REQUIRED: YES
+CLOUD DEPLOYED: NO
+EMULATOR SMOKE: BLOCKED
+READY FOR TASK 29: CONDITIONAL (sau Cloud migration 034Ã¢â€ â€™035 vÃƒÂ  smoke test)

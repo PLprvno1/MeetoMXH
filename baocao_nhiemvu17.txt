@@ -1,0 +1,70 @@
+# MEETO — TASK 17: NOTIFICATIONS CENTER
+
+Ngày cập nhật: 2026-11-03  
+Project đích: `qjpohzpapiwdrxsionyr`
+
+## Kết quả triển khai trong workspace
+
+- Tái sử dụng `public.notifications`, `public.user_settings` và RLS hiện có; không tạo bảng notification thứ hai. Bảng `notifications` đã có unique `(recipient_id,event_key)`, index cursor/unread và RLS chỉ đọc theo recipient trong migration nền. Event tạo notification đồng bộ trong transaction của bảng nghiệp vụ; không thêm pipeline/worker vào `event_outbox`.
+- Tạo candidate migration 022: `supabase/migrations/20261103000400_notifications_center.sql`. Migration thêm `follow` vào constraint/preferences, RPC list/count/mark-read/mark-all/settings/message-unread, cùng trigger transactional cho reaction, comment/reply, friend request/accept, follow và story reply.
+- Dedup dùng unique `(recipient_id,event_key)`. Retry comment/story/friend RPC không phát event nghiệp vụ mới; reaction chỉ báo khi insert reaction, không báo khi đổi hoặc bỏ reaction; follow chỉ báo khi insert, không báo unfollow. Actor tự tương tác không được thông báo.
+- Notification chỉ lưu loại event và target ID; không lưu nội dung comment, JWT hay signed URL. RPC list kiểm tra quyền đọc hiện tại và chỉ trả target ID/context khi còn đọc được. Tên/avatar actor được làm mờ khi profile không còn đọc được.
+- Notification đọc/ghi chỉ qua RPC SECURITY DEFINER giới hạn recipient; migration dừng nếu quyền table SELECT/INSERT/UPDATE của `authenticated` đang mở hoặc policy SELECT không ràng recipient với `auth.uid()` và trạng thái active. Trigger helper kiểm tra trạng thái tài khoản, block hai chiều, cài đặt toàn cục và preference từng loại.
+- Realtime dùng private topic `user:<recipient>` qua `realtime.send()` và scope `notifications`; client cũ được mở rộng để nhận scope này, dùng event ID dedup rồi refresh RPC. Danh sách/unread có polling 30 giây làm fallback. Không bật public Realtime.
+- Messenger unread dùng RPC riêng theo message `sent`, membership active và `last_read_seq`; không cộng vào notification unread. MainActivity có badge riêng cho Messenger và chuông, hiển thị tối đa `99+`.
+- Android có Notifications Center: All/Unread, avatar, nội dung, thời gian tương đối, trạng thái unread, pull-to-refresh, pagination, retry/error/empty, mark all read và navigation theo target. Notification chỉ được mark read sau khi RPC thành công. SettingsActivity có công tắc in-app global và các preference social/follow/messenger/story; không yêu cầu quyền push.
+
+## Kiểm tra đã chạy
+
+- `:app:assembleDebug`: PASS.
+- Cài và mở ứng dụng trên emulator `emulator-5554`: khởi động được, không thấy `FATAL EXCEPTION` trong logcat kiểm tra. Đây chỉ là startup smoke, không phải Notifications E2E.
+- Android shell không thể mở trực tiếp `NotificationsActivity` vì Activity đặt `exported=false`; không thay đổi quyền export để phục vụ test.
+- Manifest SHA-256 kiểm tra: 22 migration entries, mismatch 0 sau khi đồng bộ hash candidate 022. Migrations 001–021 không bị sửa bởi Task 17.
+- SHA-256 migration 022: `57A246679EA74DBC3F5DCA87FAB572DBF8691CCFFA4E5EA1556A1ABBDAD76710`.
+- Đếm dollar quote: 46 delimiter, cân bằng. Đã rà cấu trúc SQL và đối chiếu tên bảng/hàm với migrations local. Workspace không có `psql`, `pg_format` hoặc Supabase CLI; vì vậy chưa có PostgreSQL parser/server để compile migration. Đây không phải xác nhận cú pháp từ Cloud.
+
+## Trạng thái Cloud
+
+- Không có Supabase CLI, `psql`, `SUPABASE_ACCESS_TOKEN` hoặc kết nối SQL quản trị trong workspace hiện tại; không đọc được ledger/RPC Cloud và không deploy migration 022.
+- Theo báo cáo 16B trước đó: 019 được chủ dự án báo đã chạy thành công nhưng ledger chưa xác minh độc lập; 020 chưa xác minh; 021 chưa deploy tại lần kiểm tra gần nhất. Task 17 không giả định trạng thái 020/021 đã đổi.
+- Migration 022 có preconditions bắt buộc các RPC Stories của 020, RPC `set_follow` của 021, helper media 019, `realtime.send`, notification RLS và avatar preset column. Nếu thiếu dependency, migration dừng.
+- Cloud E2E chưa chạy. Không ghi nhận Cloud PASS và không đánh dấu migration applied.
+
+## Acceptance matrix
+
+| Hạng mục | Trạng thái | Bằng chứng / giới hạn |
+|---|---|---|
+| REACTION NOTIFICATION | BLOCKED | Trigger/RPC client đã viết; migration 022 chưa deploy |
+| COMMENT NOTIFICATION | BLOCKED | Như trên |
+| COMMENT REPLY NOTIFICATION | BLOCKED | Như trên; dedup recipient post/comment owner trong SQL |
+| FRIEND NOTIFICATION | BLOCKED | Trigger insert/accepted đã viết; chưa chạy fixture Cloud |
+| FOLLOW NOTIFICATION | BLOCKED | 021 chưa được xác nhận; 022 yêu cầu RPC 021 |
+| MESSENGER UNREAD | BLOCKED | Badge và RPC đã viết; chưa kiểm tra read receipts trên Cloud |
+| STORY REPLY NOTIFICATION | BLOCKED | Trigger update `reply_story_id` đã viết; chưa có Story E2E Cloud |
+| NOTIFICATION LIST | BLOCKED | UI/RPC đã viết; RPC chưa có trên Cloud |
+| UNREAD BADGE | BLOCKED | Hai badge đã nối; chưa có Cloud count |
+| MARK READ | BLOCKED | RPC/UI đã viết; chưa chạy với recipient thật |
+| MARK ALL READ | BLOCKED | RPC/UI đã viết; chưa chạy với recipient thật |
+| REALTIME | BLOCKED | Private channel wiring đã nối; broadcast chưa xác minh trên Cloud |
+| NOTIFICATION SETTINGS | BLOCKED | UI/RPC đã viết; migration chưa deploy |
+| RLS/PRIVACY | PARTIAL | Local RLS/grants và target recheck đã review; ACL/RLS Cloud chưa đọc được |
+| ANDROID BUILD | PASS | Gradle assembleDebug thành công |
+| CLOUD DEPLOYED | NO | Migration 022 chưa chạy; 020/021 Cloud còn chưa xác minh |
+| EMULATOR E2E | PARTIAL | App startup smoke đạt; chưa test UI notification hoặc nghiệp vụ Cloud |
+| CRITICAL REGRESSIONS | 0 quan sát được | Chỉ build/startup smoke; regression feature suite chưa chạy |
+| LOCAL WORKER REQUIRED | NO | Notifications được tạo transactionally; realtime có polling fallback |
+| APK/AAB EXPORTED AS DELIVERABLE | NO | Không bàn giao APK/AAB |
+| READY FOR TASK 18 | NO | Chờ xác minh/deploy dependencies Cloud và chạy E2E/regression |
+
+## Quy trình Cloud còn lại
+
+1. Trong Supabase Dashboard chọn đúng project `qjpohzpapiwdrxsionyr`. SQL Editor chạy truy vấn chỉ đọc `SELECT version,name FROM supabase_migrations.schema_migrations WHERE version IN ('20261103000100','20261103000200','20261103000300') ORDER BY version;`, đồng thời kiểm tra `to_regprocedure('private.finalize_direct_upload(uuid)')`, `to_regprocedure('public.create_story(uuid,text,text,uuid)')`, `to_regprocedure('private.reply_to_story(uuid,uuid,text)')`, `to_regprocedure('private.set_follow(uuid,boolean)')` và `to_regprocedure('public.set_follow(uuid,boolean)')`. Không chạy lại 019. Nếu ledger/object lệch nhau hoặc 020/021 thiếu, dừng và xử lý dependency theo migration tương ứng trước.
+2. Sau khi xác nhận 019–021 và RLS notification recipient-only, mở SQL Editor, dán toàn bộ `supabase/migrations/20261103000400_notifications_center.sql`, chạy đúng một lần. Preconditions trong đầu file sẽ tự dừng nếu schema không phù hợp. Không tắt RLS, không public bucket/channel và không reset database.
+3. Chỉ sau khi SQL chạy thành công, xác minh các RPC `get_notifications`, `get_notification_unread_count`, `mark_notification_read`, `mark_all_notifications_read`, `get_notification_settings`, `update_notification_settings`, `get_message_unread_count`; kiểm tra trigger functions và policy recipient-only. Đồng bộ ledger bằng Supabase CLI `supabase migration repair 20261103000400 --status applied --linked` khi project đã link và có quyền hợp lệ. Không ghi ledger trước khi xác nhận toàn bộ SQL thành công.
+4. Chạy E2E A/B với synthetic interactions: reaction, comment/reply, friend request/accept, follow, message/read, Story reply, mark read/all, logout/login, reconnect và target private/blocked/deleted. Ghi lại bằng chứng rồi mới nâng các mục BLOCKED/PARTIAL thành PASS.
+
+## Hạng mục polish sau khi backend hoạt động
+
+- Xác nhận trực quan trên emulator với data thật, gồm tải avatar private và badge qua trạng thái logout/session refresh.
+- Nếu cần, điều hướng comment notification tới đúng comment cụ thể và friend request tới màn lời mời thay vì profile.
+- Chạy regression Feed, Comments/Reactions, Friends, Profile, Messenger, Stories, Saved Posts, Follow, Direct Upload sau deploy.

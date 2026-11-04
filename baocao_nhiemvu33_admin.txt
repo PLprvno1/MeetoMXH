@@ -1,0 +1,111 @@
+# Báo cáo Task 33 — trải nghiệm Admin riêng
+
+## Thay đổi đã hoàn tất
+
+- Admin dùng lại `AdminPanelActivity` và các RPC Task 28; không tạo ứng dụng thứ hai và không thay đổi backend/schema.
+- Thêm bước xác minh phiên/quyền trước khi mở giao diện. Admin được chuyển thẳng vào Admin Dashboard; người dùng thường chỉ được chuyển vào giao diện Social sau khi server trả đúng lỗi quyền `system_admin_required`. Lỗi mạng, RPC thiếu, phản hồi sai định dạng và các lỗi 403 khác hiển thị Retry, không bị hiểu nhầm là tài khoản thường.
+- `MainActivity` chặn truy cập không có cờ xác minh trước khi inflate Feed; đăng nhập mới, khôi phục session và đăng ký đều qua role gate. Admin shell không có Social bottom navigation; nút logout xóa back stack và quay về Login.
+- Admin Panel có các mục Dashboard, Tài khoản, Báo cáo và Thêm; mục Thêm giữ các công cụ Posts, Reels, Comments, Groups, Audit và Cài đặt. Settings dùng chung lựa chọn Light/System/Dark của Meeto. Chi tiết user không mở Profile Social.
+- Thêm kiểm thử unit cho phân loại quyền/quy tắc Retry; không chỉnh SQL 036 và không deploy Cloud.
+
+## Files của Task 33
+
+- `app/src/main/java/com/example/meetomxh/supabase/AdminRoleResolver.java`
+- `app/src/main/java/com/example/meetomxh/RoleResolutionActivity.java`
+- `app/src/main/java/com/example/meetomxh/AdminPanelActivity.java`
+- `app/src/test/java/com/example/meetomxh/supabase/AdminRoleResolverTest.java`
+- Cập nhật `LoginActivity.java`, `RegisterActivity.java`, `MainActivity.java`, `ErrorMapper.java`, `SupabaseHttpClient.java`, `AndroidManifest.xml`, `activity_admin_panel.xml`, `drawer_menu.xml`; thêm `admin_menu.xml`.
+
+## Kiểm chứng
+
+- `:app:assembleDebug :app:testDebugUnitTest`: **PASS**. 22/22 unit tests (0 failures/errors); gồm 5 test mới cho Admin role resolution.
+- Pixel_4 hiện có (`emulator-5554`): bản debug mới được cài bằng `adb install -r`, giữ lại app data. App đang ở `LoginActivity`; chưa có regular session sau cài đặt.
+- Admin Panel, Dashboard, Reports, Audit và menu admin đã được quan sát trên Pixel_4 ở lượt kiểm tra Task 32 trước đó. Quan sát đó xác nhận UI/RPC read-only của bản trước; chưa thay thế kiểm tra đăng nhập trực tiếp qua role gate mới của Task 33.
+- Chưa quan sát chuyển Admin → logout → Regular → logout → Admin với role gate mới. Emulator đang chờ project owner tự đăng nhập Regular User; nội dung credential không được đọc hoặc ghi lại.
+- Giao diện sáng/tối được nối với preference hiện có nhưng chưa đổi theme và xác nhận trực tiếp trên emulator trong lượt này.
+- Admin user search vẫn **BLOCKED** đến khi migration 036 được chủ dự án triển khai và RPC được retest. Trước đó đã tái hiện HTTP 405 / PostgreSQL `25006`; migration 036 chỉ nằm trong source và chưa được triển khai.
+- Two-user messaging/voice/realtime, Stories/Groups sâu và các thao tác moderation thay đổi dữ liệu chưa được kiểm thử lại. Không có dữ liệu thật bị thay đổi.
+
+## Trạng thái
+
+| Hạng mục | Trạng thái | Ghi chú |
+|---|---|---|
+| Android build/unit tests | **PASS** | Build thành công; 22/22 unit tests. |
+| Role gate / lỗi xác minh quyền | **PASS — unit/static** | Cổng phân luồng và retry được kiểm tra bằng unit/static; cần xác nhận điều hướng trên emulator. |
+| Admin UI / dashboard read-only | **PARTIAL** | Đã quan sát ở Task 32; chưa retest cold launch qua role gate mới. |
+| Admin ↔ Regular account switch | **BLOCKED** | Chờ owner đăng nhập Regular User trên LoginActivity; Admin login cần owner nhập trực tiếp khi retest. |
+| Admin user search | **BLOCKED** | Cần deploy migration 036 rồi xác minh Cloud. |
+| Theme trên thiết bị | **PARTIAL** | Tích hợp source xong; chưa xác minh Light/Dark trực tiếp. |
+| Cloud/E2E tổng thể | **NOT CLAIMED** | Không triển khai Cloud; chưa chạy hai-user E2E. |
+
+**DEMO READY: CONDITIONAL.** Admin shell và role gate đã implement, build và unit tests đạt. Cần kiểm tra hai chiều chuyển tài khoản trên Pixel_4; Admin search còn chờ migration 036 trên Cloud.
+
+## Final role-routing retest — 2026-11-04
+
+- Chỉ dùng AVD `Pixel_4` (`emulator-5554`). Cài lại debug APK bằng `adb install -r`, giữ app data. `topResumedActivity` hiện là `LoginActivity`.
+- Chưa có thao tác đăng nhập mới trong lượt retest này. Do đó không thể kết luận cold Admin login, Social-tab isolation, admin sections/theme, logout, Regular User route, account switching hay session restoration PASS từ lượt này. Các màn Admin đã quan sát Task 32 là bằng chứng cũ và không được tính thay cho role-routing retest mới.
+- Owner cần tự nhập Admin credentials trên Pixel_4 và báo khi Dashboard hiện. Không đọc/ghi credential, không dùng lệnh ADB chứa credential.
+- Migration 036 chưa được xác nhận deploy. Admin User Search: **BLOCKED**; không thử bypass RPC/backend.
+- Không có source change trong lượt này; build/unit test không chạy lại. Kết quả gần nhất vẫn là assembleDebug PASS, 22/22 unit tests PASS.
+
+| Final routing case | Result |
+|---|---|
+| Admin login → Dashboard; no Feed/social tabs | **BLOCKED — LoginActivity still open** |
+| Dashboard / User Search / Reports / Content / Audit | **BLOCKED this retest**; User Search also awaits migration 036 |
+| Light / Dark / System | **BLOCKED — no authenticated Admin UI** |
+| Admin logout → Login → Regular User / 5 tabs | **BLOCKED — requires owner-entered test accounts** |
+| Regular logout → Admin | **BLOCKED — requires owner-entered test accounts** |
+| Process restart / role restoration | **BLOCKED — no authenticated session to restore** |
+| Retry on Supabase failure | **PASS — unit classifier only**; actual Retry screen not observed offline |
+
+## Latest emulator retest — 2026-11-04 (supersedes the blocked observations above)
+
+- **Admin direct route: PASS.** Owner confirmed Dashboard appeared; ADB top Activity was `AdminPanelActivity`. The visible shell had only Admin sections (Tổng quan/Tài khoản/Báo cáo/Thêm), with no Feed or five Social tabs.
+- **Dashboard: PASS.** `admin_dashboard` returned live statistics; the recent reports/actions sections were empty.
+- **User Search: PASS runtime.** On Tài khoản, searching `Admin` narrowed the list to the Admin account. This is a real app→Supabase RPC result; no bypass was used. Migration 036 deployment history was not independently checked, so this does not prove which Cloud deployment made the endpoint work.
+- **Reports: PASS — empty state.** Reports page and open/resolved/dismissed filters rendered; there were no report records to inspect or resolve.
+- **Content moderation: PASS — read-only.** The posts list loaded with content/state rows. No hide/remove actions were taken.
+- **Audit Log: PASS — empty state.** Page loaded and showed no matching rows; there were no audit records to inspect.
+- **Theme: PARTIAL.** Dark, Light, and System selections each updated the displayed preference and recreated the Activity while retaining Admin. Light was restored at the end. Pixel color/contrast was not measured.
+- **Bug fixed:** after theme recreation, successful Admin verification left the stale “Đang xác minh quyền quản trị…” status in Settings. `AdminPanelActivity.verifyAccess()` now clears status for an ADMIN result before loading/rendering. Retest showed the stale status no longer remained.
+- **Admin logout: PASS.** Confirmed logout returned to `LoginActivity`.
+- **Admin session restoration: PASS.** With the Admin session active, the updated APK was installed with `-r`, the app force-stopped and relaunched; it restored directly to `AdminPanelActivity` and Dashboard.
+- **Regular User → Social MainActivity / five tabs, then login Admin again: BLOCKED**, pending owner-entered Regular credentials and confirmation of Home.
+- **Offline Retry screen: PARTIAL.** Unit classifier tests cover retry routing; no authenticated offline emulator path was run.
+- **Build after source fix:** `:app:assembleDebug :app:testDebugUnitTest` **PASS**, 22/22 tests (0 failures/errors).
+- Migration 036 was not deployed by this test. User Search works at runtime now, but the exact Cloud migration state remains unverified.
+
+| Final case | Latest result |
+|---|---|
+| Admin → Dashboard; no Social Feed/tabs | **PASS** |
+| Dashboard / User Search | **PASS runtime** |
+| Reports / Content Moderation / Audit | **PASS** for list/empty-state loading; no report/audit records for detail actions |
+| Light / Dark / System | **PARTIAL** — selections applied; pixel colors not measured |
+| Admin logout → Login | **PASS** |
+| Admin session restoration after force-stop/relaunch | **PASS** |
+| Regular login → five Social tabs → logout → Admin login | **BLOCKED** — waiting for owner to enter Regular credentials |
+| Retry UI on Supabase outage | **PARTIAL** — unit pass, offline UI not observed |
+
+## Final confirmation after account switch — 2026-11-04
+
+- **Admin → Regular → Admin: PASS on Pixel_4.** Admin logout returned to LoginActivity. Owner entered a permitted Regular test account directly on the emulator; Home opened as `MainActivity`. After Regular logout, the permitted Admin account was used and the app opened `AdminPanelActivity`.
+- **Regular shell: PASS.** UI hierarchy showed the five tabs Trang chủ, Reels, Tin nhắn, Tìm kiếm, Trang cá nhân. The Feed was visible under MainActivity. No profile/feed content was modified.
+- **Regular session restore: PASS.** With the Regular session active, force-stop/relaunch restored `MainActivity`.
+- **Admin session restore: PASS** (also verified above): force-stop/relaunch restored directly to Admin Dashboard.
+- **Offline retry: PASS on device.** While Admin was authenticated, Wi‑Fi and mobile data were disabled on Pixel_4, then the app was restarted. It stayed in `RoleResolutionActivity` and showed “Không thể tải hồ sơ để xác minh quyền” with “Thử lại” and “Về màn hình đăng nhập”; it did not enter Social. Network was restored and tapping Retry returned to `AdminPanelActivity`.
+- **No credential was added to source or report.** Login was performed only on the existing AVD; the report records no email/password values.
+- Theme choices Dark/Light/System all applied at the preference/UI level; Light was restored. Visual color sampling was not completed, so theme appearance remains **PARTIAL**.
+- Admin User Search returned the matching Admin test account in the live RPC. This confirms runtime availability; exact Cloud migration 036 deployment state remains **unverified**.
+- **Latest build/tests:** after the status-label fix, `:app:assembleDebug :app:testDebugUnitTest` succeeded; 22/22 unit tests passed.
+
+| Final requirement | Result |
+|---|---|
+| Admin opens directly into dedicated Dashboard, without Social Feed/tabs | **PASS** |
+| Dashboard / User Search / Reports / Content Moderation / Audit | **PASS** for runtime loading/search; Reports and Audit have empty data, so no record-level actions were possible |
+| Light / Dark / System | **PARTIAL** — options applied and persisted; visual palette not sampled |
+| Admin logout → Login → Regular Home with 5 tabs | **PASS** |
+| Regular logout → Admin Dashboard | **PASS** |
+| Restart preserves Admin and Regular role routing | **PASS** |
+| Supabase/network failure shows Retry and recovers | **PASS** on Pixel_4; retry restored Admin shell after network recovery |
+
+**DEMO READY: CONDITIONAL.** Role routing, both account transitions, session restore, admin read-only screens and retry recovery were observed. Remaining limits: exact migration 036 deployment provenance, empty Reports/Audit detail flows, and visual theme palette verification.

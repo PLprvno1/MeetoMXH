@@ -1,0 +1,49 @@
+# Meeto — Báo cáo Task 15
+
+## Đã hoàn thành trong workspace
+
+- **Video trong Feed:** phân loại MIME từ `media_assets`, tạo frame thumbnail từ private Storage bằng quyền người xem, cache thumbnail trong bộ nhớ và chỉ mở video khi người dùng nhấn Play. Không tự phát video trên Feed.
+- **Video player:** dùng Media3 với play/pause, seek/timeline, mute, fullscreen, buffering/error/retry; phát qua authenticated Storage URL có `apikey` và access token, giải phóng player khi Activity dừng.
+- **Ảnh:** viewer hỗ trợ phóng/thu bằng pinch, double tap, vuốt qua media và tải lại khi lỗi.
+- **Avatar:** thêm preset neutral/male/female. Ảnh thật được ưu tiên; preset chỉ là fallback. Người dùng chọn preset công khai riêng, mặc định neutral; không suy luận từ giới tính/ngày sinh. Không còn dùng icon Home làm avatar mặc định trong các màn chính.
+- **Stories:** thay scaffold bằng RPC client và UI cho upload ảnh/video trực tiếp, tạo/xem tin, public/friends/private, đánh dấu lượt xem, xem danh sách người xem, trả lời qua Messenger, xóa tin và ẩn tin sau 24 giờ. Không tạo verifier hoặc bucket public.
+- **Migration candidate:** thêm `20261103000200_stories_avatar_preset.sql`; có preconditions cho schema/RPC, cấm bucket `social-media` public và yêu cầu MIME/giới hạn 50 MiB. Không thay Storage policy. Migration thêm privacy-safe avatar preset vào các RPC liên quan và RPC Stories.
+- **Manifest:** thêm checksum chỉ cho migration 020. Hash migration 019 hiện là `8408DD8E4F28C75F107C66EBF3B7D865F40F36950BA3CFF66B81E2DE75856E80`; không thay SQL 001–019 trong lượt này.
+
+## Kiểm tra
+
+- `:app:assembleDebug` — **PASS**.
+- Cài và mở app trên `emulator-5554` — mở được tới LoginActivity, không thấy `FATAL EXCEPTION` trong logcat. Emulator chưa có phiên đăng nhập để kiểm tra media.
+- Manifest JSON parse được; checksum 019 khớp file local.
+- SQL được rà soát tĩnh về dependency, preconditions, quyền và policy hiện có. Không có `psql`/Cloud SQL parser trong môi trường để parse/execute migration.
+- Supabase CLI không có access token (`Access token not provided`). Vì vậy không truy vấn được Cloud ledger/RPC, không triển khai 020 và không chạy Cloud E2E. Migration 019 được xem là đã chạy theo xác nhận trong yêu cầu; ledger Cloud chưa được xác minh.
+
+## Acceptance matrix
+
+| Hạng mục | Trạng thái | Bằng chứng/giới hạn |
+|---|---|---|
+| Video thumbnail | PARTIAL | Pipeline và build đã kiểm tra; chưa đăng nhập Cloud để xác nhận với media thật |
+| Video playback | PARTIAL | Media3/player build thành công; chưa chạy với Storage object Cloud |
+| Fullscreen/seek | PARTIAL | UI/control được triển khai; chưa kiểm tra playback thực tế |
+| Image fullscreen/zoom/gallery | PARTIAL | Viewer build thành công; chưa kiểm tra với media Cloud |
+| Avatar male/female/neutral | PARTIAL | Preset và UI/RPC client có; migration chưa deploy nên chưa xác nhận Cloud |
+| Avatar privacy | PARTIAL | Không suy luận gender; RPC candidate chỉ công khai preset và tôn trọng `can_read_profile`; chưa kiểm tra Cloud |
+| Story create image/video | BLOCKED | Cần migration 020 và tài khoản đăng nhập |
+| Story strip/viewer/views/replies | BLOCKED | Cần RPC 020 trên Cloud để E2E |
+| Story privacy/RLS/24h expiry | BLOCKED | Schema/RLS hiện có được tái sử dụng, RPC mới chưa deploy |
+| Migration 019 history reconciled | NO | Không đọc được ledger Cloud do thiếu CLI token |
+| Stories migration deployed | NO | Chưa chạy trên Cloud |
+| Android build | PASS | `assembleDebug` thành công |
+| Emulator E2E | BLOCKED | App mở được nhưng chưa có phiên đăng nhập; Cloud RPC chưa sẵn sàng |
+| Critical regressions observed | 0 | Chỉ build/launch smoke; chưa đủ để khẳng định không có regression E2E |
+| Local worker required | NO | Không dùng local worker, Docker hay Firebase |
+| APK/AAB exported as deliverable | NO | Build artifact chỉ là đầu ra kiểm tra cục bộ |
+| Ready for next feature | CONDITIONAL | Chờ deploy/reconcile migration và Cloud E2E |
+
+## Operator cần làm để triển khai Cloud
+
+1. Đăng nhập Supabase CLI với quyền project/database của `qjpohzpapiwdrxsionyr`; liên kết đúng project và kiểm tra `supabase migration list`. Không đánh dấu 019 applied trừ khi xác nhận SQL 019 đã chạy thành công trong SQL Editor.
+2. Trong Supabase Dashboard, chọn project `qjpohzpapiwdrxsionyr` → **SQL Editor** → **New query**. Mở và chạy toàn bộ `supabase/migrations/20261103000200_stories_avatar_preset.sql` đúng một lần. Preconditions sẽ dừng nếu phụ thuộc thiếu hoặc bucket `social-media` không private/configured phù hợp.
+3. Sau khi SQL chạy thành công, kiểm tra `public.prepare_direct_story_upload`, `public.get_stories`, `public.create_story`, `public.mark_story_viewed`, `public.reply_to_story`, `public.delete_story`, `public.set_avatar_preset` và cột `profiles.public_avatar_preset`. Xác nhận bucket vẫn private và policies không đổi.
+4. Chỉ sau SQL thành công mới đồng bộ ledger bằng `npx supabase migration repair 20261103000200 --status applied --remote=qjpohzpapiwdrxsionyr`. Nếu ledger thiếu 019, chỉ repair 019 sau khi xác minh việc chạy SQL 019 trước đó; không chạy lại migration 019.
+5. Đăng nhập hai tài khoản synthetic A/B trên emulator, đăng tin ảnh và MP4 nhỏ, kiểm tra `media_assets.state='ready'`, bản ghi `stories`, và mở tin từ B. Kiểm tra lượt xem, reply gắn `reply_story_id`, audiences public/friends/private, xóa tin; không đánh dấu E2E PASS cho tới khi hoàn tất các kiểm tra Cloud này.

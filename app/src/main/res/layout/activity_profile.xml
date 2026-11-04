@@ -2,170 +2,651 @@
 <androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/scrollProfile"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/app_bg"
+    android:clipToPadding="false"
+    android:paddingBottom="72dp"
     android:fillViewport="true"
     tools:context=".ProfileActivity">
 
     <LinearLayout
+        android:id="@+id/layoutProfileContent"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <!-- Header Banner & Avatar Container -->
-        <FrameLayout
+        <!-- Instagram Top Bar -->
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbarProfile"
             android:layout_width="match_parent"
-            android:layout_height="220dp"
-            android:background="@color/surface_bg">
+            android:layout_height="50dp"
+            android:background="@color/surface_bg"
+            app:contentInsetStart="0dp">
 
-            <!-- Cover Image -->
-            <ImageView
-                android:id="@+id/imgCover"
+            <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"
-                android:layout_height="160dp"
-                android:background="@color/divider_color"
-                android:contentDescription="@null"
-                android:scaleType="centerCrop" />
+                android:layout_height="match_parent"
+                android:paddingHorizontal="14dp">
 
-            <!-- Back Navigation Floating Button -->
-            <ImageView
-                android:id="@+id/btnBack"
-                android:layout_width="38dp"
-                android:layout_height="38dp"
-                android:layout_margin="12dp"
-                android:background="@drawable/shape_story_ring"
-                android:backgroundTint="#80000000"
-                android:contentDescription="@null"
-                android:padding="8dp"
-                android:src="@drawable/ic_arrow_back"
-                app:tint="#FFFFFF" />
+                <ImageView
+                    android:id="@+id/btnBack"
+                    android:layout_width="38dp"
+                    android:layout_height="38dp"
+                    android:background="?android:attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
+                    android:contentDescription="Quay lại"
+                    android:focusable="true"
+                    android:padding="8dp"
+                    android:src="@drawable/ic_back"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:tint="@color/text_primary" />
 
-            <!-- Avatar Image Floating Over Cover -->
-            <com.google.android.material.imageview.ShapeableImageView
-                android:id="@+id/imgAvatar"
-                android:layout_width="110dp"
-                android:layout_height="110dp"
-                android:layout_gravity="bottom|center_horizontal"
-                android:contentDescription="@null"
-                android:scaleType="centerCrop"
-                android:src="@drawable/ic_home"
-                app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full"
-                app:strokeColor="@color/surface_bg"
-                app:strokeWidth="4dp" />
+                <TextView
+                    android:id="@+id/tvProfileTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-bold"
+                    android:text="Trang cá nhân"
+                    android:textColor="@color/text_primary"
+                    android:textSize="17sp"
+                    android:textStyle="bold"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
 
-        </FrameLayout>
+                <ImageView
+                    android:id="@+id/btnPrivacyAction"
+                    android:layout_width="38dp"
+                    android:layout_height="38dp"
+                    android:background="?android:attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
+                    android:contentDescription="Tùy chọn quyền riêng tư"
+                    android:focusable="true"
+                    android:padding="8dp"
+                    android:src="@drawable/ic_more"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:tint="@color/text_primary" />
 
-        <!-- User Info Container -->
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+        </androidx.appcompat.widget.Toolbar>
+
+        <!-- Hairline Divider -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0.5dp"
+            android:background="@color/divider_color" />
+
+        <!-- Instagram Profile Header: Avatar + 3 Stats Columns -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@color/surface_bg"
-            android:gravity="center_horizontal"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="16dp"
+            android:paddingTop="16dp"
+            android:paddingBottom="12dp">
+
+            <!-- 78dp Circular Avatar with Story Ring & Edit Badge -->
+            <FrameLayout
+                android:layout_width="78dp"
+                android:layout_height="78dp">
+
+                <FrameLayout
+                    android:layout_width="78dp"
+                    android:layout_height="78dp"
+                    android:background="@drawable/shape_story_ring"
+                    android:padding="2.5dp">
+
+                    <com.google.android.material.imageview.ShapeableImageView
+                        android:id="@+id/imgAvatar"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:contentDescription="Ảnh đại diện"
+                        android:scaleType="centerCrop"
+                        android:src="@drawable/avatar_neutral"
+                        app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full"
+                        app:strokeColor="@color/surface_bg"
+                        app:strokeWidth="2dp" />
+
+                </FrameLayout>
+
+                <!-- Avatar Edit Camera Badge -->
+                <ImageView
+                    android:id="@+id/btnChangeAvatar"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="bottom|end"
+                    android:background="@drawable/bg_button_blue"
+                    android:contentDescription="Đổi ảnh đại diện"
+                    android:padding="4dp"
+                    android:src="@drawable/ic_camera"
+                    android:visibility="gone"
+                    app:tint="@color/white" />
+
+            </FrameLayout>
+
+            <!-- 3 Stats Columns (Posts, Followers, Following) -->
+            <LinearLayout
+                android:id="@+id/layoutFollowStats"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_weight="1"
+                android:baselineAligned="false"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <!-- Posts / Friends Stat -->
+                <LinearLayout
+                    android:id="@+id/layoutStatFriends"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/tvFriendsCountSummary"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-bold"
+                        android:gravity="center"
+                        android:text="0"
+                        android:textColor="@color/text_primary"
+                        android:textSize="17sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:gravity="center"
+                        android:text="Bạn bè"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp" />
+
+                </LinearLayout>
+
+                <!-- Followers Stat -->
+                <LinearLayout
+                    android:id="@+id/layoutStatFollowers"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="?android:attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/tvFollowers"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-bold"
+                        android:gravity="center"
+                        android:text="0"
+                        android:textColor="@color/text_primary"
+                        android:textSize="17sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:gravity="center"
+                        android:text="Người theo dõi"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp" />
+
+                </LinearLayout>
+
+                <!-- Following Stat -->
+                <LinearLayout
+                    android:id="@+id/layoutStatFollowing"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="?android:attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/tvFollowing"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-bold"
+                        android:gravity="center"
+                        android:text="0"
+                        android:textColor="@color/text_primary"
+                        android:textSize="17sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:gravity="center"
+                        android:text="Đang theo dõi"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- User Bio & Info Section -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/surface_bg"
             android:orientation="vertical"
-            android:paddingHorizontal="20dp"
-            android:paddingTop="12dp"
-            android:paddingBottom="20dp">
+            android:paddingHorizontal="16dp"
+            android:paddingBottom="12dp">
 
             <TextView
                 android:id="@+id/tvFullName"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-bold"
                 android:textColor="@color/text_primary"
-                android:textSize="22sp"
+                android:textSize="15sp"
                 android:textStyle="bold"
-                tools:text="Nguyễn Văn A" />
+                tools:text="Hồ Long" />
 
             <TextView
                 android:id="@+id/tvBio"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:gravity="center"
-                android:textColor="@color/text_secondary"
-                android:textSize="14sp"
-                tools:text="Chưa có tiểu sử" />
-
-            <!-- Relationship Action Buttons Bar -->
-            <LinearLayout
-                android:id="@+id/layoutActions"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:orientation="horizontal">
+                android:layout_marginTop="3dp"
+                android:lineSpacingExtra="2dp"
+                android:textColor="@color/text_primary"
+                android:textSize="13sp"
+                tools:text="Mobile UI/UX Developer &amp; Social Product Enthusiast 🚀" />
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnPrimaryAction"
-                    style="@style/Widget.Material3.Button.UnelevatedButton"
-                    android:layout_width="0dp"
-                    android:layout_height="44dp"
-                    android:layout_weight="1"
-                    android:text="Thêm bạn bè"
-                    android:textAllCaps="false"
-                    android:textColor="#FFFFFF"
-                    android:textSize="14sp"
-                    android:textStyle="bold"
-                    app:backgroundTint="@color/brand_blue"
-                    app:cornerRadius="8dp" />
+        </LinearLayout>
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnSecondaryAction"
-                    style="@style/Widget.Material3.Button.UnelevatedButton"
-                    android:layout_width="0dp"
-                    android:layout_height="44dp"
-                    android:layout_marginStart="10dp"
-                    android:layout_weight="1"
-                    android:text="Xóa / Hủy"
-                    android:textAllCaps="false"
-                    android:textColor="@color/text_primary"
-                    android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:visibility="gone"
-                    app:backgroundTint="@color/divider_color"
-                    app:cornerRadius="8dp" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnEditProfile"
-                    style="@style/Widget.Material3.Button.UnelevatedButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="44dp"
-                    android:text="Chỉnh sửa trang cá nhân"
-                    android:textAllCaps="false"
-                    android:textColor="@color/text_primary"
-                    android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:visibility="gone"
-                    app:backgroundTint="@color/divider_color"
-                    app:cornerRadius="8dp" />
-
-            </LinearLayout>
+        <!-- Action Buttons Row (Edit Profile, Share, Follow, Message) -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/surface_bg"
+            android:orientation="horizontal"
+            android:paddingHorizontal="16dp"
+            android:paddingBottom="12dp">
 
             <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnMessage"
+                android:id="@+id/btnEditProfile"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="0dp"
+                android:layout_height="38dp"
+                android:layout_weight="1"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:text="Chỉnh sửa trang cá nhân"
+                android:textAllCaps="false"
+                android:textColor="@color/text_primary"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:visibility="gone"
+                app:cornerRadius="8dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnPrimaryAction"
                 style="@style/Widget.Material3.Button.UnelevatedButton"
-                android:layout_width="match_parent"
-                android:layout_height="44dp"
-                android:layout_marginTop="8dp"
-                android:text="Nhắn tin"
+                android:layout_width="0dp"
+                android:layout_height="38dp"
+                android:layout_weight="1"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:text="Thêm bạn bè"
                 android:textAllCaps="false"
                 android:textColor="@color/white"
-                android:textSize="14sp"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                app:backgroundTint="@color/brand_blue"
+                app:cornerRadius="8dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSecondaryAction"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="0dp"
+                android:layout_height="38dp"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:text="Chia sẻ trang cá nhân"
+                android:textAllCaps="false"
+                android:textColor="@color/text_primary"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:visibility="gone"
+                app:cornerRadius="8dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnFollow"
+                style="@style/Widget.Material3.Button.UnelevatedButton"
+                android:layout_width="wrap_content"
+                android:layout_height="38dp"
+                android:layout_marginStart="8dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:paddingHorizontal="16dp"
+                android:text="Theo dõi"
+                android:textAllCaps="false"
+                android:textColor="@color/white"
+                android:textSize="13sp"
                 android:textStyle="bold"
                 android:visibility="gone"
                 app:backgroundTint="@color/brand_blue"
                 app:cornerRadius="8dp" />
 
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnMessage"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="wrap_content"
+                android:layout_height="38dp"
+                android:layout_marginStart="8dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:paddingHorizontal="16dp"
+                android:text="Nhắn tin"
+                android:textAllCaps="false"
+                android:textColor="@color/text_primary"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:visibility="gone"
+                app:cornerRadius="8dp" />
+
         </LinearLayout>
 
-        <!-- Details Card -->
-        <com.google.android.material.card.MaterialCardView
+        <!-- Story Highlights Row (Featured Photos) -->
+        <LinearLayout
+            android:id="@+id/cardFeatured"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
+            android:background="@color/surface_bg"
+            android:orientation="vertical"
+            android:paddingHorizontal="16dp"
+            android:paddingBottom="12dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:fontFamily="sans-serif-bold"
+                    android:text="Tin nổi bật"
+                    android:textColor="@color/text_primary"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <ImageView
+                    android:id="@+id/btnAddFeatured"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:background="?android:attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
+                    android:contentDescription="Thêm tin nổi bật"
+                    android:focusable="true"
+                    android:padding="4dp"
+                    android:src="@drawable/ic_add"
+                    app:tint="@color/text_primary" />
+
+            </LinearLayout>
+
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:scrollbars="none">
+
+                <LinearLayout
+                    android:id="@+id/layoutFeaturedItems"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal" />
+
+            </HorizontalScrollView>
+
+        </LinearLayout>
+
+        <!-- Pinned Post Notification Bar (If Any) -->
+        <LinearLayout
+            android:id="@+id/cardProfilePinned"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/surface_variant"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="16dp"
+            android:paddingVertical="8dp"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/tvProfilePinned"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="@color/text_primary"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                tools:text="📌 Đã ghim: Chào mừng tới Meeto" />
+
+            <ImageView
+                android:id="@+id/btnProfileUnpin"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:contentDescription="Bỏ ghim"
+                android:padding="3dp"
+                android:src="@drawable/ic_close"
+                app:tint="@color/text_secondary" />
+
+        </LinearLayout>
+
+        <!-- Hairline Divider above Tabs -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0.5dp"
+            android:background="@color/divider_color" />
+
+        <!-- 4 Minimalist Instagram Tabs -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:background="@color/surface_bg"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <!-- Tab 1: Posts (Grid 3x3) -->
+            <Button
+                android:id="@+id/btnProfilePosts"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:text="Bài viết"
+                android:textAllCaps="false"
+                android:textColor="@color/text_primary"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <!-- Tab 2: Photos -->
+            <Button
+                android:id="@+id/btnProfilePhotos"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:text="Ảnh"
+                android:textAllCaps="false"
+                android:textColor="@color/text_secondary"
+                android:textSize="13sp" />
+
+            <!-- Tab 3: Videos -->
+            <Button
+                android:id="@+id/btnProfileVideos"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:text="Reels"
+                android:textAllCaps="false"
+                android:textColor="@color/text_secondary"
+                android:textSize="13sp" />
+
+            <!-- Tab 4: About -->
+            <Button
+                android:id="@+id/btnProfileAbout"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:text="Giới thiệu"
+                android:textAllCaps="false"
+                android:textColor="@color/text_secondary"
+                android:textSize="13sp" />
+
+        </LinearLayout>
+
+        <!-- Hairline Divider below Tabs -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0.5dp"
+            android:background="@color/divider_color" />
+
+        <!-- Content Area 1: 3-Column Square Grid for Media / Photos / Videos -->
+        <LinearLayout
+            android:id="@+id/layoutProfileMedia"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvProfileMedia"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:clipToPadding="false"
+                android:nestedScrollingEnabled="false"
+                android:padding="1dp" />
+
+            <TextView
+                android:id="@+id/tvProfileMediaStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:padding="24dp"
+                android:textColor="@color/text_secondary"
+                android:textSize="13sp"
+                android:visibility="gone" />
+
+            <Button
+                android:id="@+id/btnProfileMediaMore"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_margin="12dp"
+                android:text="Xem thêm"
+                android:visibility="gone" />
+
+        </LinearLayout>
+
+        <!-- Content Area 2: Timeline Section (Posts List) -->
+        <LinearLayout
+            android:id="@+id/layoutTimelineSection"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvTimeline"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:clipToPadding="false"
+                android:nestedScrollingEnabled="false" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardTimelineStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="16dp"
+                android:visibility="gone"
+                app:cardBackgroundColor="@color/surface_bg"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="0dp">
+
+                <TextView
+                    android:id="@+id/tvTimelineStatus"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:padding="24dp"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="13sp" />
+
+            </com.google.android.material.card.MaterialCardView>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:orientation="horizontal"
+                android:padding="12dp">
+
+                <Button
+                    android:id="@+id/btnTimelineRefresh"
+                    style="@style/Widget.Material3.Button.TextButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Làm mới bài viết" />
+
+                <Button
+                    android:id="@+id/btnTimelineMore"
+                    style="@style/Widget.Material3.Button.TextButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="Tải thêm" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- Content Area 3: Personal Details Card (About Tab) -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardPersonalDetails"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="16dp"
+            android:visibility="gone"
             app:cardBackgroundColor="@color/surface_bg"
-            app:cardCornerRadius="0dp"
-            app:cardElevation="1dp"
-            app:strokeWidth="0dp">
+            app:cardCornerRadius="12dp"
+            app:cardElevation="0dp"
+            app:strokeColor="@color/divider_color"
+            app:strokeWidth="1dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -176,32 +657,191 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Chi tiết cá nhân"
+                    android:fontFamily="sans-serif-bold"
+                    android:text="Chi tiết trang cá nhân"
                     android:textColor="@color/text_primary"
                     android:textSize="16sp"
                     android:textStyle="bold" />
 
-                <TextView
-                    android:id="@+id/tvGender"
-                    android:layout_width="wrap_content"
+                <!-- Location Row -->
+                <LinearLayout
+                    android:id="@+id/layoutLocationRow"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="10dp"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="14sp"
-                    tools:text="Giới tính: Nam" />
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:visibility="gone">
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_location"
+                        app:tint="@color/text_secondary" />
+
+                    <TextView
+                        android:id="@+id/tvLocation"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:textColor="@color/text_primary"
+                        android:textSize="13sp" />
+
+                </LinearLayout>
+
+                <!-- Gender Row -->
+                <LinearLayout
+                    android:id="@+id/layoutGenderRow"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:visibility="gone">
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_person"
+                        app:tint="@color/text_secondary" />
+
+                    <TextView
+                        android:id="@+id/tvGender"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:textColor="@color/text_primary"
+                        android:textSize="13sp" />
+
+                </LinearLayout>
+
+                <!-- Date of Birth Row -->
+                <LinearLayout
+                    android:id="@+id/layoutDobRow"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:visibility="gone">
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_calendar"
+                        app:tint="@color/text_secondary" />
+
+                    <TextView
+                        android:id="@+id/tvDob"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:textColor="@color/text_primary"
+                        android:textSize="13sp" />
+
+                </LinearLayout>
 
                 <TextView
-                    android:id="@+id/tvDob"
+                    android:id="@+id/tvFriendsCount"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
+                    android:layout_marginTop="8dp"
                     android:textColor="@color/text_secondary"
-                    android:textSize="14sp"
-                    tools:text="Ngày sinh: 15/08/2000" />
+                    android:textSize="13sp"
+                    tools:text="15 người bạn" />
+
+                <TextView
+                    android:id="@+id/tvFriendsStatus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="13sp"
+                    android:visibility="gone" />
 
             </LinearLayout>
 
         </com.google.android.material.card.MaterialCardView>
+
+        <!-- Friends Preview Container (Retained view IDs for ProfileActivity) -->
+        <LinearLayout
+            android:id="@+id/cardFriendsPreview"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="16dp"
+            android:paddingVertical="8dp"
+            android:visibility="gone">
+
+            <Button
+                android:id="@+id/btnSeeAllFriends"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Xem tất cả bạn bè" />
+
+            <GridLayout
+                android:id="@+id/layoutFriendsGrid"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:columnCount="3" />
+
+        </LinearLayout>
+
+        <!-- Quick Create Post Container (Retained view IDs for ProfileActivity) -->
+        <LinearLayout
+            android:id="@+id/cardCreatePost"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/tvCreatePostPrompt"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+            <ImageView
+                android:id="@+id/btnCreatePostPhoto"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:contentDescription="@null" />
+
+            <ImageView
+                android:id="@+id/ivCreatePostAvatar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:contentDescription="@null" />
+
+        </LinearLayout>
+
+        <!-- Albums Shortcut Button -->
+        <Button
+            android:id="@+id/btnProfileAlbums"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="24dp"
+            android:text="Xem album ảnh"
+            android:visibility="gone" />
+
+        <!-- Zero-height elements to safely bind unused legacy views -->
+        <ImageView
+            android:id="@+id/imgCover"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:contentDescription="@null"
+            android:visibility="gone" />
+
+        <ImageView
+            android:id="@+id/btnChangeCover"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:contentDescription="@null"
+            android:visibility="gone" />
 
     </LinearLayout>
 

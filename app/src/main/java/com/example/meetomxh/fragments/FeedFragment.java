@@ -24,6 +24,7 @@ import com.example.meetomxh.adapters.FeedAdapter;
 import com.example.meetomxh.databinding.FragmentFeedBinding;
 import com.example.meetomxh.models.Post;
 import com.example.meetomxh.repositories.FeedRepository;
+import com.example.meetomxh.supabase.Api;
 import com.example.meetomxh.viewmodels.FeedViewModel;
 
 public class FeedFragment extends Fragment implements FeedAdapter.OnPostClickListener {
@@ -32,6 +33,9 @@ public class FeedFragment extends Fragment implements FeedAdapter.OnPostClickLis
     private FeedViewModel viewModel;
     private FeedAdapter adapter;
     private final Handler handler = new Handler(Looper.getMainLooper());
+    private String refreshAnchorId;
+    private int refreshAnchorOffset;
+    private boolean pullRefreshing;
 
     @Nullable
     @Override
@@ -53,6 +57,12 @@ public class FeedFragment extends Fragment implements FeedAdapter.OnPostClickLis
         adapter = new FeedAdapter(this);
         binding.rvFeed.setLayoutManager(new LinearLayoutManager(requireContext()));
         binding.rvFeed.setAdapter(adapter);
+        binding.swipeFeed.setOnRefreshListener(()->{
+            pullRefreshing=true;
+            LinearLayoutManager lm=(LinearLayoutManager)binding.rvFeed.getLayoutManager();int pos=lm==null?0:lm.findFirstVisibleItemPosition();
+            if(pos>=0&&adapter.getItemCount()>0){refreshAnchorId=adapter.getPostIdAtAdapterPosition(pos);View child=lm.findViewByPosition(pos);refreshAnchorOffset=child==null?0:child.getTop();}
+            FeedRepository.getInstance().refresh();
+        });
 
         // Khởi tạo ViewModel
         viewModel = new ViewModelProvider(this).get(FeedViewModel.class);
@@ -60,11 +70,11 @@ public class FeedFragment extends Fragment implements FeedAdapter.OnPostClickLis
         // Observe danh sách bài đăng từ ViewModel
         viewModel.getPosts().observe(getViewLifecycleOwner(), posts -> {
             if (posts != null) {
-                adapter.setPosts(posts);binding.layoutShimmer.getRoot().stopShimmer();binding.layoutShimmer.getRoot().setVisibility(View.GONE);binding.rvFeed.setVisibility(View.VISIBLE);binding.feedStatus.setText(posts.isEmpty()?"Chưa có bài viết · chạm để tải lại":"");binding.feedStatus.setVisibility(posts.isEmpty()?View.VISIBLE:View.GONE);
+                adapter.setPosts(posts); if(refreshAnchorId!=null){String rid=refreshAnchorId;int ro=refreshAnchorOffset;refreshAnchorId=null;binding.rvFeed.post(()->{if(binding!=null){int p=adapter.positionOfPost(rid);if(p>=0)((LinearLayoutManager)binding.rvFeed.getLayoutManager()).scrollToPositionWithOffset(p,ro);}});}binding.layoutShimmer.getRoot().stopShimmer();binding.layoutShimmer.getRoot().setVisibility(View.GONE);binding.swipeFeed.setVisibility(View.VISIBLE);binding.rvFeed.setVisibility(View.VISIBLE);binding.feedStatus.setText(posts.isEmpty()?"Chưa có bài viết · chạm để tải lại":"");binding.feedStatus.setVisibility(posts.isEmpty()?View.VISIBLE:View.GONE);
             }
         });
 
-        FeedRepository.getInstance().loadingState.observe(getViewLifecycleOwner(),busy->{if(binding==null)return;if(Boolean.TRUE.equals(busy)&&(viewModel.getPosts().getValue()==null||viewModel.getPosts().getValue().isEmpty())){binding.layoutShimmer.getRoot().setVisibility(View.VISIBLE);binding.layoutShimmer.getRoot().startShimmer();binding.feedStatus.setVisibility(View.GONE);}else if(!Boolean.TRUE.equals(busy)){binding.layoutShimmer.getRoot().stopShimmer();binding.layoutShimmer.getRoot().setVisibility(View.GONE);}});FeedRepository.getInstance().error.observe(getViewLifecycleOwner(),e->{if(binding!=null&&e!=null){binding.feedStatus.setText(e+" · chạm để thử lại");binding.feedStatus.setVisibility(View.VISIBLE);}});binding.feedStatus.setOnClickListener(v->FeedRepository.getInstance().refresh());binding.rvFeed.addOnScrollListener(new androidx.recyclerview.widget.RecyclerView.OnScrollListener(){public void onScrolled(androidx.recyclerview.widget.RecyclerView r,int dx,int dy){if(dy>0&&!r.canScrollVertically(1))FeedRepository.getInstance().loadMore();}});
+        FeedRepository.getInstance().loadingState.observe(getViewLifecycleOwner(),busy->{if(binding==null)return;binding.swipeFeed.setVisibility(View.VISIBLE);binding.swipeFeed.setRefreshing(pullRefreshing&&Boolean.TRUE.equals(busy));if(!Boolean.TRUE.equals(busy)){pullRefreshing=false;binding.swipeFeed.setRefreshing(false);binding.rvFeed.setVisibility(View.VISIBLE);}if(Boolean.TRUE.equals(busy)&&(viewModel.getPosts().getValue()==null||viewModel.getPosts().getValue().isEmpty())){binding.layoutShimmer.getRoot().setVisibility(View.VISIBLE);binding.layoutShimmer.getRoot().startShimmer();binding.feedStatus.setVisibility(View.GONE);}else if(!Boolean.TRUE.equals(busy)){binding.layoutShimmer.getRoot().stopShimmer();binding.layoutShimmer.getRoot().setVisibility(View.GONE);}});FeedRepository.getInstance().error.observe(getViewLifecycleOwner(),e->{if(binding!=null&&e!=null){pullRefreshing=false;binding.swipeFeed.setVisibility(View.VISIBLE);binding.rvFeed.setVisibility(View.VISIBLE);binding.swipeFeed.setRefreshing(false);binding.layoutShimmer.getRoot().stopShimmer();binding.layoutShimmer.getRoot().setVisibility(View.GONE);binding.feedStatus.setText(e+" · chạm để thử lại");binding.feedStatus.setVisibility(View.VISIBLE);}});binding.feedStatus.setOnClickListener(v->FeedRepository.getInstance().refresh());binding.rvFeed.addOnScrollListener(new androidx.recyclerview.widget.RecyclerView.OnScrollListener(){public void onScrolled(androidx.recyclerview.widget.RecyclerView r,int dx,int dy){if(dy>0&&!r.canScrollVertically(1))FeedRepository.getInstance().loadMore();}});
         binding.fabChat.setOnClickListener(v -> {
             if (!isAdded()) return;
             androidx.fragment.app.FragmentManager fragmentManager = getParentFragmentManager();
@@ -101,36 +111,7 @@ public class FeedFragment extends Fragment implements FeedAdapter.OnPostClickLis
 
     @Override
     public void onShareClick(Post post) {
-        if (post == null) return;
-
-        EditText etComment = new EditText(requireContext());
-        etComment.setHint("Viết gì đó về bài viết này...");
-        etComment.setPadding(32, 32, 32, 32);
-
-        new AlertDialog.Builder(requireContext())
-                .setTitle("Chia sẻ bài viết")
-                .setMessage("Chia sẻ bài viết này lên trang cá nhân của bạn")
-                .setView(etComment)
-                .setPositiveButton("Chia sẻ ngay", (dialog, which) -> {
-                    String comment = etComment.getText().toString().trim();
-                    viewModel.sharePost(post, comment, new FeedRepository.OnPostActionListener() {
-                        @Override
-                        public void onSuccess(String message) {
-                            if (isAdded()) {
-                                Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
-                            }
-                        }
-
-                        @Override
-                        public void onFailure(String error) {
-                            if (isAdded()) {
-                                Toast.makeText(requireContext(), error, Toast.LENGTH_SHORT).show();
-                            }
-                        }
-                    });
-                })
-                .setNegativeButton("Hủy", null)
-                .show();
+        if (isAdded() && post != null) com.example.meetomxh.supabase.ShareActions.show(requireActivity(),post,false);
     }
 
     @Override
@@ -176,10 +157,25 @@ public class FeedFragment extends Fragment implements FeedAdapter.OnPostClickLis
                 .show();
     }
 
+    @Override public void onSavePostClick(Post post, boolean save, Runnable completed) {
+        com.example.meetomxh.supabase.SavedPostClient.set(post, save, new Api.Callback<Boolean>() {
+            public void success(Boolean value) {
+                post.setSaved(value); completed.run();
+                if (isAdded()) Toast.makeText(requireContext(), value ? "Đã lưu bài viết" : "Đã bỏ lưu", Toast.LENGTH_SHORT).show();
+            }
+            public void error(String error) {
+                completed.run();
+                if (isAdded()) Toast.makeText(requireContext(), error, Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+    public void scrollToTop() { if (binding != null && binding.rvFeed != null) binding.rvFeed.smoothScrollToPosition(0); }
+
     @Override
     public void onDestroyView() {
         super.onDestroyView();
         handler.removeCallbacksAndMessages(null);
         binding = null;
     }
- @Override public void onResume(){super.onResume();if(SessionManagerReady())FeedRepository.getInstance().refresh();} private boolean SessionManagerReady(){return com.example.meetomxh.supabase.SessionManager.getInstance().getCurrentUser()!=null;}}
+ @Override public void onResume(){super.onResume();if(SessionManagerReady()){FeedRepository.getInstance().refresh();if(adapter!=null)adapter.refreshStories();}} private boolean SessionManagerReady(){return com.example.meetomxh.supabase.SessionManager.getInstance().getCurrentUser()!=null;}}

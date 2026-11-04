@@ -1,0 +1,246 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#000000">
+
+    <androidx.media3.ui.PlayerView
+        android:id="@+id/reel_player"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#000000"
+        android:keepScreenOn="true" />
+
+    <ImageView
+        android:id="@+id/reel_cover"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:contentDescription="Ảnh bìa video"
+        android:scaleType="centerCrop"
+        android:visibility="gone" />
+
+    <ProgressBar
+        android:id="@+id/reel_buffering"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:layout_gravity="center"
+        android:indeterminateTint="#FFFFFFFF" />
+
+    <Button
+        android:id="@+id/reel_retry"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:text="Tải lại video"
+        android:visibility="gone" />
+
+    <!-- Large Heart Overlay for Double Tap Like Animation in Reels -->
+    <ImageView
+        android:id="@+id/reel_heart_overlay"
+        android:layout_width="110dp"
+        android:layout_height="110dp"
+        android:layout_gravity="center"
+        android:alpha="0"
+        android:elevation="12dp"
+        android:src="@drawable/ic_like_filled"
+        android:visibility="gone"
+        app:tint="#FFFFFF" />
+
+    <!-- Bottom Content Overlay (Gradient Shade) -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:background="@drawable/bg_reel_gradient"
+        android:gravity="bottom"
+        android:orientation="horizontal"
+        android:paddingStart="16dp"
+        android:paddingTop="48dp"
+        android:paddingEnd="12dp"
+        android:paddingBottom="16dp">
+
+        <!-- Left Column: Creator info, Caption, Progress -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:paddingEnd="12dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <com.google.android.material.imageview.ShapeableImageView
+                    android:id="@+id/reel_avatar"
+                    android:layout_width="38dp"
+                    android:layout_height="38dp"
+                    android:contentDescription="Ảnh đại diện tác giả"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/avatar_neutral"
+                    app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full"
+                    app:strokeColor="#FFFFFF"
+                    app:strokeWidth="1.5dp" />
+
+                <TextView
+                    android:id="@+id/reel_author"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:fontFamily="sans-serif-bold"
+                    android:maxLines="1"
+                    android:shadowColor="#80000000"
+                    android:shadowDx="1"
+                    android:shadowDy="1"
+                    android:shadowRadius="2"
+                    android:textColor="#FFFFFF"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <Button
+                    android:id="@+id/reel_follow"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="32dp"
+                    android:layout_marginStart="10dp"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:minWidth="0dp"
+                    android:paddingHorizontal="12dp"
+                    android:text="Theo dõi"
+                    android:textAllCaps="false"
+                    android:textColor="#FFFFFF"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    app:cornerRadius="6dp"
+                    app:strokeColor="#FFFFFF"
+                    app:strokeWidth="1dp" />
+
+            </LinearLayout>
+
+            <!-- Caption -->
+            <TextView
+                android:id="@+id/reel_caption"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:lineSpacingExtra="2dp"
+                android:maxLines="3"
+                android:shadowColor="#80000000"
+                android:shadowDx="1"
+                android:shadowDy="1"
+                android:shadowRadius="2"
+                android:textColor="#FFFFFF"
+                android:textSize="13sp" />
+
+            <!-- Progress Bar -->
+            <SeekBar
+                android:id="@+id/reel_progress"
+                android:layout_width="match_parent"
+                android:layout_height="16dp"
+                android:layout_marginTop="6dp"
+                android:max="1000"
+                android:paddingStart="0dp"
+                android:paddingEnd="0dp"
+                android:progress="0"
+                android:progressTint="#FFFFFF"
+                android:thumbTint="#FFFFFF" />
+
+        </LinearLayout>
+
+        <!-- Right Vertical Column: Action Icons (Like, Comment, Save, Share) -->
+        <LinearLayout
+            android:layout_width="50dp"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
+            android:orientation="vertical">
+
+            <!-- Like (Heart) -->
+            <ImageView
+                android:id="@+id/reel_like"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true"
+                android:contentDescription="Thích"
+                android:padding="8dp"
+                android:src="@drawable/ic_like_outline"
+                app:tint="#FFFFFF" />
+
+            <TextView
+                android:id="@+id/reel_like_count"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                android:gravity="center"
+                android:shadowColor="#80000000"
+                android:shadowDx="1"
+                android:shadowDy="1"
+                android:shadowRadius="2"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <!-- Comment -->
+            <ImageView
+                android:id="@+id/reel_comment"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true"
+                android:contentDescription="Bình luận"
+                android:padding="8dp"
+                android:src="@drawable/ic_comment"
+                app:tint="#FFFFFF" />
+
+            <TextView
+                android:id="@+id/reel_comment_count"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                android:gravity="center"
+                android:shadowColor="#80000000"
+                android:shadowDx="1"
+                android:shadowDy="1"
+                android:shadowRadius="2"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <!-- Bookmark / Save -->
+            <ImageView
+                android:id="@+id/reel_save"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:layout_marginBottom="10dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true"
+                android:contentDescription="Lưu"
+                android:padding="8dp"
+                android:src="@drawable/ic_bookmark_outline"
+                app:tint="#FFFFFF" />
+
+            <!-- Share -->
+            <ImageView
+                android:id="@+id/reel_share"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true"
+                android:contentDescription="Chia sẻ"
+                android:padding="8dp"
+                android:src="@drawable/ic_share"
+                app:tint="#FFFFFF" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</FrameLayout>

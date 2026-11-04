@@ -1,14 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="8dp"
-    app:cardBackgroundColor="@color/surface_bg"
-    app:cardCornerRadius="0dp"
-    app:cardElevation="1dp"
-    app:strokeWidth="0dp">
+    android:background="@color/surface_bg"
+    android:orientation="vertical">
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvStories"
@@ -17,8 +14,15 @@
         android:clipToPadding="false"
         android:orientation="horizontal"
         android:paddingHorizontal="12dp"
-        android:paddingVertical="12dp"
+        android:paddingTop="10dp"
+        android:paddingBottom="10dp"
         app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
         tools:listitem="@layout/item_story" />
 
-</com.google.android.material.card.MaterialCardView>
+    <!-- Hairline divider below stories -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0.5dp"
+        android:background="@color/divider_color" />
+
+</LinearLayout>

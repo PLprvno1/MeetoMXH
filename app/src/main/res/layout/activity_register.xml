@@ -756,7 +756,7 @@
                         android:background="@color/surface_bg"
                         android:contentDescription="@null"
                         android:scaleType="centerCrop"
-                        android:src="@drawable/ic_home"
+                        android:src="@drawable/avatar_neutral"
                         app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full"
                         app:strokeColor="@color/surface_bg"
                         app:strokeWidth="3dp" />

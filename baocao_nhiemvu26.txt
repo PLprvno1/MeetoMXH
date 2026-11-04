@@ -1,0 +1,39 @@
+﻿MEETO — TASK 26: VOICE MESSAGING & AUDIO INFRASTRUCTURE
+
+Thay đổi chính
+- ChatActivity có giữ để ghi âm, trượt trái để hủy, trượt lên khóa, Stop/Cancel, giới hạn 119.5 giây và không gửi tự động. RECORD_AUDIO chỉ được xin khi chạm micro.
+- Bản ghi M4A nằm trong cache riêng của ứng dụng; có preview, play/pause, seek, xóa và gửi chủ động. Upload/lỗi gửi giữ bản preview để retry; retry outbox dùng idempotency hiện có.
+- Tin nhắn thoại dùng bubble riêng với thời lượng, tiến trình, play/pause, read/delivery receipt từ dữ liệu chat hiện có. Chỉ phát một file; rời Chat thì dừng; thu hồi/biến mất khỏi lịch sử thì dừng.
+- Upload mở rộng pipeline private chat-media hiện có, đặt MIME audio/mp4 và giới hạn 2 MiB. Server chỉ chuyển asset thành ready sau khi worker xác minh cấu trúc M4A/AAC-LC, bảng sample, thời lượng và SHA-256; client MIME/header không đủ để duyệt.
+- Worker audio chạy trong Edge Function dọn media hiện có; không thêm dispatcher/Realtime riêng. Tin nhắn dùng send_message/c_event và notification hiện có.
+- Migration 033: supabase/migrations/20261103001500_voice_messaging.sql. Manifest đã có SHA-256 mới.
+
+Kiểm tra
+- Android: :app:assembleDebug PASS; :app:testDebugUnitTest PASS.
+- Audio verifier tests (Node 24 chạy trực tiếp TypeScript test harness): 3/3 PASS — sample AAC-LC cấu trúc hợp lệ; file chỉ có ftyp bị từ chối; quá 2 MiB bị từ chối.
+- Edge Function TypeScript syntax parse PASS. Deno CLI không có trong máy.
+- SQL static checks PASS: transaction BEGIN/COMMIT, dollar quote cân bằng, notify/grants/revokes và signatures được rà soát. Không dùng psql/local database.
+- Emulator/ADB không có sẵn; chưa quan sát thao tác thật trên thiết bị.
+
+Giới hạn và triển khai
+- AUDIO VERIFICATION: PARTIAL. Worker kiểm tra cấu trúc ISO-BMFF, codec config AAC-LC, sample tables, track và duration; không giải mã toàn bộ AAC bitstream. Vì vậy trạng thái được ghi rõ là audio_mp4_aac_lc_structural, không tuyên bố full decode.
+- Migration 033 yêu cầu migrations 001–032 đã tồn tại trên Cloud, bao gồm schema/projection Task 25/032. Chưa xác nhận các migration 030–032 đã deploy; không chạy 033 cho đến khi xác minh thứ tự và schema trên dự án.
+- Cần chủ dự án triển khai migration 033 và cập nhật/redeploy meeto-background-cleanup Edge Function. Chưa có Cloud/E2E xác nhận.
+- Một voice asset được worker claim mỗi phút để giới hạn tải; nhiều upload đồng thời có thể phải chờ các lượt tiếp theo và vẫn chịu thời hạn intent 15 phút.
+- Thu hồi chặn quyền truy cập mới qua RLS/storage policy; client đã tải audio trước lúc thu hồi có thể còn dữ liệu trong bộ đệm/thiết bị.
+
+Acceptance matrix
+VOICE RECORDER: PARTIAL — build đã kiểm tra; thao tác mic/gesture chưa chạy emulator.
+VOICE PREVIEW: PARTIAL — implementation/build; chưa chạy thiết bị.
+VOICE SEND: PARTIAL — RPC/outbox/upload code; Cloud chưa deploy.
+VOICE PLAYBACK: PARTIAL — private authenticated playback code; chưa có Cloud/E2E.
+AUDIO VERIFICATION: PARTIAL — structural verification, không full AAC decode.
+MEDIA AUTHORIZATION: PARTIAL — code/RLS review; chưa kiểm thử Cloud với nhiều tài khoản.
+AUDIO CLEANUP: PARTIAL — dùng cleanup worker hiện hữu; chưa chạy trên Cloud.
+REALTIME: PARTIAL — dùng message outbox/event hiện có; chưa xác minh Cloud dispatcher.
+UI/UX: PARTIAL — composer/bubble implemented; chưa kiểm tra dark mode/emulator/TalkBack.
+ANDROID BUILD: PASS.
+MIGRATION REQUIRED: YES.
+CLOUD DEPLOYED: NO.
+EMULATOR E2E: BLOCKED — ADB/emulator unavailable.
+READY FOR TASK 27: CONDITIONAL — sau khi migration 001–032 được xác minh, deploy migration 033 + Edge Function và smoke test hai tài khoản trên Cloud.

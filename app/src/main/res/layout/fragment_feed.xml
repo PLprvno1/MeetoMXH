@@ -20,18 +20,24 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <!-- RecyclerView Feed -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvFeed"
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipeFeed"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:clipToPadding="false"
-        android:paddingBottom="80dp"
-        android:visibility="gone"
+        android:visibility="visible"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/feedStatus"
-        tools:listitem="@layout/item_post" />
+        >
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvFeed"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:paddingBottom="80dp"
+            tools:listitem="@layout/item_post" />
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
     <TextView android:id="@+id/feedStatus" android:layout_width="0dp" android:layout_height="wrap_content" android:padding="8dp" android:background="@color/app_bg" android:visibility="gone" app:layout_constraintTop_toTopOf="parent" app:layout_constraintEnd_toEndOf="parent" app:layout_constraintStart_toStartOf="parent" android:accessibilityLiveRegion="polite" />
     <!-- Floating Action Button Messenger -->
@@ -40,7 +46,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_margin="16dp"
-        android:translationY="-100dp"
+        android:visibility="gone"
         android:contentDescription="Nhắn tin"
         android:src="@drawable/ic_messenger"
         app:backgroundTint="@color/brand_blue"

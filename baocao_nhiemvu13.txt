@@ -1,0 +1,76 @@
+MEETO - TASK 13 HANDOVER REPORT
+Profile timeline, registration selectors, media picker, friend suggestions
+Date: 2026-11-02
+Workspace: D:\Android\MeetoMXH
+Application: com.example.meetomxh
+
+1. Verified backend contract
+- Profile read/write uses get_my_profile, get_profile, update_profile, update_profile_private and complete_onboarding.
+- Profile fields currently stored: display_name, bio, avatar_asset_id, cover_asset_id, onboarding_completed and version. birth_date and gender are in profile_private.
+- No current location field or location parameter exists in local migrations 001-018 or profile RPC contracts. get_profile for another user omits private DOB/gender; get_my_profile returns them only to the owner.
+- Timeline uses get_user_posts(p_author, p_after_time, p_after_id, p_limit), which delegates to the authorized feed projection and applies post visibility/tombstone rules.
+- Suggestions use get_suggestions. Existing SQL filters self, inactive/unonboarded profiles, blocked users, friends and pending relationships, and requires viewer access to each suggested profile.
+- No Supabase admin/ledger access was available to inspect migration history or change Cloud schema. No migration, RLS, Dashboard setting or unrelated Cloud data was modified.
+
+2. Implementation
+- ProfileActivity embeds a real profile timeline with refresh/retry, empty/error/loading states, cursor pagination and deduplication by post ID.
+- Timeline reuses FeedAdapter post cards without feed create-post/story headers. Like, comment, share, author navigation, edit and delete actions use existing RPCs/components and version checks.
+- The owner's Profile previews real friends from FriendRepository/get_friends: count returned by the paginated RPC and up to six real profile cards. The API does not expose another user's friends or mutual-friend data, so those are not fabricated.
+- RegisterActivity uses a native DatePickerDialog, optional gender chooser and optional province/municipality selector. DOB displays as dd/MM/yyyy and is sent as ISO yyyy-MM-dd. Date range is capped at UTC today minus 13 years to match current RPC constraints.
+- Name and DOB remain required for onboarding; email/password receive local validation for new signups; existing email-confirmation flow remains intact. Optional gender is carried to post-confirmation onboarding.
+- After onboarding, the user can choose profile photos or skip. Choosing opens ProfileEditActivity and returns to the app when finished.
+- ProfileEditActivity uses the same DOB/gender selectors and previews selected avatar/cover locally. Assets attach only after prepare_upload -> Storage upload -> finalize_upload returns state=ready. No mock image or ready state was introduced.
+- Province/municipality labels use the official 34-unit list established by Resolution 202/2025/QH15: https://xaydungchinhsach.chinhphu.vn/chi-tiet-34-don-vi-hanh-chinh-cap-tinh-tu-12-6-2025-119250612141845533.htm
+
+3. Files changed for Task 13
+- app/src/main/java/com/example/meetomxh/ProfileActivity.java
+- app/src/main/java/com/example/meetomxh/ProfileEditActivity.java
+- app/src/main/java/com/example/meetomxh/RegisterActivity.java
+- app/src/main/java/com/example/meetomxh/ProfileFieldSelectors.java (new)
+- app/src/main/java/com/example/meetomxh/adapters/FeedAdapter.java
+- app/src/androidTest/java/com/example/meetomxh/Task13CloudReadTest.java (new; runtime-only credentials, none embedded)
+- app/src/androidTest/java/com/example/meetomxh/Task13SelectorUiTest.java (new)
+
+4. Test evidence
+- assembleDebug: PASS during implementation verification.
+- assembleDebugAndroidTest: PASS during implementation verification.
+- testDebugUnitTest: PASS during implementation verification.
+- Pixel_4 AVD, API 37, final Task13CloudReadTest: PASS (1 test). A logged in through the real UI using a temporary loopback receiver; credentials remained in memory and were not written to source, test files, logs or this report.
+- The Cloud test queried get_user_posts/get_suggestions/get_friends; opened Profile and Friends suggestions; matched rendered timeline count to the real Cloud first page; verified suggestions excluded the viewer and current friends; and matched suggestion UI count to paginated Cloud results.
+- Controlled temporary private text post was created through the UI, appeared in the profile timeline, and was edited through the profile post menu. Cloud confirmed audience remained private and edited body was persisted. The temporary post was removed with the existing authorized delete_post RPC and absence confirmed with get_post returning 404. This cleanup did not change any relationship.
+- The Profile delete-menu confirmation UI was not counted as tested. Attempts to automate its popup/dialog were unreliable; the temporary post was still removed and verified through Cloud RPC cleanup.
+- Pixel_4 AVD, API 37, Task13SelectorUiTest: PASS. Date picker, gender chooser and location selector opened and were exercised. Signup/onboarding was not submitted.
+- Earlier failed CRUD harness runs were corrected; their temporary posts were removed by the test cleanup path. No A/B relationship was changed and no untracked test post remains from the final successful run.
+
+5. Acceptance matrix
+PROFILE HEADER: PARTIAL - existing header/actions retained; real owner friends preview added; external friend/mutual summary unavailable from current API.
+PROFILE TIMELINE: PASS for real Cloud first-page read/render and private post create/edit; PARTIAL for multi-page scrolling, refresh-after-mutation, cross-account visibility and delete-menu UI confirmation, which were not exercised.
+PROFILE PRIVACY: PARTIAL - existing RPC omits private fields for other profiles and timeline relies on authorized feed RPC; A/B cross-account privacy instrumentation not run here.
+REGISTRATION FIELDS: PARTIAL - name/email/password/DOB/gender/location UI present; email signup confirmation E2E not run.
+DOB DATE PICKER: PASS - Pixel selector UI test; no new signup was submitted.
+GENDER SELECTOR: PASS - Pixel selector UI test; onboarding save was not submitted.
+LOCATION SELECTOR: PARTIAL - Pixel UI selection works, but cannot persist because current Cloud profile schema/RPC has no location field.
+ONBOARDING: PARTIAL - existing complete_onboarding RPC reused; new-user confirmation E2E was not run.
+ONBOARDING SKIP AVATAR/COVER: PARTIAL - skip/choose routing implemented; no new-user onboarding E2E run.
+AVATAR LOCAL PICKER/PREVIEW: PARTIAL - existing Android picker and local preview implemented; not exercised in this run.
+COVER LOCAL PICKER/PREVIEW: PARTIAL - existing Android picker and local preview implemented; not exercised in this run.
+AVATAR/COVER CLOUD VERIFIED ATTACH: BLOCKED - no upload/finalize test run; attachment remains dependent on verifier returning ready.
+FRIEND SUGGESTIONS: PASS - real Cloud RPC/UI read and self/friend exclusion verified for A.
+SEND FRIEND REQUEST: BLOCKED - A/B are already friends; no relationship was reset and no unrelated person's request was generated.
+A/B PRIVACY TESTS: PARTIAL - existing A read-only/profile/suggestion paths were checked; no fresh B login/cross-account test in this run.
+ANDROID BUILD: PASS.
+CRITICAL REGRESSIONS: 0 observed in tested scope; untested flows remain open.
+READY FOR ANTIGRAVITY UI POLISH: CONDITIONAL.
+
+6. Not run / remaining manual or Cloud-admin work
+- A/B login and cross-account post visibility/privacy were not retested in this task. Preserve their existing friendship; do not unfriend to force a suggestion.
+- Profile delete-menu confirmation has not been verified through UI automation. Cloud deletion/absence was verified using the existing authorized RPC after UI create/edit.
+- Do not test send/accept using an unrelated real person. Use an owner-approved synthetic account or disposable test identity.
+- Location is an optional UI-only choice; it is not persisted to Cloud or local session storage. Before implementing persistence, an authorized operator must verify the Cloud migration ledger, review a forward migration/RPC with owner-only writes and safe disclosure rules, then apply it. Do not call location complete until the Cloud change is deployed and tested.
+- Avatar/cover Cloud attach remains blocked until finalize_upload observes verifier state=ready. A locally selected preview is not evidence of a Cloud-ready asset.
+- New-account signup, confirmation, onboarding completion and photo-skip end-to-end remain untested; avoid repeated signup attempts that could trigger email rate limits.
+
+7. Change boundary
+- No Docker/local worker; no APK/AAB delivered.
+- No service-role key, schema/RLS/migrations 001-018, Realtime policy, Dashboard setting, or existing A/B relationship was changed.
+- Existing redesign and FIX02 behavior were preserved.

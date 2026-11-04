@@ -1,0 +1,204 @@
+﻿# MEETO — Task 32: Final Integration Testing & Demo Readiness
+
+Date: 2026-11-04  
+Workspace: `D:\Android\MeetoMXH`  
+Application: `com.example.meetomxh`
+
+## 1. Environment and Cloud evidence
+
+- Debug configuration points to project ref `qjpohzpapiwdrxsionyr` (`qjpohzpapiwdrxsionyr.supabase.co`). The anon key was not printed or copied into this report.
+- AVD `Pixel_4` / `emulator-5554` booted. The debug build was installed with `adb install -r`, preserving app data; the app reached `MainActivity` as user **Ho Phi Long**. On an earlier cold launch it was at `LoginActivity`, but the same preserved app data later restored into Main. No refresh-token failure or authentication-code defect was reproduced, so the earlier Login screen is not attributed to an app bug.
+- Supabase CLI is unavailable and no authorized Cloud management connection is configured. No database deployment or migration status query was run.
+- **Migration 034:** partial live evidence only: the authenticated Reels screen reached its empty state through the `list_reels` read path, indicating that this RPC responded with an empty result. This does not verify the rest of migration 034 or Reel creation/upload/playback RPCs.
+- **Migration 035:** unverified. Admin is absent from the drawer. `MainActivity` hides that item when `admin_dashboard` returns an error; the app does not expose the error detail, so this cannot distinguish missing migration/function from a non-admin account or another request error.
+- Local Edge Function source found: `supabase/functions/meeto-background-cleanup`. Its Cloud deployment/status was not checked. The owner supplied an authorized Admin identity/role, but no secure password-entry path was available; no second test account credentials were supplied.
+
+## 2. Reproduced defect and fix
+
+**Search result → Profile did nothing.** Search returned a real person, but tapping the row did not navigate. `search_advanced_people` returns `profile_id`; `SearchFragment.SearchResultAdapter` only read `id`/`uid`, leaving the target empty.
+
+Fixed [SearchFragment.java](app/src/main/java/com/example/meetomxh/fragments/SearchFragment.java) to prefer `profile_id` and retain the legacy `id`/`uid` fallbacks. Reinstalled the new debug build and verified `Nguyen` → `Nguyen Dang Khoa` → `ProfileActivity`; Back returned to Search. No RPC contract or migration changed.
+
+No other reproducible P0/P1 defect was found in the flows available with this account. No unrelated edits were made.
+
+## 3. Emulator flows observed
+
+- **Feed:** loaded existing Cloud posts and Stories tray; pull-down refresh returned to populated content; scrolled through existing posts. No content was created or deleted.
+- **Media:** Feed video opened `VideoPlayerActivity` and Back returned to Feed. Feed image opened `ChatImageViewerActivity`, rendered, and Back returned to Feed. Upload/create/edit paths were not exercised.
+- **Navigation:** Home, Reels, Messages, Search, and Profile tabs opened. Search → Profile → Back worked after the fix.
+- **Reels:** `list_reels` produced the real empty state. No Reel was available for paging, playback, or controls.
+- **Messenger:** populated inbox rendered. No conversation was opened and no messages were sent, to avoid changing existing data without a second test account.
+- **Notifications:** Notification Center opened and displayed an existing friend request. No row was opened and no read state was changed.
+- **Groups:** Groups screen opened and displayed its empty state. No group was created or joined.
+- **Profile:** account menu and self profile rendered; a different profile opened from Search. Edit, follow, albums, and profile-media actions were not exercised.
+- **Theme/UI:** toggled Dark Mode, observed the dark screen, and restored Light Mode. No obvious clipping was observed in the sampled screens; large-font/small-screen coverage was not performed.
+- **Stability:** captured Logcat window had no `FATAL EXCEPTION`, `ANR in`, or `OutOfMemoryError`. This is limited smoke evidence, not a stress-test result.
+
+## 4. Performance and Task 31 integration
+
+Task 31 source changes remain in place: Feed pages use MIME metadata already returned by `get_feed`, Stories' initial duplicate request was removed, append/update paths avoid unconditional whole-list invalidation where IDs remain stable, and Reaction writes update locally without refreshing Feed. This pass did not collect frame-time, memory, or HTTP traces. No numeric performance claim is made.
+
+## 5. Changed files and validation
+
+- Task 32 changed [SearchFragment.java](app/src/main/java/com/example/meetomxh/fragments/SearchFragment.java); this continuation also adds Reels cache invalidation after successful post deletion in [ProfileActivity.java](app/src/main/java/com/example/meetomxh/ProfileActivity.java) and [FeedRepository.java](app/src/main/java/com/example/meetomxh/repositories/FeedRepository.java).
+- `:app:assembleDebug`: **PASS**.
+- `:app:testDebugUnitTest`: **PASS**, 17 tests, 0 failures/errors.
+- Targeted emulator retest of Search → Profile → Back: **PASS**.
+- No migration, RPC signature, RLS, or Cloud function changed. One uniquely captioned Reel test post was created and then deleted; the profile no longer displayed it, while media retirement remains asynchronous. No APK/AAB was handed off.
+
+## 6. Acceptance Matrix
+
+| Area | Status | Evidence / limit |
+|---|---|---|
+| AUTHENTICATION | **PARTIAL** | Authenticated Main and Feed observed as Ho Phi Long; no second login/refresh-expiry test. |
+| FEED | **PARTIAL** | Real feed, refresh/scroll and post metadata observed; create/edit/delete, interactions and exhaustive pagination/duplicate check not run. |
+| IMAGE/VIDEO | **PARTIAL** | Existing image/video open and Back verified; upload and broader playback cases not tested. |
+| STORIES | **PARTIAL** | Stories tray and own-story entry shown; no story content available for view/create test. |
+| REELS | **PARTIAL** | Fixture upload and `create_reel` succeeded; item rendered and played. Delete succeeded; media retirement is asynchronous. Like/comment/share/save not tested. |
+| MESSENGER | **PARTIAL** | Inbox displayed; no two-user send/receive, voice, read, or realtime test. |
+| VOICE MESSAGING | **BLOCKED** | Requires an available conversation and second test account for end-to-end verification. |
+| SEARCH | **PARTIAL** | People search and Profile navigation verified; post/group filters and other result routes not tested. |
+| PROFILE | **PARTIAL** | Self/other profile rendered; edit/follow/albums/media not exercised. |
+| NOTIFICATIONS | **PARTIAL** | Center and existing request displayed; read/target navigation and cross-account events not tested. |
+| GROUPS | **PARTIAL** | Groups screen/empty state opened; membership and posting not tested. |
+| ADMIN | **BLOCKED** | An authorized Admin identity was supplied, but its password was not available through a secure channel. Existing emulator account showed no Admin menu; dashboard error is hidden by the app. |
+| CROSS-MODULE INTEGRATION | **PARTIAL** | Feed→media→Feed and Search→Profile→Back verified; two-account integrations remain untested. |
+| UI/UX | **PARTIAL** | Sampled Light/Dark, Feed, inbox, Search, Profile and Notifications screens; no full device/font-size regression. |
+| PERFORMANCE | **PARTIAL** | Targeted source optimizations retained; no profiler or frame/network trace. |
+| ANDROID BUILD | **PASS** | `assembleDebug`. |
+| UNIT TESTS | **PASS** | 17/17. |
+| EMULATOR E2E | **PARTIAL** | One-account Reel upload/create/render/play/delete verified; multi-account flows not run. Emulator is now at Login after a force-stop, so the cache-fix retest is blocked. |
+| CLOUD E2E | **PARTIAL** | `list_reels` read and `create_reel` write worked from Android. Admin role flows, second-account flows, and full migration deployment state remain unverified. |
+| DEMO READY | **CONDITIONAL** | One-account Feed/media/Search/Profile/Notifications and Reel create/play are demonstrable. Admin, voice, cross-account and full migration states remain unverified. |
+
+## 7. Project-owner actions before the full demo
+
+1. Sign in a second authorized test account on another emulator/device; then verify follow, reactions/comments, Stories, and Messenger send/receive/realtime without sharing one session.
+2. In Supabase Dashboard, verify migrations 034 and 035 and the deployed status of `meeto-background-cleanup`. Confirm `admin_dashboard` signatures/grants and provide a secure credential-entry path for the already-authorized Admin test account.
+3. The approved test Reel was deleted after the run. No test Reel remains intentionally published; verify that media retirement completes through the existing worker when Cloud access is available.
+4. Keep the official demo script limited to the flows above that have been observed until those checks pass.
+
+## 8. Continuation: Admin and functional E2E
+
+### VERIFIED WORKING
+
+- **Reels upload/create/list/playback:** selected the allowed `app/src/androidTest/assets/verified-small.mp4` fixture (3.0 seconds; 2,431 bytes), supplied caption `TASK32_REEL_E2E_REMOVE`, and posted as the signed-in account. The create screen returned to Reels, the item appeared with its caption and controls, and the video surface rendered during playback. This confirms that the Android upload + `create_reel` + Reels list/play path worked for this fixture on this project at test time; it does not verify all of migration 034.
+- **Reel cleanup:** used the owner profile’s Delete action on the uniquely captioned test post. The profile reloaded without that item. The already-open Reels screen retained a stale card after deletion; its video then showed “Tải lại video” because deletion retires media asynchronously.
+- **Build/tests after the cache fix:** `:app:assembleDebug` PASS; `:app:testDebugUnitTest` PASS, 17 tests, 0 failures/errors.
+- No like/comment/share/save was sent, avoiding extra Cloud mutations.
+
+### NOT VERIFIED / BLOCKED
+
+- **Admin login:** the owner authorized the Admin account and supplied login details in a later message. Login was attempted through the emulator form without echoing the secret, but the app remained at LoginActivity. No further attempts were made.
+- **`admin_dashboard` and Admin RPCs:** no Admin RPC was reached in this continuation. MainActivity hides the Admin item for any `admin_dashboard` error; AdminPanelActivity displays a generic authorization/service message and closes. Neither path currently exposes a sanitized HTTP status/PostgREST code on screen. This does not prove migration 035 absent or present.
+- **Migration 034/035:** the owner confirms `admin_dashboard`, `create_reel`, `get_user_reels`, and `list_reels` exist on Cloud. This is owner-provided existence evidence, not an independent grant/runtime/deployment check. `get_user_reels` has no Android caller and was not invoked.
+- **Messenger/voice:** one inbox session only; no second authenticated account was available for receipt, realtime, unread/read, voice, or cross-account tests. No message was sent.
+- **Stories, Notifications, Profile, Groups:** earlier observed screens remain as in section 3. No story creation/view-state, notification-target/mark-read, profile follow/edit/media, or group membership/content write was done in this continuation.
+
+### CONFIRMED BROKEN AND FIX STATUS
+
+- **Reels cache after delete:** reproduced before the patch: deleting the Reel from Profile removed it from the profile timeline, but the already-open Reels tab retained it and showed a failed-media retry state. Source inspection found the delete success paths did not invalidate `ReelsRepository`.
+- Added `ReelsRepository.invalidate()` after successful deletion in both ProfileActivity’s direct delete path and FeedRepository’s shared delete path. The patch is compile/unit-test verified. UI retest after this patch is **BLOCKED** because the emulator was force-stopped to clear the stale Reels screen and relaunched into LoginActivity; no credentials were entered. Thus the report does not claim the cache fix passed on-device.
+
+### Updated status matrix
+
+| Area | Status | Current evidence / limit |
+|---|---|---|
+| Admin login, dashboard, search, reports, audit/actions | **BLOCKED** | Login attempt remained at LoginActivity; no HTTP/PostgREST result. Owner confirms RPC existence; runtime authorization and migration state remain unknown. |
+| Migration 034 | **PARTIAL** | `list_reels` and the Android upload/create/list/play/delete path worked once with a small test fixture; no broad SQL/deployment verification. |
+| Migration 035 | **NOT VERIFIED** | Owner confirmed several RPCs exist; no Cloud schema/ledger access and no Admin session. |
+| Reel playback | **PASS for fixture** | Rendered during the test session before deletion; the asset later became unavailable as expected after delete/retirement. |
+| Reel delete/cache refresh | **PARTIAL** | Delete removed the item from the owner profile. Cache invalidation fix builds/tests; device retest blocked by LoginActivity. |
+| Messenger send/receive/realtime | **BLOCKED** | No second account/session; no message write. |
+| Voice | **BLOCKED** | No two-account conversation test. |
+| Stories/Notifications/Profile/Groups remaining flows | **PARTIAL / NOT VERIFIED** | Screens were previously opened; deeper write/target/read-state flows were not run. |
+| Android build/unit tests | **PASS** | Build successful; 17/17 unit tests. |
+| Full demo readiness | **CONDITIONAL** | Reel flow now has one successful fixture E2E, but Admin, two-account Messenger/voice, and full Cloud migration status remain unverified. |
+
+### Cloud diagnostic for the project owner
+
+To verify deployed function signatures/permissions in Supabase Dashboard SQL Editor (read-only catalog query):
+
+```sql
+select n.nspname, p.proname, pg_get_function_identity_arguments(p.oid) as args,
+       pg_get_function_result(p.oid) as result,
+       has_function_privilege('authenticated', p.oid, 'EXECUTE') as authenticated_can_execute
+from pg_proc p
+join pg_namespace n on n.oid = p.pronamespace
+where n.nspname = 'public'
+  and p.proname in ('list_reels','get_user_reels','create_reel','admin_dashboard',
+    'admin_search_users','admin_list_content','admin_moderate_content',
+    'admin_set_account_status','admin_report_detail','admin_audit_page')
+order by p.proname;
+```
+
+This checks catalog entries/signatures and EXECUTE grants only; it does not prove migration completeness, runtime authorization, triggers, RLS, or end-to-end behavior.
+
+## 9. Final continuation: Admin attempt and cache lifecycle
+
+### VERIFIED WORKING
+
+- **Owner-provided Cloud RPC existence:** owner confirms `admin_dashboard`, `create_reel`, `get_user_reels`, and `list_reels` exist. This does not independently establish signatures/grants or successful runtime behavior.
+- **Reels cache source lifecycle:** ProfileActivity and FeedRepository both invalidate Reels after a successful `delete_post`. `ReelsRepository.invalidate()` clears Discover and Following rows/cursors and sets the invalidation flag. ReelsFragment consumes that flag in `onResume()` and requests a fresh first page. This is static verification of the existing patch, not an emulator retest.
+- Existing build/unit result remains valid for the unchanged source: assembleDebug PASS; 17/17 unit tests PASS. No source code changed in this continuation.
+
+### NOT VERIFIED / BLOCKED
+
+- **Admin login:** attempted from LoginActivity using the owner-authorized account. The app stayed at LoginActivity; no authenticated Admin session was established, so the Admin menu, AdminPanelActivity, dashboard statistics, user/content search, reports, audit log, loading/error state, and Back navigation were not exercised.
+- **Network diagnosis:** emulator Wi-Fi is connected and ping to a public IP succeeds, but the emulator cannot resolve the configured Supabase project hostname (`ping` reports unknown host). Therefore the login attempt produced no observable HTTP/PostgREST response. No HTTP status or server error code can be truthfully reported. No further login retry was made.
+- **Reels cache retest:** the previously created fixture Reel had already been deleted and disappeared from the owner profile. No second Reel was created because authentication could not be restored. The fixed invalidate→onResume→refresh path remains unverified on-device, including whether the stale retry card disappears after refreshing.
+- **Two-user E2E:** BLOCKED; only one emulator/session is available and the current app is unauthenticated. No Follow/Like/Comment/message/voice/share/notification writes were made. Recipient receipt, realtime, and unread/read behavior remain unverified.
+- **Voice and Notifications:** no new runtime test was possible; previous notification-center screen smoke remains the only observation. No voice message was sent or played.
+
+### CONFIRMED BROKEN AND FIX STATUS
+
+- The earlier stale Reels card after deleting a Reel remains a confirmed pre-fix defect. The source fix is present and its lifecycle is internally consistent, but this continuation could not retest it because the emulator could not resolve the Supabase hostname and remained at LoginActivity. Do not mark the on-device cache fix PASS yet.
+- No new Android or SQL fix was warranted from this blocked session. In particular, the generic Admin permission/service error could not be tied to role, migration, or network status because `admin_dashboard` was not reached.
+
+### Current status matrix
+
+| Area | Status | Evidence / remaining check |
+|---|---|---|
+| Admin login/dashboard | **BLOCKED** | Login did not reach MainActivity; emulator DNS cannot resolve Supabase hostname. |
+| Admin reports/audit/user/content search | **BLOCKED** | Admin session unavailable; RPCs not called. Owner confirms only their existence. |
+| Reels cache fix | **PARTIAL** | Source lifecycle checked; no post-fix emulator retest. |
+| Reel fixture create/play/delete | **PASS for prior fixture run** | Previous run created, played, and deleted a uniquely captioned fixture Reel; it is no longer shown on the owner profile. |
+| Two-user Messenger/voice | **BLOCKED** | No second authenticated session; no messages sent. |
+| Notifications/Stories/Profile/Groups deeper flows | **NOT VERIFIED** | Earlier screen smoke only; no new runtime checks. |
+| Build/unit tests | **PASS** | Prior post-fix build and 17 unit tests passed; source unchanged in this continuation. |
+| DEMO READY | **CONDITIONAL** | Prior one-user Reel and basic app smoke are evidenced. Admin, cache-fix retest, two-user messaging/voice, and full Cloud status remain outstanding. |
+
+### Next owner action
+
+Supabase connectivity from Pixel_4 is currently restored. Project owner should finish signing in to the authorized Admin account directly on Pixel_4, then report when MainActivity is visible. Retest the post-fix Reel deletion using only the approved fixture and verify Dashboard/Reports/Audit read-only flows. A second authorized test account/session is still required for cross-user messaging, voice, and realtime validation.
+
+## 10. Continuation after network recovery
+
+- **AVD:** `adb emu avd name` returned `Pixel_4`; no physical device or additional emulator used. No app data or emulator state was reset.
+- **Network:** Pixel_4 now resolves the configured Supabase hostname and reaches it by ICMP. More importantly, the already authenticated app loaded live Feed rows and remote video/media, confirming the app's Supabase HTTPS path is functioning at this check. This supersedes the DNS failure noted in section 9.
+- **Current session:** MainActivity shows the ordinary Feed and its drawer has no Admin item. The existing session was preserved. Admin login/dashboard remains pending owner sign-in directly on Pixel_4; no Admin RPC was called.
+- **Reels after refresh:** opened Reels and observed the empty state, with no stale deleted-item card or “Tải lại video” card. This is not yet a post-fix delete/cache E2E: no new fixture was created or deleted in this continuation.
+- **Source/build:** no source change in this continuation. Existing cache invalidation implementation and prior assembleDebug + 17/17 unit-test result remain the evidence; no repeat build was necessary.
+- **Remaining:** Admin flows pending Admin session; post-fix cache delete retest pending approved fixture; two-user Messenger/voice/realtime pending a second account. Stories, Notifications, Profile, and Groups deeper flows remain unverified.
+
+
+## 11. Final continuation: Admin session, cache retest, confirmed hotfix
+
+### PASS — observed on the existing Pixel_4 only
+
+- **Admin session/navigation:** owner signed in directly on Pixel_4. The Admin menu appeared, `AdminPanelActivity` opened, and Back returned to MainActivity.
+- **Dashboard/content:** `admin_dashboard` rendered live statistics (4 users, 48 posts; no groups, Reels, reports, or recent actions in the displayed dataset). The content moderation list loaded. Reports and Audit Log opened and showed their empty states; no moderation action was issued.
+- **Admin search:** reproduced the user-search error and captured only sanitized response metadata: HTTP 405, PostgreSQL code `25006` (read-only SQL transaction). Source inspection confirms `private.admin_search_users` is declared `STABLE` but initializes an unused `actor` through `private.b_actor()`, which takes `pg_advisory_xact_lock`. That write-style lock is incompatible with the read-only execution context. Added a separate, additive migration `20261104000200_admin_search_users_readonly_fix.sql` that removes only this unused lock acquisition while retaining the signature, role gate, active check, page validation, filtering, and result shape. **Not deployed**; Admin user-search remains blocked until the owner deploys the hotfix and retests it.
+- **Reels cache/delete:** created and played the approved small video fixture; deleted only that uniquely captioned fixture from Profile and returned to Reels. Pixel_4 displayed the Reels empty state, with no deleted fixture caption and no “Tải lại video” card. This verifies the tested create/play/delete/cache-refresh path for this fixture.
+- **Notifications/Profile:** Notifications opened and showed the empty state. Profile showed the current account content and the fixture Reel before deletion, then reflected its removal. No real content or account was moderated/deleted.
+- **Build/tests:** `:app:assembleDebug :app:testDebugUnitTest` PASS after removing the temporary sanitized diagnostic log line; 17/17 unit tests passed in the earlier run, and this run also completed successfully. No credentials or response bodies were logged.
+- **Migration integrity:** SHA-256 manifest includes the new additive hotfix; the hash was verified against the file. No migration was deployed and no older migration was edited.
+
+### BLOCKED / not verified
+
+- **Admin user search:** awaits Cloud deployment of migration 036 and an emulator retest. Dashboard/content/reports/audit were observed; reports and audit were empty, so no detail/action path existed to exercise.
+- **Two-user flows:** BLOCKED; no second authorized signed-in session was available. Follow/unfollow, recipient-observed Messenger, Realtime, unread/read, voice, share-to-chat, and cross-user notifications were not claimed PASS.
+- **Stories and Groups:** deeper create/view and membership flows were not tested in this continuation.
+- No Cloud, SQL runtime, or full end-to-end test was run. Pixel_4 evidence is device-observed UI only for the listed paths.
+
+**DEMO READY: CONDITIONAL.** Single-account Feed/Reels and Admin read-only screens were observed; Admin user search requires migration 036, and two-user messaging/voice plus deeper Stories/Groups remain unverified.

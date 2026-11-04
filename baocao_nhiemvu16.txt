@@ -1,0 +1,89 @@
+MEETO — TASK 16 | SAVED POSTS, FOLLOW, PROFILE LOCATION
+Ngày: 2026-11-03
+Project mục tiêu: qjpohzpapiwdrxsionyr
+
+TÓM TẮT
+- Đã chuẩn bị candidate migration 021: `supabase/migrations/20261103000300_saved_follows_profile_location.sql`.
+- Migration dùng lại `saved_posts` và `user_follows` đã có; không tạo bảng quan hệ trùng. Thêm location tùy chọn vào `profile_private`, mặc định audience là private.
+- Android đã nối UI và RPC cho save/unsave, Saved Posts, Follow/unfollow, danh sách follower/following và location onboarding/profile editor.
+- Migration 021 CHƯA deploy. Migration 020 và Cloud ledger chưa thể xác minh trong môi trường hiện tại; không chạy SQL trên Cloud và không đánh dấu applied.
+- Migration 019 được chủ dự án báo đã chạy thành công qua SQL Editor; ledger 019 chưa được truy vấn độc lập. Không chạy lại migration 019.
+
+THAY ĐỔI
+1. Saved Posts
+- Feed, Profile timeline và chi tiết bài có thao tác lưu/bỏ lưu.
+- Màn Đã lưu dùng lại FeedAdapter, có tải lại, phân trang bằng cursor, empty/error/retry, bỏ lưu làm bài biến khỏi danh sách.
+- RPC đặt trạng thái save idempotent; danh sách chỉ trả bài mà người gọi hiện còn quyền đọc, và không cấp quyền đọc media/post.
+- `post_json` thêm `is_saved` theo `auth.uid()`; không có thông báo cho tác giả.
+
+2. Follow
+- RPC follow/unfollow dùng bảng user_follows hiện có, chống follow bản thân, kiểm tra tài khoản đích và block hai chiều, idempotent.
+- Count là count thật từ bảng; followers/following có cursor. Danh sách lọc account không hoạt động, profile không đọc được và quan hệ bị block.
+- Không tạo/xóa friendship khi follow. `can_read_post` không đổi; follow không cấp quyền đọc bài Friends-only.
+- set_block hiện hữu vốn xóa follow hai chiều khi block; migration không thay đổi hành vi đó.
+
+3. Nơi ở
+- Dùng lại danh mục 34 tỉnh/thành đang có trong ProfileFieldSelectors; server validate cùng danh sách.
+- Nơi ở nullable; visibility public/friends/private, mặc định private cả cho onboarding.
+- `self_profile` trả dữ liệu cho chủ tài khoản; `get_profile` chỉ trả location khi profile đọc được và location policy cho phép. Không thêm location vào search, suggestions, friends/follows list hay post projection.
+- Signup giữ location trong SessionManager mã hóa xuyên email confirmation; onboarding dùng RPC kết hợp để lưu location cùng hồ sơ. Auth callback giữ lại dữ liệu signup đang chờ khi đổi session.
+- Không dùng GPS/IP.
+
+MIGRATION / SECURITY
+- 021 có precondition yêu cầu các bảng/RPC nền và avatar projection của 020. Cần triển khai 020 trước 021.
+- Các wrapper public là SECURITY INVOKER; implementation private SECURITY DEFINER, search_path rỗng; chỉ authenticated được EXECUTE. Không cấp quyền anon hoặc quyền trực tiếp trên bảng.
+- RLS và grants trên saved_posts/user_follows/profile_private không bị nới. Candidate không thay Storage policy, RLS hay bucket.
+- Candidate `post_json` giữ contract của migration 020 và chỉ thêm `is_saved`.
+- Manifest kiểm tra thành công: 21 migration; cập nhật entry chỉ cho 021. Checksum 001–020 giữ nguyên theo manifest.
+- Không có psql/Supabase CLI trong PATH, SUPABASE_ACCESS_TOKEN không có, và Cloud connection trước đó bị IPv6 (`DbConfigIpv6Error`). Vì vậy chưa thể kiểm tra SQL bằng PostgreSQL thật hoặc so ledger/RPC trực tiếp. SQL đã được review tĩnh; cần chạy precondition và toàn migration trong môi trường Cloud trước khi dùng chức năng.
+
+TRẠNG THÁI CLOUD
+- 019 SQL: chủ dự án báo đã chạy thành công thủ công; ledger chưa được xác minh.
+- 020 SQL: chưa xác minh trạng thái Cloud/ledger; không chạy lại.
+- 021 SQL: chưa deploy.
+- RPC 021 và location columns: chưa xác minh trên Cloud.
+- Không ghi migration nào mới vào ledger.
+
+KIỂM THỬ
+- `:app:assembleDebug`: PASS.
+- Cài bản debug lên emulator và mở LoginActivity: PASS (smoke khởi động). Không thực hiện thao tác đăng nhập hoặc ghi dữ liệu.
+- Cloud E2E Saved/Unsave/List/Privacy: BLOCKED — RPC 021 chưa deploy.
+- Cloud E2E Follow/Unfollow/Counts/Lists/Privacy: BLOCKED — RPC 021 chưa deploy.
+- Cloud E2E Location save/read/update/privacy/onboarding: BLOCKED — RPC 021 chưa deploy.
+- Regression Feed/Profile/Friends/Messenger/Stories/Direct Upload: chưa chạy; không có kết luận PASS.
+- Không dùng Docker/local worker, không xuất APK/AAB làm deliverable, không ghi credentials.
+
+ACCEPTANCE MATRIX
+SAVED POST: PARTIAL (UI/client nối; chưa E2E Cloud)
+UNSAVE POST: PARTIAL (UI/client nối; chưa E2E Cloud)
+SAVED POSTS LIST: PARTIAL (UI phân trang/error state; chưa E2E Cloud)
+SAVED POSTS PRIVACY: PARTIAL (RPC lọc bằng can_read_post; chưa xác minh Cloud)
+FOLLOW: PARTIAL (UI/RPC candidate; chưa E2E Cloud)
+UNFOLLOW: PARTIAL (UI/RPC candidate; chưa E2E Cloud)
+FOLLOWERS LIST: PARTIAL (UI/cursor candidate; chưa E2E Cloud)
+FOLLOWING LIST: PARTIAL (UI/cursor candidate; chưa E2E Cloud)
+FOLLOW PRIVACY: PARTIAL (lọc block/profile access trong RPC; chưa xác minh Cloud)
+FOLLOW/FRIEND SEPARATION: PARTIAL (implementation độc lập; chưa E2E Cloud)
+LOCATION SAVE: PARTIAL (onboarding/editor nối RPC candidate; chưa Cloud)
+LOCATION READ/UPDATE: PARTIAL (projection/RPC candidate; chưa Cloud)
+LOCATION PRIVACY: PARTIAL (private default + gated projection; chưa Cloud)
+ANDROID BUILD: PASS
+EMULATOR E2E: PARTIAL (chỉ mở ứng dụng; tính năng chưa đăng nhập/E2E)
+CLOUD MIGRATIONS DEPLOYED: NO (021 chưa deploy; 020 chưa xác minh)
+CRITICAL REGRESSIONS: chưa xác định; regression chưa chạy
+LOCAL WORKER REQUIRED: NO
+APK/AAB EXPORTED AS DELIVERABLE: NO
+READY FOR TASK 17: CONDITIONAL — sau khi xác minh/deploy 020, deploy 021 và chạy Cloud E2E/regression
+
+QUY TRÌNH CLOUD TIẾP THEO (KHÔNG CHẠY LẠI 019)
+1. Trên project qjpohzpapiwdrxsionyr, xác minh ledger 019/020 và các RPC/column prerequisite bằng tài khoản quản trị. Nếu ledger 019 thiếu nhưng đã xác minh SQL 019 thực sự thành công, đồng bộ riêng 019 bằng `supabase migration repair 20261103000100 --status applied`; không chạy lại SQL 019.
+2. Nếu 020 chưa có trong Cloud, chạy đúng file migration 020 một lần trong SQL Editor; nếu đã có, bỏ qua. Không ghi ledger 020 trước khi SQL thành công.
+3. Chạy toàn bộ `20261103000300_saved_follows_profile_location.sql` trong SQL Editor. Nếu precondition báo thiếu 020, dừng và xử lý bước 2; không bỏ precondition.
+4. Sau khi SQL 021 thành công, dùng CLI đã đăng nhập bằng quyền quản trị để `supabase migration repair 20261103000300 --status applied`. Không dùng lệnh repair để thay cho việc chạy SQL.
+5. Xác minh ledger/RPC rồi mới chạy E2E bằng dữ liệu demo synthetic. Giữ A/B friendship hiện tại; không test bằng cách phá friendship.
+
+CẦN CHẠY SAU KHI CLOUD SẴN SÀNG
+- Save → reload Saved Posts → unsave → restart; thử bài không còn đọc được và xác nhận không lộ nội dung/media.
+- Follow → kiểm tra count và cả hai list → unfollow; thử self/block; xác nhận trạng thái friendship không đổi và follow không mở bài Friends-only.
+- Location: save/reload/restart/edit/clear; kiểm tra owner, public, friends, private, search/list không rò location; kiểm tra signup → email confirmation → onboarding.
+- Regression theo scope: Feed, Profile, Friends, Messenger, Direct Upload và Stories nếu 020 được xác nhận deploy.

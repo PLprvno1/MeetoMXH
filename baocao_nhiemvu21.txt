@@ -1,0 +1,53 @@
+MEETO — BÁO CÁO TASK 21: MEMORIES
+Ngày: 03/11/2026
+Workspace: D:\Android\MeetoMXH
+
+TÓM TẮT
+Đã bổ sung migration 027 và nối Memories Home với RPC dùng posts hiện có. Không tạo dữ liệu giả, bảng posts/media thứ hai, bucket mới hoặc sửa migrations 001–026. Migration chưa triển khai Cloud.
+
+BACKEND / MIGRATION
+- File: supabase/migrations/20261103000900_memories.sql
+- SHA-256: 633B053420C77EB262AF033EE7AFC0B862AD36C40875F52292FC16674CD09DE6
+- Candidate 027 độc lập với 026; kiểm tra schema posts/share, media access, saved posts, notification RLS và các RPC cần dùng.
+- Tái dùng private.can_read_post, private.can_read_media, private.post_json, set_saved_post và share_post. Các RPC Memories dùng identity từ JWT, active-status check, SECURITY DEFINER/search_path rỗng; bảng hidden_memories bật RLS và không cấp quyền bảng trực tiếp.
+- Ngày được tính từ statement_timestamp() theo memories_timezone lưu trong user_settings; timezone được validate qua pg_timezone_names. Today chỉ lấy bài published do chính user tạo vào cùng ngày/tháng ở các năm trước. Năm nhuận: 29/02 chỉ khớp với ngày 29/02.
+- Phân trang theo created_at/id. Bài hidden/deleted/moderated, bài không còn đọc được, media không còn quyền và group post khi đã mất membership không được trả về.
+- Hide/unhide chỉ tác động bảng riêng theo user_id/post_id; không sửa bài, privacy, reaction/comment hoặc saved state.
+- Share dùng share_post với original_post_id và idempotency key; không copy nội dung/media vào bài mới. Group post không shareable qua luồng này. can_read_post/post_json hiện có giới hạn nội dung gốc cho từng viewer.
+- Reminder tùy chọn tạo tối đa một in-app notification/ngày local khi Memories, notification tổng thể và preference memories đều bật. Không có push hay lịch chạy nền.
+
+ANDROID
+- MemoriesActivity đã thay màn placeholder; mở từ menu chính hiện có.
+- Có Today, archive theo số năm, hidden memories và settings (bật Memories, reminder, timezone thiết bị); refresh, empty/error/retry, load-more và pagination.
+- FeedAdapter hiển thị bài, avatar, thời gian địa phương, reaction/comment counts; dùng luồng mở Post Detail, comments, save/unsave, hide/unhide và share composer có audience.
+- Ảnh/video không tự tải khi chỉ hiển thị danh sách; mở viewer mới tải media có quyền. Thumbnail ảnh phía server chưa bật vì Supabase hiện yêu cầu Pro trở lên cho image transformations; xem https://supabase.com/docs/guides/storage/serving/image-transformations. Do đó card dùng placeholder media đến khi người dùng mở viewer.
+- NotificationItem hiển thị nội dung reminder Memories.
+
+KIỂM TRA / GIỚI HẠN
+- :app:assembleDebug: PASS.
+- MemoriesLayoutSmokeTest trên Pixel 4 API 35: PASS (inflate layout và kiểm tra các surface; không phải RPC/E2E).
+- Migration manifest: PASS, 27 checksum hợp lệ; SHA-256 candidate khớp manifest.
+- SQL được rà soát tĩnh; dollar delimiters cân bằng. Không chạy PostgreSQL parser/runtime hoặc Supabase Cloud.
+- Chủ dự án báo 001–025 đã triển khai; không xác minh độc lập. Migration 026 chưa xác nhận; 027 không phụ thuộc 026. Migration 027 chưa triển khai.
+- Chưa kiểm tra tài khoản A/B, dữ liệu lịch sử đủ năm, timezone/leap-day thực trên DB, signed media, share privacy hoặc notification dedupe trên Cloud. Không thay đổi dữ liệu thật/backdate posts.
+- Không chạy regression Login, Feed, Post Detail, Direct Upload, Saved Posts, Privacy, Groups, Search hoặc Notifications.
+
+ACCEPTANCE MATRIX
+TODAY MEMORIES: PARTIAL
+MEMORIES BY YEAR: PARTIAL
+MEDIA VIEWER: PARTIAL (ủy quyền hiện có; card dùng placeholder do image transform không khả dụng trên Free)
+OPEN ORIGINAL POST: PARTIAL
+SHARE MEMORY: PARTIAL
+SHARE PRIVACY: PARTIAL (tái dùng reference authorization; chưa E2E Cloud)
+SAVE/UNSAVE: PARTIAL
+HIDE/UNHIDE: PARTIAL
+MEMORIES SETTINGS: PARTIAL
+MEMORY REMINDERS: PARTIAL (in-app, khi mở app; không push/background)
+TIMEZONE / LEAP DAY: PARTIAL (logic server-reviewed; chưa chạy PostgreSQL/Cloud)
+MEMORIES RLS: PARTIAL (static review)
+ANDROID UI: PARTIAL
+ANDROID BUILD: PASS
+CLOUD DEPLOYED: NO
+EMULATOR E2E: BLOCKED / NOT RUN
+CRITICAL REGRESSIONS: NOT TESTED
+READY FOR TASK 22: CONDITIONAL (sau kiểm tra ledger/prerequisites, chạy 027 thủ công và E2E quyền riêng tư)

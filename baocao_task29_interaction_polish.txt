@@ -1,0 +1,151 @@
+================================================================================
+BÁO CÁO NHIỆM VỤ: TASK 29 UI POLISH
+INSTAGRAM-STYLE REACTIONS, INTERACTIONS & ANIMATIONS
+ỨNG DỤNG: Meeto (com.example.meetomxh) - Nền tảng: Android Java + XML
+================================================================================
+
+I. TỔNG QUAN
+Nhiệm vụ này hoàn thiện toàn bộ các hiệu ứng tương tác, chuyển động và trạng thái phản hồi cho các chức năng Like, Double-tap, Comment, Bookmark/Save, Follow/Unfollow, Reels và chuyển tab Bottom Navigation theo đúng chuẩn trải nghiệm hiện đại của Instagram. Toàn bộ logic nghiệp vụ, Supabase backend, RPC contracts và database schema được giữ nguyên 100%.
+
+---
+
+II. CHI TIẾT CÁC THAY ĐỔI VÀ HOÀN THIỆN TƯƠNG TÁC
+
+1. Nút Like thành Trái Tim Instagram (Feed & Post Cards):
+- Loại bỏ hoàn toàn biểu tượng ngón tay cái kiểu Facebook và màu xanh dương Facebook (#1877F2).
+- Trạng thái chưa thích (NOT LIKED):
+  + Icon: Trái tim viền mảnh (ic_like_outline.xml).
+  + Màu sắc: Theo theme text_primary (#000000 trong Light mode, #FFFFFF trong Dark mode).
+  + Không có nền màu, không có chữ "Thích" bên cạnh (tvLikeText = GONE).
+- Trạng thái đã thích (LIKED):
+  + Icon: Trái tim tô đầy (ic_like_filled.xml).
+  + Màu sắc: Đỏ Instagram (#ED4956 / #FF3040).
+  + Không hiển thị chữ "Like" hay "Thích" thay thế icon.
+- Ánh xạ backend:
+  + Giữ nguyên backend reaction contract: bài viết được gán reaction = "like" khi thích, và reaction = null khi bỏ thích.
+  + UI ánh xạ: post.isLiked() == true -> Trái tim đỏ. post.isLiked() == false -> Trái tim viền.
+
+2. Hiệu ứng Animation Trái Tim (Single Tap & Double Tap):
+- Single Tap trên icon tim:
+  + Khi thích: Icon tim phóng to từ 0.8 -> 1.3 với OvershootInterpolator(3.0f), sau đó nảy nhẹ về 1.0 trong 280ms.
+  + Khi bỏ thích: Icon tim thu nhỏ nhẹ về 0.85 rồi đàn hồi về 1.0 trong 190ms, chuyển màu về outline.
+- Double Tap trên ảnh/video bài viết (Instagram Double-Tap Like):
+  + Sử dụng GestureDetector.SimpleOnGestureListener với phân tách rạch ròi giữa onSingleTapConfirmed (mở trình xem ảnh/video) và onDoubleTap (thả tim).
+  + Khi double tap: Xuất hiện một trái tim lớn (ivHeartOverlay, 100dp x 100dp) ở chính giữa ảnh/video.
+  + Trái tim pop-up với hiệu ứng scale 0 -> 1.3 (OvershootInterpolator 2.5f) -> 1.0 -> giữ 180ms -> bay nhẹ lên trên (-40f) và fade out (alpha -> 0).
+  + Quy tắc logic:
+    * Nếu bài viết chưa thích: Double-tap lập tức thích bài viết (icon tim ở dưới nhảy bounce và số lượt thích tăng ngay lập tức).
+    * Nếu bài viết đã thích: Double-tap chỉ phát lại animation trái tim lớn ở giữa ảnh/video, TUYỆT ĐỐI KHÔNG bỏ thích.
+- Thu dọn Animation (Memory Leak Prevention):
+  + ViewHolder có phương thức cleanupAnimations() được gọi trong onViewRecycled() của RecyclerView.Adapter để hủy tất cả ViewPropertyAnimator khi view bị cuộn khỏi màn hình.
+
+3. Đồng bộ Trái Tim trong Reels (Short Videos):
+- Nút Like bên phải màn hình Reels:
+  + Thay thế TextView ký tự unicode thô sơ ("♡" / "♥") bằng ImageView vector (ic_like_outline / ic_like_filled).
+  + Chưa thích: Trái tim viền trắng (#FFFFFF) tương phản trên nền video.
+  + Đã thích: Trái tim đỏ (#ED4956) rực rỡ, kèm hiệu ứng bounce scale.
+- Double Tap trên Reel Video:
+  + Tích hợp GestureDetector trên bề mặt video player.
+  + Double tap: Hiển thị trái tim trắng 110dp (reel_heart_overlay) pop-up ở giữa màn hình video và kích hoạt thích video nếu chưa thích.
+  + Single tap confirmed: Bật/tắt Pause/Play video mượt mà, không xung đột với Double-tap.
+  + Không tự động chuyển video hoặc pause ngoài ý muốn khi double-tap.
+
+4. Bình luận (Comments Bottom Sheet - Instagram Style):
+- Nút bình luận sử dụng icon bong bóng hội thoại viền (ic_comment.xml).
+- Bottom Sheet mở lên ở chế độ mở rộng (BottomSheetBehavior.STATE_EXPANDED) với góc bo trên cong mịn.
+- Thanh kéo (drag handle) tinh tế ở mép trên.
+- Danh sách bình luận cuộn mượt, avatar tròn, tên tác giả in đậm, nội dung dễ đọc.
+- Khung nhập bình luận (composer) neo ở đáy và tự động nâng lên theo bàn phím (không bị che khuất).
+
+5. Nút Bookmark / Lưu bài viết (Save):
+- Thêm id `btnBookmark` trên action bar của thẻ bài viết.
+- Tạo mới vector drawable `ic_bookmark_outline.xml` (dạng viền khi chưa lưu) và sử dụng `ic_bookmark.xml` (dạng tô đầy khi đã lưu).
+- Đồng bộ với `post.isSaved()` và Supabase SavedPostClient.
+- Hiệu ứng scale bounce nhẹ (scale 1.25 -> 1.0) khi nhấn lưu/bỏ lưu.
+
+6. Nút Theo Dõi (Follow / Unfollow):
+- Chưa theo dõi: Nút xanh nổi bật (hoặc accent của theme), chữ trắng "Theo dõi".
+- Đang theo dõi: Nút bề mặt trung tính (surface_bg), viền mảnh (divider_color), chữ "Đang theo dõi".
+- Hiệu ứng phản hồi nhấp (pressed scale 0.95 -> 1.0) và vô hiệu hóa nút tạm thời khi request đang gửi để chống spam request.
+
+7. Story Animation:
+- Vòng tròn quanh avatar dùng gradient Instagram rực rỡ (shape_story_ring.xml) cho tin chưa xem.
+- Tin đã xem hiển thị viền trung tính xám mờ (shape_story_ring_seen.xml).
+- Nhấn vào story có phản hồi scale nhẹ (scale 0.92 -> 1.0) trước khi chuyển vào Story Viewer.
+
+8. Bottom Navigation Micro-interactions:
+- Khi chuyển tab: Tab được chọn có hiệu ứng nảy nhẹ (scale 1.15 -> 1.0 trong 200ms) tạo cảm giác xúc giác (tactile feedback).
+- Reselect tab Feed: Khi người dùng đang ở Feed mà nhấn lại tab Home, FeedFragment tự động cuộn mượt lên đầu trang (smoothScrollToPosition(0)) giống Instagram.
+- Badge tin nhắn / thông báo: Màu đỏ hồng Instagram (#ED4956), tự động cập nhật số lượng tin chưa đọc.
+
+---
+
+III. CƠ CHẾ OPTIMISTIC UI VÀ CHỐNG DUPLICATE REQUEST
+
+1. Optimistic UI:
+- Khi người dùng nhấn Tim hoặc Lưu bài viết:
+  1. Trạng thái icon chuyển ngay lập tức (outline <-> filled red).
+  2. Số lượt thích (`post.getLikesCount()`) tăng/giảm ngay lập tức trên UI.
+  3. Khóa nút tạm thời (`btnLike.setEnabled(false)` hoặc cờ in-flight).
+  4. Gửi request RPC ngầm tới Supabase.
+  5. Nếu RPC thành công: Cập nhật số lượng chính thức từ server, mở lại nút.
+  6. Nếu RPC thất bại: Tự động rollback lại giá trị reaction cũ và số lượng cũ, re-render icon và hiển thị thông báo lỗi ngắn gọn.
+
+2. Chống Duplicate Request:
+- Cờ trạng thái `btnLike.setEnabled(false)` trong suốt thời gian callback chờ phản hồi từ RPC.
+- Double-tap kiểm tra điều kiện `!post.isLiked()` trước khi gọi request Like, ngăn ngừa việc kích hoạt 2 request liên tiếp.
+
+---
+
+IV. DANH SÁCH FILE ĐÃ ĐƯỢC CHỈNH SỬA VÀ THÊM MỚI
+
+1. Mã nguồn Java:
+- `app/src/main/java/com/example/meetomxh/adapters/FeedAdapter.java`:
+  + Cập nhật logic trái tim Instagram trong `renderReaction`.
+  + Tích hợp animation single-tap bounce.
+  + Tích hợp `playDoubleTapHeartAnimation` và `GestureDetector` cho media.
+  + Tích hợp nút Bookmark trực tiếp trên action bar với optimistic update.
+  + Thêm `onViewRecycled` và `cleanupAnimations`.
+- `app/src/main/java/com/example/meetomxh/fragments/FeedFragment.java`:
+  + Thêm phương thức `scrollToTop()` hỗ trợ reselect tab Home.
+- `app/src/main/java/com/example/meetomxh/fragments/ReelsFragment.java`:
+  + Chuyển `h.like`, `h.comment`, `h.save`, `h.share` sang ImageView.
+  + Thêm animation single-tap like cho Reels.
+  + Thêm `playReelHeartAnimation` và `GestureDetector` cho double-tap trên Reels video.
+  + Đồng bộ lưu bookmark và follow trong Reels.
+- `app/src/main/java/com/example/meetomxh/MainActivity.java`:
+  + Tích hợp micro-interaction scale khi chọn tab Bottom Navigation.
+  + Tích hợp `setOnItemReselectedListener` để cuộn lên đầu Feed khi bấm lại tab Home.
+- `app/src/main/java/com/example/meetomxh/ProfileActivity.java`:
+  + Tích hợp `updateFollowButtonUI` chuyển đổi linh hoạt giữa "Theo dõi" và "Đang theo dõi" kèm hiệu ứng nảy nút.
+- `app/src/main/java/com/example/meetomxh/adapters/StoryAdapter.java`:
+  + Phân biệt viền tin chưa xem (`shape_story_ring`) và tin đã xem (`shape_story_ring_seen`).
+  + Hiệu ứng scale nhẹ khi chạm vào tin.
+
+2. Giao diện XML Layout & Drawables:
+- `app/src/main/res/layout/item_post.xml`:
+  + Thêm `ivHeartOverlay` (100dp) hiển thị animation thả tim lớn khi double tap.
+  + Thêm id `btnBookmark` cho nút bookmark bên phải.
+- `app/src/main/res/layout/item_reel.xml`:
+  + Thêm `reel_heart_overlay` (110dp) cho hiệu ứng double tap Reels.
+  + Thay thế các TextView ký tự emoji bằng ImageView vector chuẩn mực (`ic_like_outline`, `ic_comment`, `ic_bookmark_outline`, `ic_share`).
+- `app/src/main/res/drawable/ic_bookmark_outline.xml`:
+  + Tạo mới vector drawable biểu tượng bookmark viền chuẩn Instagram.
+- `app/src/main/res/values/colors.xml`:
+  + Tái sử dụng màu đỏ Instagram `reaction_like` (#ED4956) cho trạng thái Liked.
+
+---
+
+V. KẾT QUẢ BUILD VÀ KIỂM THỬ TỰ ĐỘNG
+- Test Unit (`.\gradlew.bat testDebugUnitTest`):
+  * BUILD SUCCESSFUL (14 tests completed, 0 failed, 100% pass rate).
+- Build Debug APK (`.\gradlew.bat assembleDebug`):
+  * BUILD SUCCESSFUL (36 actionable tasks executed cleanly).
+- Mã hóa tiếng Việt:
+  * 0 lỗi mojibake, bảo toàn 100% tiếng Việt có dấu.
+- Tương thích ngược:
+  * Toàn bộ contracts Supabase RPC, migrations, schema giữ nguyên vẹn.
+
+VI. KẾT LUẬN
+Giao diện Meeto đã hoàn toàn thoát khỏi phong cách thô cứng kiểu cũ, sở hữu trọn vẹn cảm giác mượt mà, tinh tế, hiện đại đặc trưng của Instagram: từ nút tim đỏ đàn hồi, double-tap thả tim trên ảnh/Reels, bookmark, nút follow đổi màu, đến chuyển tab Bottom Navigation có phản hồi xúc giác.
+

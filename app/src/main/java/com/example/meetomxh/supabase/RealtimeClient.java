@@ -19,7 +19,7 @@ public final class RealtimeClient extends WebSocketListener {
  private final Runnable heartbeat=new Runnable(){public void run(){synchronized(RealtimeClient.this){if(socket==null)return;send(socket,"phoenix","heartbeat",Api.obj());}Api.IO.execute(()->{try{SessionManager.getInstance().access(false);}catch(Exception ignored){}});Api.MAIN.postDelayed(this,20000);}};
  @Override public void onMessage(WebSocket ws,String text){if(ws!=socket||epoch!=SessionManager.getInstance().generation())return;try{JSONObject frame=new JSONObject(text);String event=frame.optString("event");if(event.equals("phx_reply")&&!joined&&frame.getJSONObject("payload").optString("status").equals("ok")){joined=true;failures=0;reconnections++;invalidate();}
   if(event.equals("phx_close")||event.equals("phx_error")){stop();retry();}
-  if(event.equals("broadcast")){JSONObject payload=frame.getJSONObject("payload").getJSONObject("payload");String id=payload.optString("event_id");if(!payload.optString("scope").equals("messenger")||!id.matches("[0-9a-fA-F-]{36}")||!seen.accept(id))return;receivedEvents++;invalidate();}
+  if(event.equals("broadcast")){JSONObject payload=frame.getJSONObject("payload").getJSONObject("payload");String id=payload.optString("event_id");String scope=payload.optString("scope");if(!(scope.equals("messenger")||scope.equals("notifications"))||!id.matches("[0-9a-fA-F-]{36}")||!seen.accept(id))return;receivedEvents++;invalidate();}
  }catch(JSONException ignored){}}
  private void invalidate(){for(Runnable r:subscribers)Api.MAIN.post(r);}
  private void retry(){Api.MAIN.postDelayed(this::connect,Math.min(30000,1000L<<Math.min(failures++,5)));}

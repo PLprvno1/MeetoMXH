@@ -1,0 +1,60 @@
+MEETO — TASK 16B: CLOUD STORIES / SAVED POSTS / FOLLOW / PROFILE LOCATION
+Ngày kiểm tra: 2026-11-03
+Supabase project mục tiêu: qjpohzpapiwdrxsionyr
+
+KẾT QUẢ TRIỂN KHAI
+- Migration 019: chủ dự án đã báo SQL chạy thành công trong SQL Editor và ảnh post upload thành công. Trạng thái SQL được ghi nhận là reported deployed; ledger chưa thể truy vấn độc lập.
+- Migration 020: Cloud deploy/ledger chưa xác minh. Không chạy SQL 020.
+- Migration 021: candidate đã review/sửa ở `supabase/migrations/20261103000300_saved_follows_profile_location.sql`; CHƯA deploy.
+- Không migration nào được đánh dấu applied trong lượt này. Không chạy lại 019, không sửa 001–020.
+- Không có `supabase` CLI, `psql`, `SUPABASE_ACCESS_TOKEN` hoặc kết nối SQL Cloud khả dụng. Do đó không thể đọc ledger/RPC/columns Cloud hay thực thi migration an toàn.
+- Đã thử probe REST chỉ đọc bằng cấu hình app; request thất bại ở tầng kết nối (WebException), nên không thu được schema/RPC và không giữ lại JWT. Không có Cloud data được sửa.
+
+SỬA CANDIDATE 021
+1. `private.list_follows`: filter trạng thái account, onboarding, block và profile visibility trước `ORDER BY/LIMIT`. Cursor giữ thứ tự ổn định theo `(created_at DESC, profile_id DESC)`, lọc theo cùng tuple nên không tạo trang rỗng giả do các profile bị loại và không bỏ qua người hợp lệ.
+2. `private.complete_onboarding_with_location`: khóa profile, đối chiếu `expected_version` trước khi ghi location. Nếu onboarding đã hoàn thành từ trước và chỉ location thay đổi thì tăng version; nếu onboarding mới đã tăng version thì không tăng hai lần.
+3. Follow chỉ tạo cạnh khi profile đích đang hoạt động, người gọi đọc được profile và không có block hai chiều. Unfollow idempotent và vẫn xóa được cạnh cũ nếu profile không còn đọc được. Friendship không bị sửa.
+4. Count là số cạnh tổng hợp cho profile đọc được, không trả danh tính người theo dõi bị ẩn. Danh sách chỉ trả profile mà caller được đọc và không bị block. Follow không đổi `can_read_post` nên không cấp quyền Friends-only.
+5. Saved Posts dùng PK hiện hữu để chống duplicate; unsave idempotent; danh sách lọc `can_read_post` trước LIMIT, sort/cursor theo `(saved_at DESC, post_id DESC)`. `is_saved` chỉ phụ thuộc `auth.uid()`.
+6. Location nullable, server validate danh mục 34 tỉnh/thành, visibility `public/friends/private`, default `private`. `get_profile` chỉ thêm location khi caller đã đọc được profile và location policy cho phép. Không thêm location vào search, suggestions, follow list hay post JSON.
+7. Các wrapper public vẫn SECURITY INVOKER; implementation private SECURITY DEFINER với `search_path=''`; quyền EXECUTE chỉ authenticated. Không cấp table grants, không tắt RLS.
+8. Contract `self_profile`, `get_profile`, `post_json` giữ fields của migration 020 và bổ sung đúng location/is_saved.
+
+MIGRATION / MANIFEST
+- Checksum cập nhật riêng cho migration 021: `D876F196EFB98F6412A0B0B43CCA40CB24EEA84DA9994BCDD1B88001BD25AC98`.
+- `Test-MigrationManifest.ps1`: PASS, xác minh 21 entries. Hash 001–020 giữ nguyên theo manifest.
+- Candidate được rà soát tĩnh và kiểm tra cặp dollar-quote. Không có PostgreSQL parser/server khả dụng để compile SQL; chưa coi đây là xác nhận cú pháp từ Cloud.
+
+ANDROID / REGRESSION
+- `:app:assembleDebug`: PASS.
+- Cài đặt emulator và khởi chạy LoginActivity: PASS ở mức launch smoke test.
+- Không đăng nhập, không tạo/xóa dữ liệu Cloud và không chạy feature E2E vì migration/backend Cloud chưa xác minh.
+- Stories E2E: BLOCKED.
+- Saved Posts E2E: BLOCKED.
+- Follow E2E: BLOCKED.
+- Location E2E: BLOCKED.
+- Login/session restore, Profile, Feed, Posts/Comments/Reactions, Friends, Messenger, Direct Upload, Light/Dark và các Stories interactions: chưa regression-tested trong lượt này. Build/launch không được tính là E2E.
+- Không Docker, worker local, Firebase hay APK/AAB deliverable. Credentials không được ghi vào source hoặc báo cáo.
+
+CLOUD STATUS MATRIX
+019 SQL deployed: REPORTED YES; independently verified: NO
+019 ledger: UNKNOWN
+020 SQL deployed: UNKNOWN
+020 ledger: UNKNOWN
+020 Stories/Avatar RPCs: UNKNOWN
+021 SQL deployed: NO
+021 ledger: NO / not verified
+021 Saved/Follow/Location RPCs: NOT VERIFIED
+RLS/EXECUTE on Cloud: NOT VERIFIED (local migration policy/grant model reviewed)
+
+QUY TRÌNH DUY NHẤT ĐỂ CHỦ DỰ ÁN TIẾP TỤC TRÊN DASHBOARD
+1. Chọn đúng project `qjpohzpapiwdrxsionyr` → SQL Editor. Chạy truy vấn chỉ đọc ledger:
+   `SELECT version, name FROM supabase_migrations.schema_migrations WHERE version IN ('20261103000100','20261103000200','20261103000300') ORDER BY version;`
+2. Trong cùng phiên, truy vấn `to_regprocedure` cho 019 (`public.prepare_direct_upload(text,text,uuid)`, `private.finalize_direct_upload(uuid)`), 020 (`public.prepare_direct_story_upload(text,uuid)`, `public.create_story(uuid,text,text,uuid)`, `public.set_avatar_preset(text)`, `private.finalize_story_upload(uuid)`), 021 (`public.set_saved_post(uuid,boolean)`, `public.get_saved_posts(timestamptz,uuid,integer)`, `public.set_follow(uuid,boolean)`, `public.get_follow_counts(uuid)`, `public.list_follows(uuid,text,timestamptz,uuid,integer)`, hai RPC location). Kiểm tra các cột `profiles.public_avatar_preset`, `profile_private.current_location`, `profile_private.location_audience`.
+3. Nếu 020 vắng cả ledger lẫn các object của migration, kiểm tra preconditions rồi chạy file 020 đúng một lần; xác minh Stories/Avatar RPC. Nếu ledger/object lệch nhau hoặc chỉ có một phần, dừng và đối chiếu trước, không chạy lại SQL tạo function.
+4. Chỉ khi các precondition 021 đầy đủ và schema/RPC 021 chưa tồn tại, chạy toàn file 021 một lần. Xác minh các RPC/cột, grants và RLS sau đó.
+5. Dashboard SQL Editor không tự ghi Supabase migration ledger. Sau khi xác nhận SQL chạy hết thành công, dùng CLI đã đăng nhập bằng quyền quản trị để `supabase migration repair <version> --status applied` cho đúng những version thực sự đã chạy. Với 019, chỉ reconcile ledger sau khi xác minh SQL 019 hiện diện; tuyệt đối không chạy lại SQL 019.
+6. Sau deploy/ledger, chạy E2E A/B với dữ liệu synthetic, giữ nguyên friendship hiện hữu; chỉ chuyển từng mục sang PASS khi có bằng chứng thao tác và kết quả Cloud thực tế.
+
+MỨC SẴN SÀNG TASK 17
+CONDITIONAL / NO-GO cho tới khi xác minh Cloud ledger, deploy 020 nếu thiếu, deploy 021, rồi chạy Stories/Saved/Follow/Location E2E và targeted regression. Không tuyên bố các tính năng đã hoạt động thật trên Cloud.

@@ -1,0 +1,7 @@
+MEETO — TASK 23 FINAL FIX
+
+- Fixed private.utf16_slice to detect end boundaries while scanning code points and reject spans that bisect a surrogate pair.
+- Targeted UTF-16 algorithm harness passed: start, middle, end, adjacent mentions, emoji before/inside/after, and split-surrogate start/end rejection.
+- can_read_post delegates to can_read_post_base; migration 023 base allows pending group content only for author or active group manager. Both mention/tag sync retain author checks. Notification triggers wait for publication and recheck recipient visibility.
+- Seven-day re-tag cooldown retained.
+- SQL static checks and manifest hashes pass. PostgreSQL runtime/Cloud not tested; no Docker/psql used.

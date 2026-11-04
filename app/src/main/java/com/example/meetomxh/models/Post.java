@@ -2,11 +2,15 @@ package com.example.meetomxh.models;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.json.JSONArray;
 
 public class Post {
     public long version=1;
+    public boolean canShareMemory;
     public String serverCreatedAt;
     private String postId;
+    private String groupId;
+    private String postState;
     private String authorUid;
     private String userName;
     private String userAvatar;
@@ -15,19 +19,31 @@ public class Post {
     private String postImage;
     private String mediaType;
     private List<String> imageUrls;
+    private List<String> mediaTypes;
+    private String userAvatarPreset = "neutral";
     private int likesCount;
     private int commentsCount;
     private int sharesCount;
     private boolean isLiked;
+    private String reaction;
+    private boolean isSaved;
     private String type; // "normal" or "share"
     private String originalPostId;
     private Post originalPost;
     private long createdAt;
     private long updatedAt;
     private String visibility; // "public", "friends", "private"
+    private JSONArray mentions = new JSONArray();
+    private JSONArray tags = new JSONArray();
+    private boolean reel;
+    private boolean reelFollowing;
+    private int reelDurationMs;
+    private int reelCoverPositionMs;
+    private String reelCoverAssetId;
 
     public Post() {
         this.imageUrls = new ArrayList<>();
+        this.mediaTypes = new ArrayList<>();
         this.type = "normal";
         this.visibility = "public";
     }
@@ -52,6 +68,11 @@ public class Post {
     public String getPostId() {
         return postId;
     }
+
+    public String getGroupId() { return groupId; }
+    public void setGroupId(String value) { groupId = value; }
+    public String getPostState() { return postState; }
+    public void setPostState(String value) { postState = value; }
 
     public void setPostId(String postId) {
         this.postId = postId;
@@ -79,6 +100,12 @@ public class Post {
 
     public void setUserAvatar(String userAvatar) {
         this.userAvatar = userAvatar;
+    }
+
+    public String getUserAvatarPreset() { return userAvatarPreset; }
+
+    public void setUserAvatarPreset(String value) {
+        this.userAvatarPreset = "male".equals(value) || "female".equals(value) ? value : "neutral";
     }
 
     public String getTimeAgo() {
@@ -123,6 +150,18 @@ public class Post {
         this.imageUrls = imageUrls;
     }
 
+    public List<String> getMediaTypes() { return mediaTypes; }
+
+    public void setMediaTypes(List<String> types) {
+        this.mediaTypes = types == null ? new ArrayList<>() : new ArrayList<>(types);
+    }
+
+    public void setMediaTypeAt(int index, String mimeType) {
+        while (mediaTypes.size() <= index) mediaTypes.add("image/*");
+        mediaTypes.set(index, mimeType == null ? "image/*" : mimeType);
+        if (index == 0) mediaType = mimeType != null && mimeType.startsWith("video/") ? "video" : "image";
+    }
+
     public int getLikesCount() {
         return likesCount;
     }
@@ -148,12 +187,20 @@ public class Post {
     }
 
     public boolean isLiked() {
-        return isLiked;
+        return reaction != null ? !reaction.isEmpty() : isLiked;
     }
 
     public void setLiked(boolean liked) {
         isLiked = liked;
+        if (!liked) reaction = null;
+        else if (reaction == null) reaction = "like";
     }
+
+    public String getReaction() { return reaction; }
+    public void setReaction(String value) { reaction = value; isLiked = value != null; }
+
+    public boolean isSaved() { return isSaved; }
+    public void setSaved(boolean saved) { isSaved = saved; }
 
     public String getType() {
         return type;
@@ -202,4 +249,18 @@ public class Post {
     public void setVisibility(String visibility) {
         this.visibility = visibility;
     }
+    public JSONArray getMentions(){return mentions;}
+    public void setMentions(JSONArray value){mentions=value==null?new JSONArray():value;}
+    public JSONArray getTags(){return tags;}
+    public void setTags(JSONArray value){tags=value==null?new JSONArray():value;}
+    public boolean isReel(){return reel;}
+    public void setReel(boolean value){reel=value;}
+    public boolean isReelFollowing(){return reelFollowing;}
+    public void setReelFollowing(boolean value){reelFollowing=value;}
+    public int getReelDurationMs(){return reelDurationMs;}
+    public void setReelDurationMs(int value){reelDurationMs=value;}
+    public int getReelCoverPositionMs(){return reelCoverPositionMs;}
+    public void setReelCoverPositionMs(int value){reelCoverPositionMs=value;}
+    public String getReelCoverAssetId(){return reelCoverAssetId;}
+    public void setReelCoverAssetId(String value){reelCoverAssetId=value;}
 }

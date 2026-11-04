@@ -1,0 +1,44 @@
+MEETO — BÁO CÁO TASK 20: ADVANCED SEARCH
+Ngày: 03/11/2026
+Workspace: D:\Android\MeetoMXH
+
+TÓM TẮT
+Đã bổ sung migration 026 và Android Search Home cho tìm People, Posts, Groups; All Results; bộ lọc bài viết; lịch sử riêng theo tài khoản. Tìm kiếm dùng RPC Supabase và quyền đọc hiện có, không tải toàn bộ dữ liệu về Android.
+
+BACKEND
+- Migration: supabase/migrations/20261103000800_advanced_search.sql; SHA-256: CD30F832397C0DABC9A8A4E0ECEB5CCC5922C88BABDF567238A7892220CFC52D.
+- People dùng can_read_profile, profile audience, account status và block checks; chỉ trả tên/avatar preset cùng trạng thái friend request/follow của người xem. Không tìm email, vị trí hoặc gender riêng tư.
+- Posts tìm server-side bằng PostgreSQL simple full-text search, có GIN index, lọc thời gian/media, newest/relevance cursor. can_read_post được áp dụng trước cursor và LIMIT; nội dung JSON/media lấy qua post_json và helper quyền hiện có.
+- Groups dùng can_discover_group/group_card, cursor riêng; group ẩn chỉ xuất hiện với thành viên, private-listed chỉ trả metadata.
+- search_history có RLS theo user_id, không cấp quyền bảng trực tiếp; RPC list/save/delete/clear giới hạn 20 mục và gộp query theo chữ thường/khoảng trắng.
+- Tiếng Việt dùng tokenizer simple, không giả định tách âm tiết hoàn hảo; tìm không dấu chưa được hỗ trợ vì không thêm extension unaccent.
+
+ANDROID
+- SearchActivity nối từ nút Search trên MainActivity; có debounce 400 ms, bỏ qua response cũ, tab All/People/Posts/Groups, lọc relevance/newest, khoảng thời gian và media-only.
+- All Results gọi ba RPC có giới hạn riêng, có See all. People dùng profile navigation và trạng thái quan hệ; Posts dùng FeedAdapter, thumbnail/media, reaction/comment counts và mở Post Detail; Groups mở Group Detail và hiển thị cover/privacy/member count.
+- Lịch sử gần đây hiển thị trong Search Home, có dùng lại query, xóa mục và xóa toàn bộ. Không lưu query khi chỉ đang gõ.
+
+KIỂM TRA / GIỚI HẠN
+- :app:assembleDebug: PASS.
+- SearchLayoutSmokeTest trên emulator Pixel 4 API 35: PASS (kiểm tra inflate các surface của Search Home; không phải E2E/RPC).
+- Migration manifest: PASS, 26 checksum hợp lệ. Dollar-quote delimiters cân bằng; không có PostgreSQL parser/runtime cục bộ để kiểm tra cú pháp thực thi.
+- Người dùng báo migrations 023–025 đã chạy qua Dashboard; chưa có xác minh độc lập/ledger. Migration 026 chưa triển khai; không dùng Cloud, CLI, psql hay Docker.
+- Chưa kiểm tra hai tài khoản, privacy/block thay đổi trực tiếp, RPC/search pagination hoặc signed media trên Cloud. Regression Profile/Feed/Groups/Friends/Privacy/Direct Media chưa chạy; không có dữ liệu fixture để test.
+
+ACCEPTANCE MATRIX
+PEOPLE SEARCH: PARTIAL
+POST SEARCH: PARTIAL
+GROUP SEARCH: PARTIAL
+ALL RESULTS: PARTIAL
+SEARCH FILTERS: PARTIAL
+SEARCH HISTORY: PARTIAL
+CLEAR HISTORY: PARTIAL
+SUGGESTIONS: PARTIAL (lịch sử gần đây)
+CURSOR PAGINATION: PARTIAL (static review, chưa E2E)
+SEARCH PRIVACY/RLS: PARTIAL (static review, chưa Cloud)
+ANDROID UI: PARTIAL
+ANDROID BUILD: PASS
+CLOUD DEPLOYED (026): NO
+EMULATOR E2E: BLOCKED / NOT RUN
+CRITICAL REGRESSIONS: NOT TESTED
+READY FOR TASK 21: NO

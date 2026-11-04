@@ -1,0 +1,45 @@
+MEETO — TASK 24: ADVANCED PROFILE & PHOTO ALBUMS
+Ngày: 2026-11-03
+
+ĐÃ TÁI SỬ DỤNG
+- ProfileActivity/ProfileClient hiện có, FeedAdapter và get_user_posts tiếp tục cung cấp hồ sơ và bài viết.
+- ProfileEditActivity/SupabaseStorage tiếp tục xử lý avatar, cover và xác minh media hiện tại; không thêm pipeline upload hay lưu URL.
+- PrivateAssetLoader và asset:// tiếp tục xử lý ảnh/video được phép xem.
+
+THAY ĐỔI
+- Profile có tab Posts, Photos, Videos, About; tab ảnh/video phân trang qua RPC và có trạng thái loading/empty/error/retry. Bài ghim được hiển thị trước nội dung thường; menu bài viết có thao tác ghim, hồ sơ chủ có thao tác bỏ ghim.
+- Album ảo tham chiếu ảnh đã gắn vào bài viết cá nhân: tạo/sửa/xóa album, quyền public/friends/private, thêm nhiều ảnh có sẵn, chọn ảnh bìa, gỡ ảnh, fullscreen viewer vuốt ngang.
+- Featured photos có thể chọn và gỡ; hồ sơ vẫn ẩn item khi bài gốc không còn quyền đọc.
+- Migration 031 tạo bảng mới có RLS bật và thu hồi quyền trực tiếp; RPC SECURITY DEFINER có search_path rỗng, chỉ cấp execute cho authenticated. Album/gallery/featured/pin đều kiểm tra quyền hồ sơ, bài gốc và media. Không sao chép object, không trả storage path/signed URL. Chỉ cho nguồn là ảnh từ bài cá nhân published do chính chủ sở hữu.
+- Manifest có thêm migration 031, SHA-256: B3D35156A9AB33DB418B2CFB771E3E16860149B07042FC1B7A48E333253863C6.
+
+KIỂM TRA
+- `:app:assembleDebug`: PASS.
+- `:app:testDebugUnitTest`: PASS.
+- Emulator: mở được ProfileActivity, quan sát được tab Posts/Photos/Videos/About và Photo albums. Tab Photos hiện error state khi RPC mới chưa sẵn sàng. Album activity hiển thị lỗi có retry; không thấy crash trong logcat.
+- SQL: rà soát tĩnh transaction, prerequisite signatures, function signatures, grants, RLS, quyền media và tham chiếu migration. Không chạy PostgreSQL parser/DB vì không dùng psql/local server; chưa xác nhận migration chạy được trên Cloud.
+- Cloud/E2E A-B: CHƯA KIỂM CHỨNG. Không triển khai Cloud.
+
+GIỚI HẠN / ĐIỀU KIỆN
+- Chưa xác nhận Cloud đã chạy migration 030; cần chủ dự án xác nhận/chạy 030 trước 031 vì 031 dùng contract post_json mới của 030.
+- Album chỉ nhận ảnh đã thuộc bài viết cá nhân published; chưa có album-independent upload, thao tác chuyển là thêm rồi gỡ, không di chuyển byte.
+- Avatar/cover tái sử dụng picker/upload hiện tại nhưng chưa có crop/reposition mới. Featured UI hiện chọn ảnh, chưa có giao diện chọn featured post hoặc sắp xếp đầy đủ. Photo viewer hỗ trợ vuốt và tỉ lệ ảnh, chưa thêm pinch-to-zoom.
+- Chưa kiểm thử quyền giữa hai tài khoản, block, thu hồi quyền, vòng đời media hay ghi đồng thời trên Cloud.
+
+ACCEPTANCE MATRIX
+PROFILE HEADER: PARTIAL (tái sử dụng header hiện có; chưa thêm crop/reposition)
+PROFILE TABS: PARTIAL (UI quan sát được; RPC media phụ thuộc migration 031)
+PHOTO ALBUMS: PARTIAL (source/UI có; Cloud chưa triển khai)
+ALBUM PRIVACY: PARTIAL (cổng quyền được kiểm tra tĩnh; chưa có A/B Cloud)
+FEATURED CONTENT: PARTIAL (featured photos; chưa có giao diện featured post/reorder)
+PINNED POSTS: PARTIAL (một post cá nhân, thay ghim/bỏ ghim; chưa Cloud verify)
+AVATAR MANAGEMENT: PARTIAL (upload hiện có, không thêm crop)
+COVER MANAGEMENT: PARTIAL (upload hiện có, không thêm crop/reposition)
+PHOTO VIEWER: PARTIAL (fullscreen swipe; chưa zoom)
+MEDIA SECURITY: PARTIAL (gates/grants tĩnh; chưa Cloud verify)
+UI/UX: PARTIAL (chưa kiểm tra rotation, dark/light đầy đủ)
+ANDROID BUILD: PASS
+MIGRATION REQUIRED: YES
+CLOUD DEPLOYED: NO (chưa deploy trong phiên này; trạng thái Cloud hiện tại không được xác minh)
+EMULATOR E2E: PARTIAL
+READY FOR TASK 25: CONDITIONAL — sau khi xác minh/chạy 030 rồi 031 và hoàn tất kiểm thử quyền Cloud.

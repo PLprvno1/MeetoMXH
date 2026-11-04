@@ -1,0 +1,71 @@
+﻿# MEETO — Task 31 Performance Optimization Report
+
+Date: 2026-11-04  
+Workspace: `D:\Android\MeetoMXH`  
+Scope: targeted Android Java/XML inspection and small Feed optimizations. No backend/schema change, deployment, APK handoff, or broad refactor.
+
+## 1. Performance state and findings
+
+### Confirmed bottlenecks fixed
+
+- **Feed paging repeated media metadata requests.** Each `get_feed` page was followed by a `media_assets` MIME query containing every media reference loaded so far. The existing authorized `private.post_json` projection in migrations returns `mime_type` with the page, and `Dto.post` already consumes it. Removed the redundant query from [FeedRepository.java](app/src/main/java/com/example/meetomxh/repositories/FeedRepository.java). Source-level result: one fewer REST request per Feed page, and no cumulative all-pages MIME query.
+- **Initial Stories request was duplicated.** `FeedAdapter` loaded Stories in its constructor and `FeedFragment.onResume()` immediately loaded them again. Removed the constructor call; Feed's resume path remains the single refresh owner. This avoids duplicate `self profile` and `get_stories` requests on initial Feed entry.
+- **Feed updates invalidated the whole list.** `FeedAdapter.setPosts()` always called `notifyDataSetChanged()`, including when `FeedRepository` appended a page or replaced one changed item. It now sends per-item changes for stable IDs and a range-insert for appended rows; full invalidation remains for reorder/shrink cases.
+- **Reaction writes triggered unnecessary reload work.** The reaction picker called a repository helper that refreshed Feed after `set_post_reaction`; the Like path also made a follow-up `get_post` request. The repository now consumes the existing reaction RPC result (`reaction`, `reactions_count`) and updates the loaded model without reloading Feed. Like/Reaction use one RPC; Save already updated locally without reloading.
+
+No numerical FPS, frame-time, or memory baseline was available, so no such performance figures are claimed.
+
+### Other inspected areas
+
+- **Reels:** source keeps one ExoPlayer, pauses while dragging/leaving, cancels the media info request, removes its progress ticker, and releases the player on view destruction. No additional preload/cache was introduced without playback data or memory measurements.
+- **Messenger:** message work uses the shared `Api.run` IO executor; RealtimeClient is a singleton and `ChatActivity` removes registrations during lifecycle cleanup. No runtime profiling was possible.
+- **Media:** Feed uses the shared Glide loader path and recycled image requests are cleared; fullscreen private media retains the authenticated loader and retry path. No signed URL or storage policy changes.
+- **Navigation:** `MainActivity` replaces tab fragments, which can recreate screens and repeat their data loads. This is a likely tab-switch/scroll-retention cost. I left navigation semantics unchanged because converting to cached fragments also changes Reels/player and subscription lifecycles and was not measurable in this run.
+- **Animation:** existing reaction/heart and bottom-navigation animations were left intact; dropped frames were not measured.
+
+## 2. Files changed
+
+- `app/src/main/java/com/example/meetomxh/repositories/FeedRepository.java`
+- `app/src/main/java/com/example/meetomxh/adapters/FeedAdapter.java`
+
+No migrations or RPC signatures changed. Existing unrelated Task changes were left untouched.
+
+## 3. Before / after evidence
+
+- Feed page load: previously `get_feed` + one metadata REST request over accumulated media; now `get_feed` only because the page already includes MIME metadata.
+- First Feed entry: previously Stories self-profile/list fetch was invoked both at adapter construction and on resume; now resume is the only trigger.
+- Append: previously a whole-list adapter invalidation; now range insertion for the new tail when existing post IDs remain a stable prefix.
+- Like/Reaction: previously two RPCs for the Like path or a Feed refresh after reaction selection; now one reaction RPC with local count/state update.
+
+These are source-level request/update counts, not a network trace benchmark.
+
+## 4. Validation and emulator observations
+
+- `:app:assembleDebug`: **PASS**.
+- `:app:testDebugUnitTest`: **PASS**, 17 tests, 0 failures/errors.
+- Targeted compile validates the touched Java sources. There are no dedicated RecyclerView instrumentation tests for notification ranges.
+- AVD `Pixel_4` booted, but the app opened at `LoginActivity` with no authenticated session. Feed/Reels/Messenger smoke actions requiring Cloud data could not be repeated. The captured recent Logcat window contained no `FATAL EXCEPTION`, `ANR in`, or `OutOfMemoryError`; this is not a full runtime stability guarantee.
+- Emulator smoke: **PARTIAL/BLOCKED by authentication**. Task 30 had previously observed Feed image open/return, but Task 31 could not run its requested authenticated long-scroll, five-tab, video, chat, or Reels playback sequence.
+- Cloud/E2E: **NOT VERIFIED**; no deployment performed. Reels/Admin dependencies on migrations 034/035 remain to be confirmed in Cloud.
+
+## 5. Acceptance matrix
+
+| Check | Status | Notes |
+|---|---|---|
+| FEED SCROLL | **PARTIAL** | Append no longer invalidates the full list; long authenticated scroll not observed. |
+| REELS PLAYBACK | **PARTIAL** | Single-player lifecycle verified in source; no Cloud Reel available for playback test. |
+| IMAGE LOADING | **PARTIAL** | Existing authenticated loader retained; no authenticated Task 31 media smoke. |
+| MESSENGER PERFORMANCE | **PARTIAL** | IO/realtime lifecycle inspected; live conversation performance not measured. |
+| TAB SWITCHING | **PARTIAL** | No runtime measurement; fragment replacement remains a likely cost. |
+| NETWORK EFFICIENCY | **PARTIAL** | Confirmed Feed metadata, duplicate Stories, and reaction reload calls removed; no HTTP trace. |
+| MEMORY/LIFECYCLE | **PARTIAL** | Reels player/request/ticker cleanup inspected; no profiler heap/session run. |
+| ANIMATION SMOOTHNESS | **PARTIAL** | Animations preserved; frame timing not measured. |
+| ANDROID BUILD | **PASS** | `assembleDebug`. |
+| UNIT TESTS | **PASS** | 17/17. |
+| EMULATOR SMOKE | **PARTIAL** | AVD booted, app unauthenticated at LoginActivity; authenticated flows blocked. |
+| CLOUD/E2E | **BLOCKED** | Live migration and Cloud behavior not verified. |
+| READY FOR TASK 32 | **CONDITIONAL** | Feed source bottlenecks fixed and build/tests pass; authenticated performance smoke and Cloud dependencies remain. |
+
+## 6. Remaining limitations
+
+No before/after frame or memory profiling was available. Feed tab fragment recreation is the main remaining likely UX cost. Authenticated emulator smoke, actual Reels playback, and live Cloud migration state are required before marking the app fully demo-ready.

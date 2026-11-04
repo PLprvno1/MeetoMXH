@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
     <application
         android:name=".MeetoApplication"
@@ -27,6 +28,8 @@
             </intent-filter>
         </activity>
 
+          <activity android:name=".RoleResolutionActivity" android:exported="false" />
+
         <activity
             android:name=".RegisterActivity"
             android:exported="false" />
@@ -39,6 +42,7 @@
         <activity
             android:name=".MainActivity"
             android:exported="false" />
+        <activity android:name=".SearchActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
 
         <activity
             android:name=".ProfileActivity"
@@ -48,19 +52,47 @@
         <activity android:name=".AuthCallbackActivity" android:exported="true">
             <intent-filter><action android:name="android.intent.action.VIEW"/><category android:name="android.intent.category.DEFAULT"/><category android:name="android.intent.category.BROWSABLE"/><data android:scheme="meeto" android:host="auth" android:path="/callback"/></intent-filter>
         </activity>
+        <activity android:name=".SharedPostLinkActivity" android:exported="true">
+            <intent-filter><action android:name="android.intent.action.VIEW"/><category android:name="android.intent.category.DEFAULT"/><category android:name="android.intent.category.BROWSABLE"/><data android:scheme="meeto" android:host="post" /></intent-filter>
+        </activity>
 
         <activity
             android:name=".ChatActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".ConversationDetailsActivity" android:exported="false" />
+        <activity android:name=".SharedMediaGalleryActivity" android:exported="false" />
 
         <activity
             android:name=".ChatImageViewerActivity"
             android:exported="false" />
+        <activity android:name=".VideoPlayerActivity" android:exported="false" />
+        <activity android:name=".CreateReelActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".ProfileAlbumsActivity" android:exported="false" />
+        <activity android:name=".ProfilePhotoViewerActivity" android:exported="false" />
 
         <activity
             android:name=".CreatePostActivity"
             android:exported="false" />
+
+        <activity android:name=".SettingsActivity" android:exported="false" />
+        <activity android:name=".TagManagementActivity" android:exported="false" />
+        <activity android:name=".StoryCreateActivity" android:exported="false" />
+        <activity android:name=".StoryViewActivity" android:exported="false" />
+        <activity android:name=".GroupsHomeActivity" android:exported="false" />
+        <activity android:name=".CreateCommunityGroupActivity" android:exported="false" />
+        <activity android:name=".CommunityGroupDetailActivity" android:exported="false" />
+        <activity android:name=".CommunityGroupMembersActivity" android:exported="false" />
+        <activity android:name=".CommunityGroupAdminActivity" android:exported="false" />
+        <activity android:name=".CommunityGroupInvitesActivity" android:exported="false" />
+        <activity android:name=".NotificationsActivity" android:exported="false" />
+        <activity android:name=".SavedPostsActivity" android:exported="false" />
+        <activity android:name=".FollowListActivity" android:exported="false" />
+        <activity android:name=".MemoriesActivity" android:exported="false" />
+        <activity android:name=".MarketplaceActivity" android:exported="false" />
+        <activity android:name=".ReportContentActivity" android:exported="false" />
+        <activity android:name=".ModerationDashboardActivity" android:exported="false" />
+        <activity android:name=".AdminPanelActivity" android:exported="false" />
     </application>
 
 </manifest>

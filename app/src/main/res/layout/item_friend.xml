@@ -2,14 +2,15 @@
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    style="@style/Widget.Meeto.Card"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginHorizontal="12dp"
     android:layout_marginVertical="4dp"
-    app:cardBackgroundColor="@color/surface_bg"
-    app:cardCornerRadius="10dp"
-    app:cardElevation="1dp"
-    app:strokeWidth="0dp">
+    app:cardCornerRadius="14dp"
+    app:cardElevation="0dp"
+    app:strokeColor="@color/outline"
+    app:strokeWidth="1dp">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
@@ -18,11 +19,11 @@
 
         <com.google.android.material.imageview.ShapeableImageView
             android:id="@+id/ivFriendAvatar"
-            android:layout_width="60dp"
-            android:layout_height="60dp"
-            android:contentDescription="@null"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:contentDescription="Avatar"
             android:scaleType="centerCrop"
-            android:src="@drawable/ic_home"
+            android:src="@drawable/avatar_neutral"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
@@ -32,34 +33,35 @@
             android:id="@+id/tvFriendName"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
+            android:layout_marginStart="14dp"
+            android:fontFamily="sans-serif-bold"
             android:textColor="@color/text_primary"
             android:textSize="16sp"
             android:textStyle="bold"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toEndOf="@id/ivFriendAvatar"
             app:layout_constraintTop_toTopOf="@id/ivFriendAvatar"
-            tools:text="Nguyễn Văn A" />
+            tools:text="Hồ Long" />
 
         <TextView
             android:id="@+id/tvFriendSubtext"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
+            android:layout_marginStart="14dp"
             android:layout_marginTop="2dp"
             android:textColor="@color/text_secondary"
             android:textSize="13sp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toEndOf="@id/ivFriendAvatar"
             app:layout_constraintTop_toBottomOf="@id/tvFriendName"
-            tools:text="15 bạn chung" />
+            tools:text="Gợi ý cho bạn" />
 
         <!-- Action Buttons Container -->
         <LinearLayout
             android:id="@+id/layoutActions"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
+            android:layout_marginStart="14dp"
             android:layout_marginTop="8dp"
             android:orientation="horizontal"
             app:layout_constraintEnd_toEndOf="parent"
@@ -72,14 +74,16 @@
                 android:layout_width="0dp"
                 android:layout_height="38dp"
                 android:layout_weight="1"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
                 android:padding="0dp"
                 android:text="Thêm bạn bè"
                 android:textAllCaps="false"
-                android:textColor="#FFFFFF"
+                android:textColor="@color/white"
                 android:textSize="13sp"
                 android:textStyle="bold"
                 app:backgroundTint="@color/brand_blue"
-                app:cornerRadius="6dp" />
+                app:cornerRadius="8dp" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnSecondaryAction"
@@ -88,15 +92,17 @@
                 android:layout_height="38dp"
                 android:layout_marginStart="8dp"
                 android:layout_weight="1"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
                 android:padding="0dp"
-                android:text="Hủy"
+                android:text="Gỡ"
                 android:textAllCaps="false"
                 android:textColor="@color/text_primary"
                 android:textSize="13sp"
                 android:textStyle="bold"
                 android:visibility="gone"
-                app:backgroundTint="@color/divider_color"
-                app:cornerRadius="6dp" />
+                app:backgroundTint="@color/surface_variant"
+                app:cornerRadius="8dp" />
 
         </LinearLayout>
 

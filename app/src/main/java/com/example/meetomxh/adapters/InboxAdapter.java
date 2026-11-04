@@ -10,6 +10,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.example.meetomxh.databinding.ItemInboxBinding;
 import com.example.meetomxh.models.Inbox;
+import com.example.meetomxh.ui.AvatarViews;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -88,16 +89,7 @@ public class InboxAdapter extends RecyclerView.Adapter<InboxAdapter.InboxViewHol
             binding.tvTimestamp.setText(inbox.getServerTime());
             binding.viewUnread.setVisibility(inbox.isUnread() ? android.view.View.VISIBLE : android.view.View.GONE);
 
-            if (inbox.getAvatarUrl() != null && !inbox.getAvatarUrl().isEmpty()) {
-                Glide.with(binding.ivAvatar.getContext())
-                        .applyDefaultRequestOptions(new com.bumptech.glide.request.RequestOptions().diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.NONE).skipMemoryCache(true)).load(inbox.getAvatarUrl())
-                        .placeholder(com.example.meetomxh.R.drawable.ic_home)
-                        .error(com.example.meetomxh.R.drawable.ic_home)
-                        .into(binding.ivAvatar);
-            } else {
-                Glide.with(binding.ivAvatar.getContext()).clear(binding.ivAvatar);
-                binding.ivAvatar.setImageResource(com.example.meetomxh.R.drawable.ic_home);
-            }
+            AvatarViews.load(binding.ivAvatar, inbox.getAvatarUrl(), inbox.getAvatarPreset());
             binding.getRoot().setOnClickListener(v -> {
                 if (clickListener != null) clickListener.onInboxClick(inbox);
             });

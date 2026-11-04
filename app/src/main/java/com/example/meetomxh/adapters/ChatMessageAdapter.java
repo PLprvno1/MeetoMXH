@@ -27,8 +27,9 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<ChatMessageAdapter.
     private static final Object RECEIPT_CHANGED = new Object();
     public interface OnMessageInteractionListener {
         void onLongPress(ChatMessage message);
-        void onReplyTap(String messageId);
+        void onReplyTap(String messageId, long seq);
         void onImageTap(String imageUrl);
+        void onVoiceTap(ChatMessage message);
     }
     private final List<ChatMessage> messages = new ArrayList<>();
     private final List<ChatMessage> allMessages = new ArrayList<>();
@@ -36,6 +37,9 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<ChatMessageAdapter.
     private OnMessageInteractionListener interactionListener;
     private final Set<String> busyMessageIds = new HashSet<>();
     private Long otherParticipantLastReadSeq;
+    private String voiceMessageId;
+    private int voicePositionMs, voiceDurationMs;
+    private boolean voicePlaying;
 
     public ChatMessageAdapter(String currentUid) {
         this.currentUid = currentUid;
@@ -59,9 +63,16 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<ChatMessageAdapter.
                 return safeEquals(oldMessage.getText(), newMessage.getText())
                         && safeEquals(oldMessage.getSenderId(), newMessage.getSenderId())
                         && oldMessage.isRecalled() == newMessage.isRecalled()
+                        && oldMessage.isForwarded() == newMessage.isForwarded()
+                        && ((oldMessage.getEditedAt() == null && newMessage.getEditedAt() == null)
+                          || (oldMessage.getEditedAt() != null && oldMessage.getEditedAt().equals(newMessage.getEditedAt())))
                         && safeEquals(oldMessage.getReplyToMessageId(), newMessage.getReplyToMessageId())
+                        && oldMessage.getReplyToSeq() == newMessage.getReplyToSeq()
                         && safeEquals(oldMessage.getReplyPreview(), newMessage.getReplyPreview())
                         && safeEquals(oldMessage.getImageUrl(), newMessage.getImageUrl())
+                        && safeEquals(oldMessage.getType(), newMessage.getType())
+                        && safeEquals(oldMessage.getMediaMimeType(), newMessage.getMediaMimeType())
+                        && oldMessage.getVoiceDurationMs() == newMessage.getVoiceDurationMs()
                         && (oldMessage.getDeletedFor() == null ? newMessage.getDeletedFor() == null
                         : oldMessage.getDeletedFor().equals(newMessage.getDeletedFor()))
                         && (oldMessage.getCreatedAt() == null ? newMessage.getCreatedAt() == null
@@ -96,6 +107,19 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<ChatMessageAdapter.
         int index = indexOfMessage(messageId);
         if (index >= 0) notifyItemChanged(index);
     }
+    public void setVoicePlayback(String messageId, int positionMs, int durationMs, boolean playing) {
+        if (messageId == null) return;
+        String oldId = voiceMessageId;
+        voiceMessageId = playing ? messageId : (messageId.equals(voiceMessageId) ? messageId : voiceMessageId);
+        voicePositionMs = Math.max(0, positionMs);
+        voiceDurationMs = Math.max(1, durationMs);
+        voicePlaying = playing;
+        int oldIndex = indexOfMessage(oldId);
+        if (oldIndex >= 0 && !oldId.equals(messageId)) notifyItemChanged(oldIndex);
+        int index = indexOfMessage(messageId);
+        if (index >= 0) notifyItemChanged(index);
+        if (!playing && messageId != null && messageId.equals(voiceMessageId)) voiceMessageId = null;
+    }
 
     @NonNull
     @Override
@@ -109,7 +133,8 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<ChatMessageAdapter.
         String latestOutgoingId = latestOutgoingId();
         holder.bind(messages.get(position), currentUid, interactionListener,
                 busyMessageIds.contains(messages.get(position).getMessageId()), allMessages,
-                otherParticipantLastReadSeq, latestOutgoingId);
+                otherParticipantLastReadSeq, latestOutgoingId,
+                safeEquals(messages.get(position).getMessageId(), voiceMessageId), voicePositionMs, voiceDurationMs, voicePlaying);
     }
 
     private String latestOutgoingId() {
@@ -141,6 +166,7 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<ChatMessageAdapter.
         }
         return -1;
     }
+    public String messageIdAt(int position) { return position < 0 || position >= messages.size() ? null : messages.get(position).getMessageId(); }
 
     /** Searches only the message window currently loaded by the chat listener (up to 50 rows). */
     public List<ChatMessage> searchLoadedTextMessages(String query) {
@@ -166,25 +192,79 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<ChatMessageAdapter.
         }
 
         void bind(ChatMessage message, String currentUid, OnMessageInteractionListener listener, boolean busy,
-                  List<ChatMessage> allMessages, Long otherReadSeq, String latestOutgoingId) {
+                  List<ChatMessage> allMessages, Long otherReadSeq, String latestOutgoingId,
+                  boolean activeVoice, int voicePositionMs, int voiceDurationMs, boolean voicePlaying) {
             boolean mine = currentUid != null && currentUid.equals(message.getSenderId());
             binding.messageRow.setGravity(mine ? Gravity.END : Gravity.START);
             binding.messageBubble.setBackgroundResource(mine
                     ? R.drawable.bg_chat_bubble_mine : R.drawable.bg_chat_bubble_other);
             binding.tvMessageText.setText(message.getDisplayText());
-            boolean hasImage = !message.isRecalled() && "image".equals(message.getType())
-                    && com.example.meetomxh.repositories.ChatRepository.isValidStorageImageUrl(message.getImageUrl());
-            binding.ivMessageImage.setVisibility(hasImage ? android.view.View.VISIBLE : android.view.View.GONE);
-            binding.tvMessageText.setVisibility(hasImage ? android.view.View.GONE : android.view.View.VISIBLE);
-            if (hasImage) {
-                Glide.with(binding.ivMessageImage).applyDefaultRequestOptions(new com.bumptech.glide.request.RequestOptions().diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.NONE).skipMemoryCache(true)).load(message.getImageUrl())
-                        .placeholder(R.drawable.ic_photo).error(R.drawable.ic_photo)
-                        .centerCrop().into(binding.ivMessageImage);
-                binding.ivMessageImage.setOnClickListener(v -> {
-                    if (listener != null) listener.onImageTap(message.getImageUrl());
+            String context = message.isForwarded() ? "Đã chuyển tiếp" : "";
+            if (message.getEditedAt() != null && !message.isRecalled())
+                context = context.isEmpty() ? "Đã chỉnh sửa" : context + " · Đã chỉnh sửa";
+            binding.tvMessageContext.setText(context);
+            binding.tvMessageContext.setVisibility(context.isEmpty() ? android.view.View.GONE : android.view.View.VISIBLE);
+            if(message.hasSharedPost()&&message.isSharedPostAvailable()&&message.getSharedPostId()!=null){
+                binding.tvMessageText.setOnClickListener(v->{
+                    if(message.getSharedPostVideoAssetId()!=null){
+                        v.getContext().startActivity(new android.content.Intent(v.getContext(),com.example.meetomxh.VideoPlayerActivity.class)
+                                .putExtra(com.example.meetomxh.VideoPlayerActivity.EXTRA_ASSET,
+                                        com.example.meetomxh.supabase.Dto.asset(message.getSharedPostVideoAssetId())));
+                    }else com.example.meetomxh.supabase.PostDetails.show((android.app.Activity)v.getContext(),message.getSharedPostId());
                 });
+                binding.tvMessageText.setPaintFlags(binding.tvMessageText.getPaintFlags()|android.graphics.Paint.UNDERLINE_TEXT_FLAG);
+            }else{
+                binding.tvMessageText.setOnClickListener(null);
+                binding.tvMessageText.setPaintFlags(binding.tvMessageText.getPaintFlags()&~android.graphics.Paint.UNDERLINE_TEXT_FLAG);
+            }
+            boolean video = "video".equals(message.getType());
+            boolean voice = "voice".equals(message.getType()) && !message.isRecalled()
+                    && com.example.meetomxh.repositories.ChatRepository.isValidStorageMediaReference(message.getImageUrl());
+            boolean hasMedia = !message.isRecalled() && ("image".equals(message.getType()) || video)
+                    && com.example.meetomxh.repositories.ChatRepository.isValidStorageMediaReference(message.getImageUrl());
+            binding.layoutMessageMedia.setVisibility(hasMedia ? android.view.View.VISIBLE : android.view.View.GONE);
+            binding.layoutVoiceMessage.setVisibility(voice ? android.view.View.VISIBLE : android.view.View.GONE);
+            binding.tvMessageText.setVisibility(hasMedia || voice ? android.view.View.GONE : android.view.View.VISIBLE);
+            if (voice) {
+                binding.btnVoicePlay.setImageResource(activeVoice && voicePlaying ? R.drawable.ic_pause : R.drawable.ic_play);
+                binding.btnVoicePlay.setImageTintList(ContextCompat.getColorStateList(binding.getRoot().getContext(),
+                        mine ? R.color.chat_bubble_mine_text : R.color.brand_blue));
+                binding.progressVoicePlayback.setProgress(activeVoice && voiceDurationMs > 0
+                        ? Math.min(1000, voicePositionMs * 1000 / voiceDurationMs) : 0);
+                int duration = activeVoice && voiceDurationMs > 0 ? voiceDurationMs : (int) message.getVoiceDurationMs();
+                binding.tvVoiceDuration.setText(formatDuration(duration));
+                binding.btnVoicePlay.setOnClickListener(v -> { if (listener != null) listener.onVoiceTap(message); });
+            } else binding.btnVoicePlay.setOnClickListener(null);
+            binding.tvVideoPlay.setVisibility(hasMedia && video ? android.view.View.VISIBLE : android.view.View.GONE);
+            binding.tvMessageText.setVisibility(hasMedia || voice ? android.view.View.GONE : android.view.View.VISIBLE);
+            binding.ivMessageImage.setTag(hasMedia ? message.getImageUrl() : null);
+            if (hasMedia && !video) {
+                Glide.with(binding.ivMessageImage).applyDefaultRequestOptions(new com.bumptech.glide.request.RequestOptions().diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.NONE).skipMemoryCache(true)).load(message.getImageUrl())
+                        .placeholder(R.drawable.ic_photo).error(R.drawable.ic_photo).centerCrop().into(binding.ivMessageImage);
+            } else if (hasMedia) {
+                Glide.with(binding.ivMessageImage).clear(binding.ivMessageImage);
+                String reference = message.getImageUrl();
+                com.example.meetomxh.supabase.Api.run(() -> com.example.meetomxh.storage.SupabaseStorage.videoThumbnail(reference),
+                        new com.example.meetomxh.supabase.Api.Callback<android.graphics.Bitmap>() {
+                            @Override public void success(android.graphics.Bitmap bitmap) {
+                                if (reference.equals(binding.ivMessageImage.getTag()))
+                                    Glide.with(binding.ivMessageImage).load(bitmap).centerCrop().into(binding.ivMessageImage);
+                                else if (bitmap != null && !bitmap.isRecycled()) bitmap.recycle();
+                            }
+                            @Override public void error(String error) { }
+                        });
             } else {
                 Glide.with(binding.ivMessageImage).clear(binding.ivMessageImage);
+                binding.ivMessageImage.setTag(null);
+            }
+            if (hasMedia) {
+                binding.ivMessageImage.setOnClickListener(v -> {
+                    if (video) binding.getRoot().getContext().startActivity(new android.content.Intent(
+                            binding.getRoot().getContext(), com.example.meetomxh.VideoPlayerActivity.class)
+                            .putExtra(com.example.meetomxh.VideoPlayerActivity.EXTRA_ASSET, message.getImageUrl()));
+                    else if (listener != null) listener.onImageTap(message.getImageUrl());
+                });
+            } else {
                 binding.ivMessageImage.setOnClickListener(null);
             }
             binding.tvMessageText.setTypeface(null, message.isRecalled() ? android.graphics.Typeface.ITALIC : android.graphics.Typeface.NORMAL);
@@ -196,7 +276,8 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<ChatMessageAdapter.
                         : (message.getReplyPreview().length() == 0 ? "Tin nhắn không còn hiển thị" : message.getReplyPreview());
                 binding.tvReplyPreview.setText("↪ " + preview);
                 binding.tvReplyPreview.setOnClickListener(v -> {
-                    if (listener != null && message.getReplyToMessageId() != null) listener.onReplyTap(message.getReplyToMessageId());
+                    if (listener != null && message.getReplyToMessageId() != null)
+                        listener.onReplyTap(message.getReplyToMessageId(), message.getReplyToSeq());
                 });
             } else {
                 binding.tvReplyPreview.setVisibility(android.view.View.GONE);
@@ -213,6 +294,8 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<ChatMessageAdapter.
             binding.tvMessageText.setOnLongClickListener(messageActions);
             binding.tvReplyPreview.setOnLongClickListener(messageActions);
             binding.ivMessageImage.setOnLongClickListener(messageActions);
+            binding.tvVideoPlay.setOnLongClickListener(messageActions);
+            binding.layoutVoiceMessage.setOnLongClickListener(messageActions);
             int textColor = ContextCompat.getColor(binding.getRoot().getContext(),
                     mine ? R.color.chat_bubble_mine_text : R.color.text_primary);
             binding.tvMessageText.setTextColor(textColor);
@@ -222,6 +305,11 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<ChatMessageAdapter.
             binding.tvMessageTime.setTextColor(ContextCompat.getColor(binding.getRoot().getContext(),
                     mine ? R.color.chat_bubble_mine_secondary : R.color.text_secondary));
             bindReceipt(message, currentUid, otherReadSeq, latestOutgoingId);
+        }
+
+        private String formatDuration(long millis) {
+            long seconds = Math.max(0, millis / 1000);
+            return String.format(Locale.getDefault(), "%d:%02d", seconds / 60, seconds % 60);
         }
 
         void bindReceipt(ChatMessage message, String currentUid, Long otherReadSeq, String latestOutgoingId) {

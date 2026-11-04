@@ -7,15 +7,16 @@
     android:focusable="true"
     android:gravity="center_vertical"
     android:orientation="vertical"
-    android:paddingHorizontal="12dp"
-    android:paddingVertical="8dp">
+    android:paddingHorizontal="14dp"
+    android:paddingVertical="9dp">
 
     <TextView
         android:id="@+id/tvSearchResultText"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:maxLines="1"
         android:ellipsize="end"
+        android:fontFamily="sans-serif-medium"
+        android:maxLines="1"
         android:textColor="@color/text_primary"
         android:textSize="14sp" />
 
@@ -26,4 +27,5 @@
         android:layout_marginTop="2dp"
         android:textColor="@color/text_secondary"
         android:textSize="11sp" />
+
 </LinearLayout>

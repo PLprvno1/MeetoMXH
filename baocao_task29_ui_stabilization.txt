@@ -1,0 +1,59 @@
+================================================================================
+BÁO CÁO NHIỆM VỤ: TASK 29 UI STABILIZATION
+FIX LAYOUT, VIETNAMESE TEXT & CLEAN HOME FEED
+ỨNG DỤNG: Meeto (com.example.meetomxh) - Nền tảng: Android Studio Java + XML
+================================================================================
+
+I. TỔNG QUAN VÀ MỤC TIÊU
+- Sửa triệt để 100% lỗi mã hóa hiển thị tiếng Việt (mojibake) trên toàn bộ ứng dụng.
+- Sửa vỡ bố cục màn hình Profile (Trang cá nhân): khoảng cách avatar và 3 cột thống kê (Bạn bè, Người theo dõi, Đang theo dõi) bị ép chữ, xuống dòng vỡ nát.
+- Bỏ khung soạn trạng thái "Bạn đang nghĩ gì?" kiểu Facebook ở đầu Home Feed.
+- Sửa lỗi che nội dung bởi Bottom Navigation và thanh điều hướng hệ thống (edge-to-edge / bottom insets).
+- Giữ nguyên 100% logic nghiệp vụ, Supabase backend, RPC contract và unit test suite.
+
+II. NGUYÊN NHÂN VÀ CÁC THAY ĐỔI CHI TIẾT
+
+1. Sửa triệt để lỗi mã hóa tiếng Việt (Mojibake):
+- Nguyên nhân: Trước đó một số file mã nguồn Java chứa các chuỗi ký tự UTF-8 bị giải mã nhầm theo Windows-1252/Latin-1 rồi lưu đè, sinh ra chuỗi mojibake (ví dụ: "ngÆ°á» i dÃ¹ng", "XÃ³a bÃ i viáº¿t?", "lÆ°á»£t thÃ­ch", "Ä‘ang theo dÃµi").
+- Giải pháp: Khôi phục chính xác 100% ký tự Unicode tiếng Việt chuẩn trên toàn bộ các file:
+  + app/src/main/AndroidManifest.xml
+  + app/src/main/java/com/example/meetomxh/supabase/Dto.java ("Người dùng", "Vừa cập nhật", "Cuộc trò chuyện", "Thành viên", "Bình luận đã xóa")
+  + app/src/main/java/com/example/meetomxh/models/ChatMessage.java ("Tin nhắn đã được thu hồi")
+  + app/src/main/java/com/example/meetomxh/ChatActivity.java ("Người dùng không khả dụng")
+  + app/src/main/java/com/example/meetomxh/fragments/InboxFragment.java ("Người dùng không khả dụng", " (lưu trữ)")
+  + app/src/main/java/com/example/meetomxh/ProfileEditActivity.java ("Đang tải hồ sơ…", "Đang kiểm tra tệp…", "Chọn ngày sinh hợp lệ.", "Không muốn nêu", "Đã lưu thay đổi", v.v.)
+  + app/src/main/java/com/example/meetomxh/adapters/FeedAdapter.java ("Tin của bạn", " lượt thích", " bình luận", "Yêu thích", "Thương", "Buồn", "Phẫn nộ", "Thích bài viết", "Đã thả cảm xúc", " · Đang chờ duyệt", "Cùng với", "Được gắn thẻ trong bài viết", "Xóa bài viết", "Chỉnh sửa bài viết", "Ghim lên trang cá nhân", "Lưu bài viết" / "Bỏ lưu bài viết", "Nội dung gốc không còn khả dụng với bạn.", v.v.)
+  + app/src/main/java/com/example/meetomxh/ProfileActivity.java ("Không tìm thấy thông tin người dùng", "Xóa bài viết?", "Bài viết sẽ được xóa...", "0 người bạn", "Chưa có bạn bè.", "Quyền riêng tư", "Chặn người dùng", "Đang tải bài viết…", "Nơi ở: ", "Giới tính: ", "Ngày sinh: ", "Thêm bạn bè", "Đã hủy kết bạn", v.v.)
+  + app/src/test/java/com/example/meetomxh/ChatMessageProjectionTest.java ("Tin nhắn đã được thu hồi")
+
+2. Khắc phục vỡ bố cục Profile (Trang cá nhân):
+- Hiện trạng cũ:
+  + activity_profile.xml ép cả số đếm lẫn chuỗi text " người theo dõi" vào trong một TextView hẹp ~70dp khiến text bị ngắt dòng 3-4 hàng ("15 \n người \n theo \n dõi").
+  + Cột bạn bè bị hiển thị trùng chữ ("12 người bạn" bên trên và "Bạn bè" bên dưới).
+- Khắc phục:
+  + Chuẩn hóa bố cục 3 cột thống kê chuẩn Instagram:
+    * Cột 1: Số bạn bè/bài viết hiển thị ở TextView trên (17sp bold text_primary, ví dụ "12", "1.2K"), nhãn "Bạn bè" ở TextView dưới (12sp text_secondary).
+    * Cột 2: Số người theo dõi hiển thị ở TextView trên (17sp bold text_primary, id tvFollowers), nhãn "Người theo dõi" ở TextView dưới (12sp text_secondary).
+    * Cột 3: Số đang theo dõi hiển thị ở TextView trên (17sp bold text_primary, id tvFollowing), nhãn "Đang theo dõi" ở TextView dưới (12sp text_secondary).
+  + Tối ưu kích thước Avatar chuẩn Instagram: khung 78dp có viền gradient `shape_story_ring`.
+  + Tỷ lệ hiển thị cân đối trên cả màn hình nhỏ (Pixel 4, màn hình 360dp - 392dp).
+  + Thêm hàm `formatCount(int count)` trong ProfileActivity để định dạng số lớn (K, M) gọn gàng.
+  + Gán sự kiện click cho cả cột layout (`layoutStatFollowers`, `layoutStatFollowing`) và TextView để mở danh sách theo dõi tiện lợi.
+
+3. Dọn dẹp Header Home Feed:
+- Loại bỏ hoàn toàn khối soạn bài kiểu Facebook (`TYPE_CREATE_POST`, "Bạn đang nghĩ gì?") khỏi danh sách hiển thị trên Home Feed.
+- Vị trí số 0 trên Feed là Story Tray (dải tin chuẩn Instagram).
+- Vị trí từ số 1 trở đi là các thẻ bài viết.
+- Nút tạo bài viết (+) đã được bố trí ở Top Bar (appBarLayout) trong MainActivity và hoạt động trơn tru.
+- Header offset trong FeedAdapter được cập nhật thành `showFeedHeader ? 1 : 0`, bảo toàn tính tương thích khi RecyclerView chèn, xóa hoặc cuộn tới bài viết.
+
+4. Xử lý che nội dung / Inset & Padding:
+- Ẩn nút tròn `fabChat` nổi trên feed (vốn che mất các nút tương tác cuối bài viết). Tin nhắn đã có tab riêng ở Bottom Nav và icon ở Top Bar.
+- Thêm `clipToPadding="false"` và `paddingBottom="72dp"` - `80dp"` trên tất cả các danh sách (Feed, Search explore grid, Inbox recycler view, Profile nested scroll view).
+- Đảm bảo khi cuộn đến cuối cùng, mọi nút like, bình luận, chia sẻ và caption bài viết đều nằm hoàn toàn phía trên thanh điều hướng Bottom Navigation.
+
+III. KẾT QUẢ XÁC MINH
+- Kiểm tra mã hóa toàn bộ source code: 0 lỗi mojibake.
+- Unit Test (`.\gradlew.bat testDebugUnitTest`): BUILD SUCCESSFUL (14/14 tests pass).
+- Debug APK Build (`.\gradlew.bat assembleDebug`): BUILD SUCCESSFUL (36 actionable tasks executed).
+

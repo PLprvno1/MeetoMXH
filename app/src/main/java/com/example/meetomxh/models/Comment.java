@@ -1,15 +1,21 @@
 package com.example.meetomxh.models;
 
+import org.json.JSONArray;
+
 public class Comment {
     public long version=1;
-    public String parentId,state;
+    public String parentId,state,serverCreatedAt;
     private String commentId;
     private String postId;
     private String authorUid;
     private String authorName;
     private String authorAvatar;
+    private String authorAvatarPreset = "neutral";
     private String content;
     private long createdAt;
+    public int reactionsCount;
+    public String myReaction;
+    public JSONArray mentions=new JSONArray();
 
     public Comment() {
     }
@@ -62,6 +68,12 @@ public class Comment {
 
     public void setAuthorAvatar(String authorAvatar) {
         this.authorAvatar = authorAvatar;
+    }
+
+    public String getAuthorAvatarPreset() { return authorAvatarPreset; }
+
+    public void setAuthorAvatarPreset(String value) {
+        authorAvatarPreset = "male".equals(value) || "female".equals(value) ? value : "neutral";
     }
 
     public String getContent() {

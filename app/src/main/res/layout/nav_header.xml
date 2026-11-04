@@ -19,7 +19,7 @@
         android:layout_height="60dp"
         android:contentDescription="@null"
         android:scaleType="centerCrop"
-        android:src="@drawable/ic_home"
+        android:src="@drawable/avatar_neutral"
         app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full" />
 
     <TextView

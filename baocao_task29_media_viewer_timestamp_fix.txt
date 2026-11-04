@@ -1,0 +1,24 @@
+﻿MEETO Task 29 — Media viewer, video exit, post timestamps
+
+ROOT CAUSE
+- FeedAdapter's shared GestureDetector only handled onSingleTapConfirmed/onDoubleTap. SimpleOnGestureListener.onDown defaults to false; the non-clickable post ImageView therefore did not claim ACTION_DOWN and could lose the rest of the tap sequence. This prevented reliable image-viewer navigation.
+- Feed video taps went through ChatImageViewerActivity as a media-type router. That activity remained in the back stack, so closing VideoPlayerActivity could reveal its black viewer surface.
+- Dto.post assigned every server post the literal “Vừa cập nhật”, irrespective of created_at.
+
+CHANGES
+- FeedAdapter: consume onDown so photo single/double taps complete; launch video posts directly in VideoPlayerActivity.
+- ChatImageViewerActivity: after discovering a video, launch the player and finish the routing activity. Keep authenticated asset:// loading, fit-to-screen behavior owned by ZoomableImageView, and loading/error/retry states.
+- Added PostTimestampFormatter: parses existing ServerTime ISO-8601 UTC/offset values; formats local relative time, calendar date for >=7 days, explicit local date/time for future timestamps, and “Không rõ thời gian” for invalid/missing values.
+- Applied the formatter to Dto.post, Home/Profile/Group/Reels shared FeedAdapter rendering, legacy PostAdapter, Advanced Search, and notification timestamps. Memories' explicit years-ago label remains intact.
+- Added PostTimestampFormatterTest covering recent, minute/hour/day, >=7 day, offset, future, null and invalid values.
+
+CHECK MATRIX
+- Build/unit tests: PASS — :app:testDebugUnitTest and :app:assembleDebug.
+- Emulator Feed render and old-post timestamp: PASS — Feed appeared with media and an old post showed “1 ngày trước”.
+- Video close/navigation: PASS — player X returned to the existing Feed activity; Feed remained visible. Player release remains in onStop.
+- Feed image thumbnail: PASS — observed rendering on emulator.
+- Fullscreen image tap/viewer: PARTIAL — the post tap was not reliably reproducible through emulator input after reinstall; no visual PASS claimed. Static path uses authorized asset:// loader and retains loading/error/retry handling.
+- Cloud/backend changes: NO.
+
+LIMITATIONS
+- No Cloud/E2E test. Emulator verification used the currently available signed-in session/data. Fullscreen image was not visually confirmed after the final rebuild.

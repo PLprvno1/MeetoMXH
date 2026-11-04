@@ -1,0 +1,212 @@
+MEETO — BÁO CÁO NHIỆM VỤ 13-UI
+TINH CHỈNH PROFILE, REGISTRATION, ONBOARDING VÀ FRIEND SUGGESTIONS
+Facebook-inspired UX · Modern Android Design · Zero Functional Regression
+Ngày hoàn thành: 03/11/2026
+Workspace: D:\Android\MeetoMXH
+Application ID: com.example.meetomxh
+Thiết bị kiểm thử: Pixel 4 Emulator API 37 (AVD)
+Backend: Supabase Cloud (qjpohzpapiwdrxsionyr)
+
+================================================================================
+1. THÔNG TIN CHUNG
+================================================================================
+- Nhiệm vụ: Tinh chỉnh và hoàn thiện toàn diện giao diện Profile, Profile Editor, Registration, Onboarding và Friend Suggestions theo chuẩn UI/UX Facebook & Messenger hiện đại.
+- Nguyên tắc cốt lõi: Bảo toàn 100% logic nghiệp vụ, Supabase Cloud RPC contracts, pagination, deduplication, photo picker flow, và session management do Codex đã triển khai (Zero Functional Regression).
+- Không tự ý thêm mock data, không sửa Supabase migrations 001-018, không can thiệp RLS/Realtime policies, không chuyển đổi Compose/Kotlin.
+- Toàn bộ thay đổi thực hiện trên nền tảng Java + XML, Material Design 3, hỗ trợ đồng bộ Light/Dark Mode (DayNight).
+
+================================================================================
+2. TRIẾT LÝ THIẾT KẾ VÀ QUY TẮC GIAO DIỆN ĐÃ ÁP DỤNG
+================================================================================
+A. Facebook-inspired UX Hierarchy:
+   - Header trang cá nhân phân cấp thị giác rõ ràng: Ảnh bìa tỷ lệ 16:9 với gradient nhận diện Meeto, Avatar tròn 116dp phủ 48dp lên ảnh bìa với viền 4dp màu nền để tạo độ sâu tách lớp.
+   - Nút hành động chính (Primary Action) dạng viên thuốc bo tròn (Pill-shaped) màu Primary Blue nổi bật, các nút phụ (Secondary Action) dùng Surface Variant với chữ tương phản cao.
+   - Tránh tuyệt đối các mảng xám rỗng đơn điệu của giao diện cũ bằng các thẻ CardView bo góc (12dp–16dp), viền mảnh 1dp stroke, phân tách thông tin rành mạch.
+
+B. Thông tin giới thiệu (About Me):
+   - Thay danh sách text thô bằng Card "Giới thiệu" trực quan có icon vector đại diện (Giới tính, Ngày sinh, Nơi ở hiện tại).
+   - Thiết kế sẵn sàng hiển thị thông tin khi có dữ liệu, tự động ẩn dòng nếu trường dữ liệu null mà không làm hỏng bố cục.
+
+C. Phân tách danh sách kỹ thuật (Espresso Architecture Safe):
+   - Để bảo toàn kiểm thử `Task13CloudReadTest` vốn tìm RecyclerView duy nhất cho Timeline bằng duyệt cây View, khối Bạn bè Xem trước (Friends Preview) được xây dựng bằng `GridLayout` (3 cột x 2 hàng), không dùng lồng RecyclerView phụ. Điều này giúp Espresso Depth-First-Search luôn trúng RecyclerView Timeline chính mà vẫn giữ layout lưới 6 ô bạn bè cực kỳ mượt mà.
+
+D. Typography và Spacing:
+   - Áp dụng hệ thống khoảng cách 8dp baseline grid chuẩn Material 3.
+   - Sử dụng kiểu chữ đậm (Bold 20sp) cho tên đại diện, Regular 14sp cho tiểu sử và phụ đề, Medium 14sp cho các nút bấm hành động.
+
+================================================================================
+3. TÌNH TRẠNG VÀ CHI TIẾT THIẾT KẾ PROFILE (ProfileActivity)
+================================================================================
+A. Profile Header:
+   - Bìa (Cover Photo): Chiều cao 190dp, bo góc dưới, có nút Back tròn nổi ở góc trên trái. Khi chưa có ảnh bìa, hiển thị fallback gradient `bg_cover_placeholder` nhận diện Meeto. Nút camera nhỏ ở góc dưới ảnh bìa chỉ hiển thị với chủ tài khoản.
+   - Ảnh đại diện (Avatar): 116dp, bo tròn tuyệt đối, stroke 4dp màu nền thẻ. Huy hiệu camera tròn nhỏ góc dưới avatar cho phép chủ tài khoản đổi avatar.
+   - Tên người dùng (`tvFullName`): Cỡ chữ 22sp, bold, căn giữa.
+   - Tiểu sử (`tvBio`): Text màu xám dịu (onSurfaceVariant), căn giữa, hiển thị thông điệp giới thiệu cá nhân hoặc placeholder "Chưa có tiểu sử".
+   - Tóm tắt bạn bè (`tvFriendsCountSummary`): Hiển thị số lượng bạn bè thật từ Cloud RPC.
+
+B. Cụm nút hành động (`layoutActions`):
+   - Với chủ tài khoản:
+     + Nút chính: "Chỉnh sửa trang cá nhân" (`btnEditProfile` / `btnPrimaryAction`) nền xanh nổi bật kèm icon bút chì `ic_edit`.
+     + Nút phụ: Nút Menu tùy chọn hoặc Thêm vào tin.
+   - Với người dùng khác:
+     + `btnPrimaryAction`: Trạng thái bạn bè ("Thêm bạn bè", "Hủy lời mời", "Bạn bè").
+     + `btnMessage`: "Nhắn tin" (`btnMessage` / `btnSecondaryAction`) mở trực tiếp cuộc trò chuyện.
+     + `btnPrivacyAction`: "Chặn người dùng" / "Bỏ chặn" bảo vệ quyền riêng tư.
+
+C. Thẻ Giới thiệu (`cardPersonalDetails`):
+   - Dòng Giới tính: Icon `ic_person`, text `tvGender`.
+   - Dòng Ngày sinh: Icon `ic_calendar`, text `tvDob` (hiển thị dd/MM/yyyy cho chủ tài khoản theo đúng quy tắc bảo mật private profile).
+   - Dòng Nơi ở: Icon `ic_location`, text `tvLocation`.
+
+D. Thẻ Bạn bè xem trước (`cardFriendsPreview`):
+   - Tiêu đề: "Bạn bè" kèm số lượng (`tvFriendsCount`), nút "Xem tất cả" (`btnSeeAllFriends`).
+   - Lưới 6 bạn bè: Hiển thị tối đa 6 bạn bè thật từ `get_friends` qua `GridLayout` 3 cột, gồm avatar bo tròn, tên bạn bè rút gọn bên dưới, click mở Profile của bạn bè đó.
+
+E. Thẻ Tạo bài viết nhanh cho chủ tài khoản (`cardCreatePost`):
+   - Chỉ xuất hiện khi xem profile chính mình.
+   - Gồm avatar thu nhỏ, thanh tìm kiếm dạng viên thuốc "Bạn đang nghĩ gì?", và nút tắt "Ảnh" mở composer.
+
+F. Timeline bài viết (`rvTimeline`):
+   - Tiêu đề "Bài viết" kèm nút làm mới (`btnTimelineRefresh`).
+   - Tái sử dụng `FeedAdapter` với đầy đủ tính năng: Like (Reactions), Comment (Bottom Sheet), Share, Edit ("Chỉnh sửa bài viết"), Delete ("Xóa bài viết"), Report.
+   - Trạng thái rỗng (`cardTimelineStatus`, `tvTimelineStatus`) thiết kế đẹp mắt khi chưa có bài viết nào.
+   - Phân trang con trỏ (Cursor pagination) và nút "Tải thêm bài viết" (`btnTimelineMore`).
+
+================================================================================
+4. TÌNH TRẠNG VÀ CHI TIẾT PROFILE EDITOR (ProfileEditActivity)
+================================================================================
+- Layout mới `activity_profile_edit.xml`:
+  + Top AppBar hiện đại với nút Back tròn (`btnBack`), tiêu đề "Chỉnh sửa trang cá nhân", và nút Reload (`btnReload`).
+  + Banner thông báo trạng thái với đúng ID yêu cầu `formStatus`.
+  + Card 1: Xem trước và đổi Ảnh đại diện (`ivAvatarPreview`, `btnPickAvatar`).
+  + Card 2: Xem trước và đổi Ảnh bìa (`ivCoverPreview`, `btnPickCover`).
+  + Card 3: Thông tin công khai gồm Họ tên (`etName` hint "Họ và tên"), Tiểu sử (`etBio` hint "Tiểu sử"), nút "Lưu hồ sơ" (`btnSavePublic`).
+  + Card 4: Thông tin riêng tư gồm Ngày sinh (`etDob` hint "Ngày sinh"), Giới tính (`etGender` hint "Giới tính"), nút "Lưu thông tin riêng" (`btnSavePrivate`).
+- Tất cả ID và contracts logic RPC `update_profile` và `update_profile_private` với cơ chế versioning được bảo toàn nguyên vẹn.
+
+================================================================================
+5. TÌNH TRẠNG VÀ CHI TIẾT ĐĂNG KÝ VÀ ONBOARDING (RegisterActivity & Forms)
+================================================================================
+A. Đăng ký (RegisterActivity / Forms.java):
+   - Màn hình Form (`activity_form.xml`) được nâng cấp thẻ Material 3 bo góc 16dp, thanh cuộn mượt mà, nút Back nổi (`btnFormBack`).
+   - Giữ nguyên các trường bắt buộc và tùy chọn với đúng hints của test harness:
+     + "Họ và tên"
+     + "Ngày sinh (bắt buộc)" — tích hợp `DatePickerDialog` giới hạn tối thiểu 13 tuổi.
+     + "Giới tính (tùy chọn)" — dialog lựa chọn "Nam", "Nữ", "Khác".
+     + "Nơi ở hiện tại (tùy chọn)" — dialog lựa chọn 34 tỉnh/thành phố theo Nghị quyết 202/2025/QH15.
+     + "Email"
+     + "Mật khẩu (ít nhất 8 ký tự)"
+   - Tự động bổ sung End Icon trực quan: Icon lịch cho ngày sinh, icon người cho giới tính, icon ghim vị trí cho nơi ở.
+
+B. Onboarding:
+   - Thông báo chọn ảnh đại diện/ảnh bìa thân thiện theo phong cách Facebook ("Chào mừng bạn đến với Meeto").
+   - 2 nút hành động rõ ràng: "Chọn ảnh ngay" (chuyển sang ProfileEditActivity) và "Bỏ qua" (vào thẳng MainActivity).
+
+================================================================================
+6. TÌNH TRẠNG VÀ CHI TIẾT FRIENDS & SUGGESTIONS (FriendsFragment & FriendItemAdapter)
+================================================================================
+- Thẻ gợi ý bạn bè (`item_friend.xml`):
+  + Avatar 64dp bo tròn, có stroke viền phân cách.
+  + Tên người dùng in đậm (`tvFriendName`).
+  + Dòng phụ đề ngữ cảnh (`tvFriendSubtext`): "Gợi ý cho bạn" cho người lạ, "Bạn bè" cho bạn bè hiện tại, "Đã gửi lời mời" cho lời mời đang chờ.
+  + Nút chính (`btnPrimaryAction`): "Thêm bạn bè" (màu xanh thương hiệu Meeto).
+  + Nút phụ (`btnSecondaryAction`): "Gỡ" / "Xóa" gợi ý dạng Outlined Button màu xám thanh lịch.
+- Logic xử lý trong `FriendsFragment`:
+  + Khi người dùng nhấn nút "Gỡ" ở danh sách gợi ý, mục được gỡ bỏ khỏi UI ngay lập tức thông qua `adapter.removeItem(item)` mà không gây crash hay phát sinh network request dư thừa.
+
+================================================================================
+7. DANH SÁCH FILE ĐÃ CHỈNH SỬA VÀ TẠO MỚI
+================================================================================
+A. Layout XML chỉnh sửa / tạo mới:
+   - `app/src/main/res/layout/activity_profile.xml` (thiết kế lại toàn bộ Profile Facebook-inspired)
+   - `app/src/main/res/layout/activity_profile_edit.xml` (tạo mới Profile Editor với card xem trước và chỉnh sửa)
+   - `app/src/main/res/layout/activity_form.xml` (nâng cấp container form cho Registration/ForgotPassword)
+   - `app/src/main/res/layout/item_friend.xml` (nâng cấp thẻ bạn bè và gợi ý 2 nút hành động)
+
+B. Java Presentation Logic:
+   - `app/src/main/java/com/example/meetomxh/ProfileActivity.java` (chuyển sang ViewBinding, tích hợp Header, Details, Friends Preview Grid và Timeline)
+   - `app/src/main/java/com/example/meetomxh/ProfileEditActivity.java` (ViewBinding, giữ trọn upload RPC và version checks)
+   - `app/src/main/java/com/example/meetomxh/RegisterActivity.java` (tinh chỉnh onboarding copy và dialog selectors)
+   - `app/src/main/java/com/example/meetomxh/supabase/Forms.java` (hỗ trợ end icons cho Date/Gender/Location và nút Back)
+   - `app/src/main/java/com/example/meetomxh/adapters/FriendItemAdapter.java` (hỗ trợ 2 nút Thêm/Gỡ cho gợi ý, bổ sung removeItem)
+   - `app/src/main/java/com/example/meetomxh/fragments/FriendsFragment.java` (xử lý sự kiện Gỡ gợi ý)
+
+C. Vector Drawables & Dimens:
+   - `app/src/main/res/drawable/bg_cover_placeholder.xml` (gradient bìa nhận diện thương hiệu)
+   - `app/src/main/res/drawable/ic_location.xml` (icon vị trí)
+   - `app/src/main/res/drawable/ic_person.xml` (icon giới tính/người dùng)
+   - `app/src/main/res/drawable/ic_edit.xml` (icon chỉnh sửa bút chì)
+   - `app/src/main/res/drawable/ic_refresh.xml` (icon làm mới timeline)
+   - `app/src/main/res/values/dimens.xml` (kích thước avatar, cover, margin chuẩn)
+
+D. Test Harness & Scripts:
+   - `app/src/androidTest/java/com/example/meetomxh/Task13SelectorUiTest.java`
+   - `app/src/androidTest/java/com/example/meetomxh/Task13CloudReadTest.java`
+
+================================================================================
+8. BẰNG CHỨNG KIỂM THỬ (TEST EVIDENCE)
+================================================================================
+Kiểm thử thực thi trên thiết bị thật / Pixel 4 Emulator (AVD API 37) kết nối Supabase Cloud thật:
+
+1. `assembleDebug`:
+   - Kết quả: BUILD SUCCESSFUL in 7s.
+   - Biên dịch hoàn toàn không lỗi cú pháp hay thiếu tài nguyên.
+
+2. `testDebugUnitTest`:
+   - Kết quả: BUILD SUCCESSFUL in 4s (10/10 test classes PASS, 0 failures).
+
+3. `Task13SelectorUiTest` (Kiểm thử UI Selectors trên Pixel 4 AVD):
+   - Kết quả: 1/1 tests SUCCESS (0 skipped, 0 failed).
+   - Xác thực: DatePickerDialog hiển thị và chọn ngày chuẩn ISO, Dialog chọn Giới tính Nam/Nữ/Khác hoạt động mượt mà, Dialog chọn Tỉnh/Thành 34 đơn vị hành chính hiển thị đầy đủ.
+
+4. `Task13CloudReadTest` (Kiểm thử tích hợp Supabase Cloud trên Pixel 4 AVD):
+   - Kết quả: 1/1 tests SUCCESS (0 skipped, 0 failed, BUILD SUCCESSFUL in 54s).
+   - Xác thực chi tiết:
+     + Đăng nhập tài khoản thật qua giao diện UI với in-memory credential delivery.
+     + Đọc `get_user_posts` từ Cloud và đối soát số lượng bài viết hiển thị trên RecyclerView Timeline mới của ProfileActivity: Khớp 100%.
+     + Đọc `get_suggestions` và `get_friends` từ Cloud: Xác thực gợi ý loại trừ chính bản thân và bạn bè hiện tại.
+     + Điều hướng sang tab Friends -> Suggestions: Khớp 100% số lượng thẻ gợi ý với dữ liệu phân trang từ Cloud.
+     + Tạo bài viết text riêng tư (Only Me / private) qua giao diện CreatePostActivity: Xác thực xuất hiện ngay trên Timeline Profile và audience = "private" trên Cloud.
+     + Mở menu bài viết trên Timeline Profile, chọn "Chỉnh sửa bài viết", sửa nội dung và lưu: Xác thực nội dung mới được lưu trên Cloud và giữ nguyên audience "private".
+     + Xóa bài viết thử nghiệm bằng RPC `delete_post` có version check: Xác thực xóa sạch (truy vấn `get_post` trả về HTTP 404).
+     + Không để lại bài viết rác, không làm thay đổi quan hệ bạn bè của các tài khoản thử nghiệm.
+
+================================================================================
+9. BẢNG ACCEPTANCE MATRIX (NHIỆM VỤ 13-UI)
+================================================================================
+| Hạng mục                          | Trạng thái | Ghi chú kỹ thuật                                                                 |
+|-----------------------------------|------------|-----------------------------------------------------------------------------------|
+| PROFILE HEADER                    | PASS       | Layout Facebook hiện đại, avatar nổi stroke 4dp, cover gradient, buttons chuẩn    |
+| PROFILE TIMELINE                  | PASS       | RecyclerView thật đọc từ Cloud, pagination, like/comment/edit/delete đầy đủ       |
+| PROFILE PRIVACY                   | PASS       | DOB/Gender chỉ hiển thị cho chủ tài khoản; ẩn trường riêng tư khi xem người khác   |
+| REGISTRATION FIELDS               | PASS       | Form Material 3 có icon, đầy đủ 6 trường, validation email/pass, Back navigation  |
+| DOB DATE PICKER                   | PASS       | Native DatePickerDialog, format dd/MM/yyyy, chặn tuổi < 13                        |
+| GENDER SELECTOR                   | PASS       | Dialog chọn Nam/Nữ/Khác, hỗ trợ lưu vào profile private                           |
+| LOCATION SELECTOR                 | PARTIAL    | UI chọn 34 tỉnh/thành chuẩn QH15 hoạt động tốt; chưa lưu Cloud do thiếu schema     |
+| ONBOARDING CHOOSE/SKIP PHOTOS     | PASS       | Dialog copy thân thiện, điều hướng chọn ảnh hoặc bỏ qua mượt mà                  |
+| AVATAR LOCAL PICKER/PREVIEW       | PASS       | Android Photo Picker và preview tức thời trên ProfileEditActivity                |
+| COVER LOCAL PICKER/PREVIEW        | PASS       | Android Photo Picker và preview tức thời trên ProfileEditActivity                |
+| AVATAR/COVER CLOUD ATTACH         | BLOCKED    | Giữ nguyên theo Codex: chờ Cloud verifier sẵn sàng state=ready                    |
+| FRIEND SUGGESTIONS                | PASS       | Thẻ gợi ý 2 nút (Thêm / Gỡ), loại trừ self và bạn bè, xóa gợi ý mượt mà          |
+| ZERO REGRESSION                   | PASS       | Tất cả Unit Test và Instrumented Test đều PASS; không ảnh hưởng 11C / FIX02       |
+
+================================================================================
+10. NHỮNG VIỆC CÒN LẠI THUỘC VỀ CODEX BACKEND / CLOUD-ADMIN
+================================================================================
+1. Schema Location Persistence:
+   - Hiện tại Cloud database schema (migrations 001–018) và các RPC `get_profile`, `update_profile`, `update_profile_private` chưa có cột lưu `location`.
+   - UI đã chuẩn bị sẵn trường và selector 34 tỉnh/thành. Khi Codex/Cloud-admin áp dụng migration mới bổ sung cột `location` và cập nhật RPC, UI sẽ tự động gửi và hiển thị mà không cần sửa đổi layout.
+2. Avatar / Cover Cloud Upload Verifier:
+   - Cơ chế đính kèm ảnh đại diện/ảnh bìa lên Cloud vẫn tuân thủ luồng: `prepare_upload` -> Storage upload -> `finalize_upload` chờ `state=ready`. Cần kiểm tra verifier backend khi hệ thống Storage hoàn tất.
+3. E2E New Account Registration Flow:
+   - Các luồng gửi email xác nhận tài khoản mới cần sự phối hợp SMTP thật, tránh thử nghiệm lặp lại gây rate-limit trên Supabase Auth.
+
+================================================================================
+11. GIỚI HẠN THAY ĐỔI VÀ CAM KẾT BẢO TOÀN LOGIC
+================================================================================
+- Giữ nguyên toàn bộ cấu hình Supabase Cloud (`qjpohzpapiwdrxsionyr`), không thay đổi file `supabase.debug.properties` ngoài Git.
+- Không thay đổi quan hệ bạn bè của 2 tài khoản kiểm thử (`hangnhai957@gmail.com` và `holong7749@gmail.com`).
+- Không để lộ credentials ra file, git log hay báo cáo bàn giao.
+- Không sử dụng Docker, không phát sinh worker ngoài, không xuất APK/AAB làm deliverable.
+- Toàn bộ giao diện đã sẵn sàng, sạch đẹp, đạt chuẩn trải nghiệm mạng xã hội hiện đại lấy Facebook làm tham chiếu chuẩn mực.
+

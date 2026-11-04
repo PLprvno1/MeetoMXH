@@ -1,0 +1,79 @@
+MEETO — BÁO CÁO TASK 18: COMMUNITY GROUPS
+Ngày: 03/11/2026
+Workspace: D:\Android\MeetoMXH
+
+TÓM TẮT
+Đã bổ sung migration 20261103000500_community_groups.sql và kết nối các luồng Android cơ bản tới Supabase RPC: tìm nhóm có cursor, tạo nhóm, xem chi tiết, tham gia/rời nhóm. Đây là trạng thái code trong workspace; chưa deploy Cloud nên chưa thể xác nhận hành vi backend thực tế hoặc RLS trên dự án qjpohzpapiwdrxsionyr.
+
+1. Schema Groups hiện có
+Migration 001 đã có public.groups, group_members, group_join_requests; posts đã có group_id và audience='group'; post_media, media_assets và các helper can_read_group/can_read_post cũng đã tồn tại. Groups migration 023 (timestamp 20261103000500) mở rộng privacy thành public/private/hidden, thêm listed, post_approval, rules và member_count; thêm group_invites. Không tạo lại các bảng nền.
+
+2. Bảng/RPC tái sử dụng và bổ sung
+Tái sử dụng groups, group_members, group_join_requests, posts, post_media, media_assets, profiles, friendships, account_status. RPC mới: create_community_group, update_community_group, search_community_groups, get_community_group, join_community_group, leave_community_group, list_community_members, resolve_group_request, invite_to_community_group, resolve_group_invite, set_community_member_role, create_community_post, review_community_post, get_community_posts. Các hàm gọi nghiệp vụ dùng b_actor/b_active và SECURITY DEFINER search_path rỗng. Không có phụ thuộc migration Notifications 022.
+
+3. Android UI
+GroupsHomeActivity gọi search RPC cho tab Nhóm của bạn/Khám phá, lọc tên và mở Group Detail; CreateCommunityGroupActivity gọi create RPC với idempotency key; CommunityGroupDetailActivity tải metadata và gọi join/leave RPC. Không còn nút mở màn hình chi tiết demo với dữ liệu giả. Danh sách hiện tại chưa có điều khiển tải trang tiếp theo; UI loading/retry còn đơn giản.
+
+4. Discovery/search
+Backend giới hạn 20 mục/trang, cursor theo created_at/id, lọc tên trên server. Hidden không xuất hiện trong khám phá; private chỉ trả metadata khi listed. Android hiện tải trang đầu.
+
+5. Membership/invites
+Đã có join public trực tiếp; private tạo request; hidden cần lời mời; leave; review request; gửi và nhận lời mời qua RPC. Android mới tích hợp join/leave. Chưa có Android UI cho inbox lời mời, yêu cầu chờ, approve/reject hoặc invite bạn bè.
+
+6. Role permissions
+Migration hỗ trợ owner/admin/moderator/member; creator được gán owner. RPC đổi role giới hạn server-side, không cho thay owner bằng RPC này; owner cuối cùng không thể rời nhóm. Chưa có chuyển quyền sở hữu, xóa thành viên, ban/unban, audit log hoặc UI dashboard.
+
+7. Group posts/media
+Posts có group_id được tái sử dụng; có RPC tạo bài với asset post đã ready và lấy danh sách bài theo cursor. React/comment tiếp tục dựa trên pipeline posts hiện có. Chưa tích hợp Android Group Feed, Create Post, reaction/comment trong group, xóa/sửa bài hoặc report. Chưa chạy luồng Cloud để chứng minh media policy.
+
+8. Post approval
+Có cờ post_approval, state pending_review/rejected và RPC tạo/duyệt/từ chối/ẩn bài. Quyền moderator/admin kiểm tra trên server. Chưa có hàng chờ moderation và UI tác giả xem trạng thái đang chờ.
+
+9. Moderation
+Mới có RPC duyệt bài và yêu cầu gia nhập. Chưa có ban list, remove/ban member, report queue, audit log và các màn hình quản trị.
+
+10. Group cover uploads
+Chưa triển khai. Direct upload hiện hỗ trợ avatar/cover/post ở profile-media/social-media; group-media chưa được cấu hình private bucket/policy/finalize contract. Không tạo bucket public hoặc giả lập upload.
+
+11. RLS/security
+Giữ RLS hiện có và thu hẹp đọc nhóm thông qua can_read_group: public/private được discover khi listed; hidden chỉ đọc khi đã là member. Bài nhóm vẫn cần can_read_group; pending chỉ tác giả hoặc manager đọc được. group_invites bật RLS và không cấp quyền bảng trực tiếp. Static review chưa thay thế kiểm thử bằng hai tài khoản trên Cloud; cần rà soát SQL lần cuối và chạy adversarial probes trước deploy.
+
+12. Migration và Cloud
+Migration mới: 20261103000500_community_groups.sql. Không sửa migration cũ; không chạy lại 019/020; không reset DB. Cloud migration deployed: NO / chưa xác minh. Không có thao tác deploy Cloud trong lượt này.
+
+13. Emulator E2E
+BLOCKED/NOT RUN. Chưa cài và chạy trên Pixel 4 API 37; cần Cloud có migration và hai tài khoản A/B để kiểm chứng public/private/hidden, join approval, bài nhóm và quyền truy cập chéo.
+
+14. Regression
+Không chạy full regression. Android assembleDebug thành công; chưa kiểm thử Login/Profile, Feed, Friends, Messenger, Direct Upload, Stories, Saved/Follow, Notifications trên emulator.
+
+15. Blockers
+- Chưa deploy/kiểm chứng migration trên Supabase Cloud; migration 021/022 không được giả định đã deploy.
+- Không có E2E bằng tài khoản A/B trong lượt này.
+- Còn thiếu UI/backend operations cho member remove/ban, transfer ownership, danh sách requests/invites, report và moderation.
+- Group cover upload chưa có private bucket/policy/finalization dành riêng.
+- Chưa có Group Feed Android tích hợp PostAdapter và Create Post.
+
+16. Màn hình cần polish sau backend PASS
+Groups discovery/list và pagination; Group Detail; Group Feed/Create Post; Members/Invitations/Join Requests; Admin Dashboard/Pending Posts; Settings/Rules; report/ban/member management; cover picker/upload states.
+
+ACCEPTANCE MATRIX
+GROUP DISCOVERY: PARTIAL
+CREATE GROUP: PARTIAL
+GROUP DETAIL: PARTIAL
+JOIN/LEAVE: PARTIAL
+JOIN REQUESTS: PARTIAL
+GROUP INVITES: PARTIAL
+MEMBERS LIST: PARTIAL
+ROLE MANAGEMENT: PARTIAL
+GROUP POSTS: PARTIAL
+GROUP IMAGE/VIDEO: PARTIAL
+POST APPROVAL: PARTIAL
+GROUP MODERATION: PARTIAL
+GROUP COVER: FAIL (chưa triển khai)
+GROUP PRIVACY/RLS: PARTIAL (static review, Cloud chưa xác minh)
+ANDROID BUILD: PASS
+CLOUD MIGRATION DEPLOYED: NO
+EMULATOR E2E: BLOCKED / NOT RUN
+CRITICAL REGRESSIONS: 0 được xác nhận; regression suite chưa chạy
+READY FOR TASK 19: NO

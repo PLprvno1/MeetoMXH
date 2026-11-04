@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="?android:attr/selectableItemBackground"
+    android:clickable="true"
+    android:focusable="true"
+    android:paddingHorizontal="16dp"
+    android:paddingVertical="10dp">
+
+    <!-- 44dp Circular Avatar -->
+    <com.google.android.material.imageview.ShapeableImageView
+        android:id="@+id/ivNotificationAvatar"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:contentDescription="Avatar"
+        android:scaleType="centerCrop"
+        android:src="@drawable/avatar_neutral"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full" />
+
+    <!-- Notification Content Text -->
+    <TextView
+        android:id="@+id/tvNotificationText"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="14dp"
+        android:layout_marginEnd="10dp"
+        android:lineSpacingExtra="2dp"
+        android:textColor="@color/text_primary"
+        android:textSize="13sp"
+        app:layout_constraintEnd_toStartOf="@id/ivNotificationBadge"
+        app:layout_constraintStart_toEndOf="@id/ivNotificationAvatar"
+        app:layout_constraintTop_toTopOf="@id/ivNotificationAvatar"
+        tools:text="holong đã thích bài viết của bạn." />
+
+    <!-- Timestamp -->
+    <TextView
+        android:id="@+id/tvNotificationTime"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="14dp"
+        android:layout_marginTop="2dp"
+        android:textColor="@color/text_secondary"
+        android:textSize="11sp"
+        app:layout_constraintEnd_toStartOf="@id/ivNotificationBadge"
+        app:layout_constraintStart_toEndOf="@id/ivNotificationAvatar"
+        app:layout_constraintTop_toBottomOf="@id/tvNotificationText"
+        tools:text="15 phút trước" />
+
+    <!-- Vibrant Unread Indicator Dot -->
+    <View
+        android:id="@+id/ivNotificationBadge"
+        android:layout_width="8dp"
+        android:layout_height="8dp"
+        android:background="@drawable/bg_unread_dot"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

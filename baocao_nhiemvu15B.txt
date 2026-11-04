@@ -1,0 +1,60 @@
+# Meeto — Task 15B
+
+## Kết quả review migration 020
+
+Migration 020 được rà soát đối chiếu với schema và function definitions trong migrations 001–019 của workspace. Những contract đang có được giữ lại; các thay đổi là additive: avatar preset trong JSON, MIME trong post media, reply-to-story fields và Stories RPC. `private.can_read_story` tiếp tục là nguồn quyết định quyền xem: owner, public, bạn bè khi chưa block; private chỉ owner; story hết hạn không đọc được. `story_views` tiếp tục có RLS và quyền xem của owner/viewer.
+
+Các lỗi/cạnh rủi ro sửa trong candidate chưa deploy:
+
+- Cleanup trước đó bỏ qua attachment checks với mọi asset `pending_delete`. Bản hiện tại kiểm tra post còn published, avatar/cover còn gắn với profile và story còn active/chưa hết hạn; các predicate cũng được áp dụng trước `LIMIT` để tránh cleanup xóa media còn dùng hoặc làm orphan bị starvation.
+- `get_stories` lấy tối đa N tin mới nhất rồi trả lại theo thứ tự thời gian tăng dần để viewer chạy đúng trình tự.
+- Preconditions kiểm tra các bảng, RPC helpers, RLS, Stories read policies, bucket social-media private/50 MiB/MIME phù hợp và Storage policies hiện có. Candidate không tạo, sửa, xóa policy hay bucket. Nó fail-closed nếu có permissive INSERT/SELECT policy bổ sung cho `authenticated` ngoài các policy Meeto đã biết.
+- Grant cho `private.finalize_story_upload` bị thu hồi; helper chỉ được gọi bên trong `private.finalize_upload` SECURITY DEFINER. Các private helpers của public SECURITY INVOKER wrappers vẫn được cấp EXECUTE cho `authenticated`.
+
+Schema nền có `stories` với audience/state và constraint `expires_at = created_at + 24 hours`; `story_views` có khóa story/viewer; `messages.reply_story_id` đã FK tới stories; `media_assets.purpose` đã cho phép `story` và yêu cầu `social-media`. Storage INSERT policy nền áp dụng cho profile/social, kiểm tra owner và `private.can_upload_object`, policy restrictive chỉ cho standard `object.upload`; object read dùng `private.can_read_object`. Object path do intent cấp có dạng `<owner>/<asset-id>/original.<ext>` và bị giới hạn bởi dòng `media_assets` pending. Các kết luận này đối chiếu local migrations; Cloud definitions không đọc được trong phiên này.
+
+`self_profile`, `get_profile`, `search_profiles`, `list_relations`, `post_json`, `finalize_upload`, `c_message` và `schedule_media_cleanup` được so với định nghĩa nền. Các field hiện hữu được giữ; phần mới thêm có điều kiện privacy/RLS. Preset không suy ra từ gender. Bucket vẫn private.
+
+## Checksum và Cloud migration state
+
+- Migration 019 local SHA-256: `8408DD8E4F28C75F107C66EBF3B7D865F40F36950BA3CFF66B81E2DE75856E80` — file không bị sửa trong Task 15B; hash khớp manifest.
+- Migration 020 local SHA-256: `7897ADB78672A791623242D2A84738C935ABF588B1E00AEA4127600A8AA0A586` — manifest chỉ được cập nhật entry 020.
+- 019 được chủ dự án xác nhận đã chạy thành công trong SQL Editor; trạng thái migration ledger Cloud **UNKNOWN / chưa truy vấn**.
+- 020 chưa deploy theo thông tin chủ dự án; trạng thái ledger Cloud **UNKNOWN / chưa truy vấn**.
+- `supabase projects list` thất bại vì không có `SUPABASE_ACCESS_TOKEN`; `supabase migration list --remote=qjpohzpapiwdrxsionyr` nhận diện đúng project nhưng không kết nối được do `DbConfigIpv6Error` (mạng hiện tại không hỗ trợ IPv6; CLI cần pooler URL IPv4 và DB password). Vì vậy ledger/RPC vẫn chưa truy vấn được. Không chạy lại 019, không chạy 020, không ghi ledger.
+- PostgreSQL server/parser không có trong môi trường. Candidate được rà soát tĩnh và delimiter/manifest được kiểm tra, nhưng SQL chưa được parse hoặc thực thi trên Cloud.
+
+## Acceptance matrix
+
+| Kiểm tra | Trạng thái | Ghi chú |
+|---|---|---|
+| Review contract các hàm `CREATE OR REPLACE` | PARTIAL | Đối chiếu với local migrations; Cloud body chưa xác minh trực tiếp |
+| Stories schema/constraints | PARTIAL | Tương thích với schema local 001; Cloud schema chưa truy vấn |
+| Purpose `story`, path và Storage policies | PARTIAL | Local policy path hợp lệ; runtime preconditions kiểm tra Cloud khi chạy 020 |
+| Public/friends/private, block, expiry, views | PARTIAL | Logic `can_read_story` local được giữ; chưa E2E Cloud |
+| Reply-to-story và Messenger | PARTIAL | Candidate thêm liên kết message; chưa gửi nhận trên Cloud |
+| Cleanup không xóa media đang dùng | PASS (review candidate) | Candidate kiểm tra active references trước khi retire |
+| EXECUTE/SECURITY DEFINER | PARTIAL | Đã rà soát theo wrapper grants; chưa đọc ACL Cloud |
+| Checksum 019 | PASS (local) | Khớp manifest, không đổi file |
+| Checksum/manifest 020 | PASS (local) | Hash khớp, JSON manifest hợp lệ |
+| Migration 019 trong Cloud ledger | BLOCKED | CLI không kết nối được remote DB: IPv6 bị chặn, chưa có pooler URL/password |
+| Migration 020 deployed | NO | Chưa triển khai |
+| Video thumbnail/playback/fullscreen/seek | BLOCKED | Chưa chạy với dữ liệu Cloud của A/B |
+| Image zoom/gallery | BLOCKED | Chưa chạy với dữ liệu Cloud của A/B |
+| Avatar thật/preset/privacy | BLOCKED | Migration 020 chưa deploy; chưa xác minh trên Cloud |
+| Story image/video create | BLOCKED | Migration 020 chưa deploy |
+| Story visibility/views/replies/24h/delete | BLOCKED | Migration 020 chưa deploy; chưa E2E |
+| Regression Feed/Profile/Friends/Messenger/Direct Upload | BLOCKED | Chưa chạy Cloud regression suite |
+| Android build | PASS | `:app:assembleDebug` thành công ở Task 15B |
+| Emulator E2E | BLOCKED | Không có phiên người dùng sau cài bản debug; không có Cloud RPC Stories |
+| Credentials trong source/Git/report | PASS | Không ghi email/password/JWT/key vào file |
+| Local worker/Docker/APK deliverable | NO | Không dùng worker/Docker; không xuất APK/AAB làm deliverable |
+
+## Một quy trình triển khai cho operator
+
+1. Đăng nhập Supabase CLI với quyền quản trị project/database, rồi chạy `npx supabase migration list --remote=qjpohzpapiwdrxsionyr`. Nếu 019 chưa có ledger row, chỉ sau khi SQL 019 đã được xác nhận chạy thành công, đồng bộ bằng `npx supabase migration repair 20261103000100 --status applied --remote=qjpohzpapiwdrxsionyr`. Không chạy lại file SQL 019.
+2. Trong Dashboard chọn đúng project `qjpohzpapiwdrxsionyr` → **SQL Editor** → **New query**. Dán toàn bộ `supabase/migrations/20261103000200_stories_avatar_preset.sql` từ workspace và chạy **một lần**. Preconditions tự kiểm tra Cloud tables/functions, RLS/policies và bucket private; nếu bất kỳ điều kiện nào không đạt, query phải dừng. Không bật Public và không sửa/tắt RLS.
+3. Chỉ sau khi Dashboard báo toàn bộ query thành công, chạy `npx supabase migration repair 20261103000200 --status applied --remote=qjpohzpapiwdrxsionyr`; sau đó dùng `migration list` để đối chiếu local/remote history. Nếu kết quả query không chắc chắn, kiểm tra schema/RPC trước khi chạy lại; không re-run mù vì migration có DDL không idempotent.
+4. Trên emulator đăng nhập A/B, chạy checklist thật: post video thumbnail/playback controls; photo viewer zoom/gallery; avatar/preset; A tạo Story ảnh + video; B xem theo public/friends/private; kiểm tra block; lượt xem; reply xuất hiện ở Messenger; xóa Story và quyền đọc; xác minh `expires_at` do server đặt là `created_at + 24h`. Chạy regression Feed/Profile/Friends/Messenger và ảnh/video Direct Upload cũ. Chỉ ghi PASS cho các mục đã thực sự chạy.
+
+**Trạng thái bàn giao:** candidate 020 đã review và sửa nhưng chưa deploy. Stories chưa hoàn thiện Cloud E2E; không đánh dấu PASS dựa trên build.

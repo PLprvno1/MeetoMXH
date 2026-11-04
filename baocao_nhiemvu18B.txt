@@ -1,0 +1,64 @@
+MEETO — BÁO CÁO TASK 18B: COMMUNITY GROUPS END-TO-END
+Ngày: 03/11/2026
+Workspace: D:\Android\MeetoMXH
+
+TÓM TẮT
+Đã nối Group Feed với FeedAdapter, composer bài viết hiện có, pipeline upload post media, reaction, comment và post detail. Bổ sung màn hình thành viên, lời mời, yêu cầu duyệt, admin dashboard, báo cáo, cài đặt và group cover upload. Thêm migration forward 024 vì trạng thái deploy 023 không xác minh được; không sửa candidate 023. Source đã build nhưng Cloud/E2E chưa được xác minh.
+
+1. Android đã hoàn thiện
+- Group Detail tải metadata/cover, hiển thị feed, tạo post text/ảnh/video, tải trang tiếp, pull-to-refresh, reaction, comment, xem post detail và gửi report.
+- Tác giả thấy nhãn chờ duyệt; người thường chỉ lấy published và bài pending của chính họ.
+- Members screen có profile, role actions, remove/ban, chuyển ownership; admin dashboard có requests, pending posts, bans, reports và settings.
+- Invitations screen có inbox, accept/decline, mời bạn bè và hủy invite. Join request có hủy.
+- Create Post dùng composer hiện tại; direct upload có progress/retry/cancel.
+- Detail và discovery cards hiển thị group cover; owner/admin thay cover bằng private Storage upload.
+
+2. Backend/RPC
+Tái sử dụng RPC/bảng trong 023. Migration 024 thêm list/cancel requests và invites, remove/ban/unban, transfer owner, ban list, reports, group cover upload/finalize, delete post; siết idempotency/attachment checks; khóa transition post review; bổ sung audit triggers và settings validation.
+
+3. Migration
+File mới: `20261103000600_community_groups_completion.sql` (migration 024). Không sửa 023 vì ledger Cloud chưa xác minh. Migration 024 yêu cầu schema 001–023 và thông báo lỗi rõ nếu thiếu prerequisites. `migrations.sha256.json` đã cập nhật; script kiểm checksum xác nhận 24 migration.
+
+4. RLS/privacy review
+Migration 023 trước đó gộp discoverability private-listed với quyền đọc nội dung. Migration 024 tách `can_discover_group` khỏi `can_read_group`: private-listed group có thể trả metadata/cover nhưng private posts/media tiếp tục yêu cầu membership hiện hành. Hidden không xuất hiện discovery; post media dựa trên `can_read_post`. Ban/remove làm mất quyền nội dung ngay. Đây là review tĩnh; phải triển khai và kiểm tra trên Cloud trước khi coi quyền truy cập đã xác minh.
+
+5. Cover media
+Migration tạo/cấu hình bucket `group-media` là private, giới hạn ảnh PNG/JPEG/WebP và 10 MiB; Storage policy kiểm tra asset pending thuộc user; RPC prepare/finalize yêu cầu owner/admin và xác thực object metadata trước khi gắn cover. Không dùng public bucket hay Media Verifier.
+
+6. Cloud, Emulator và regression
+- Cloud deployment: NO / chưa xác minh. Không có Supabase CLI/DB credentials trong workspace.
+- Emulator E2E: BLOCKED / NOT RUN. Không có `adb` hoặc emulator được cấu hình.
+- Regression suite: NOT TESTED. Không chạy test tài khoản A/B hay các module cũ.
+- Android `:app:assembleDebug`: PASS.
+- Migration manifest: PASS, 24 checksum hợp lệ.
+
+7. Blockers / giới hạn còn lại
+- Cần apply migration 024 sau khi xác nhận Cloud ledger có đủ 001–023; không chạy lại 019/020 và không reset DB.
+- Cần E2E hai tài khoản cho private membership revocation, hidden discovery, post approval, reports, role hierarchy và cover upload.
+- Requests/invites hiện tải trang đầu trong Android; moderation/media cần kiểm chứng bằng Cloud thật.
+- Không xác nhận signed URL hoặc quy tắc Storage trên project Cloud.
+
+ACCEPTANCE MATRIX
+GROUP DISCOVERY: PARTIAL
+GROUP CREATE/DETAIL: PARTIAL
+GROUP FEED: PARTIAL
+GROUP TEXT POST: PARTIAL
+GROUP IMAGE/VIDEO: PARTIAL
+REACTION/COMMENT: PARTIAL
+JOIN/LEAVE: PARTIAL
+MEMBERSHIP REQUESTS: PARTIAL
+GROUP INVITES: PARTIAL
+MEMBER LIST: PARTIAL
+ROLE MANAGEMENT: PARTIAL
+OWNER TRANSFER: PARTIAL
+REMOVE/BAN/UNBAN: PARTIAL
+POST APPROVAL: PARTIAL
+REPORTS/MODERATION: PARTIAL
+GROUP COVER: PARTIAL
+GROUP SETTINGS: PARTIAL
+GROUP PRIVACY/RLS: PARTIAL (forward fix static-reviewed; Cloud not verified)
+ANDROID BUILD: PASS
+CLOUD DEPLOYED: NO
+EMULATOR E2E: BLOCKED
+CRITICAL REGRESSIONS: NOT TESTED
+READY FOR TASK 19: NO

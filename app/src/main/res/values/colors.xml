@@ -1,24 +1,92 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Base System Colors -->
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="transparent">#00000000</color>
 
-    <!-- Facebook Style Color Palette (Light Mode) -->
-    <color name="brand_blue">#1877F2</color>
-    <color name="app_bg">#F0F2F5</color>
+    <!-- Instagram Gradient & Signature Accent Tokens -->
+    <color name="ig_pink">#E1306C</color>
+    <color name="ig_purple">#833AB4</color>
+    <color name="ig_orange">#FBAA47</color>
+    <color name="ig_red">#FD1D1D</color>
+    <color name="ig_blue">#0095F6</color>
+    <color name="ig_story_start">#FBAA47</color>
+    <color name="ig_story_mid">#E1306C</color>
+    <color name="ig_story_end">#833AB4</color>
+
+    <!-- Primary Brand Palette (Instagram-inspired Light Mode) -->
+    <color name="brand_blue">#E1306C</color>
+    <color name="brand_blue_dark">#C13584</color>
+    <color name="brand_blue_light">#FCE4EC</color>
+    <color name="brand_blue_soft">#F8BBD0</color>
+
+    <!-- Semantic UI Tokens -->
+    <color name="primary">#E1306C</color>
+    <color name="on_primary">#FFFFFF</color>
+    <color name="primary_container">#FCE4EC</color>
+    <color name="on_primary_container">#880E4F</color>
+
+    <!-- Clean Instagram Light Backgrounds -->
+    <color name="app_bg">#FFFFFF</color>
     <color name="surface_bg">#FFFFFF</color>
-    <color name="text_primary">#050505</color>
-    <color name="text_secondary">#65676B</color>
-    <color name="divider_color">#CED0D4</color>
-    <color name="chat_bubble_mine">#1877F2</color>
-    <color name="chat_bubble_other">#FFFFFF</color>
-    <color name="chat_bubble_mine_text">#FFFFFFFF</color>
-    <color name="chat_bubble_mine_secondary">#DCEBFF</color>
+    <color name="surface_variant">#FAFAFA</color>
+    <color name="card_bg">#FFFFFF</color>
+
+    <!-- Instagram Typography -->
+    <color name="text_primary">#262626</color>
+    <color name="text_secondary">#737373</color>
+    <color name="text_tertiary">#8E8E8E</color>
+    <color name="text_hint">#C7C7C7</color>
+
+    <!-- Subtle Hairline Dividers & Outlines -->
+    <color name="divider_color">#EFEFEF</color>
+    <color name="divider_light">#F5F5F5</color>
+    <color name="outline_color">#DBDBDB</color>
+    <color name="divider">#EFEFEF</color>
+    <color name="outline">#DBDBDB</color>
+
+    <!-- Status Colors -->
+    <color name="status_success">#10D876</color>
+    <color name="status_success_container">#E8F5E9</color>
+    <color name="status_error">#ED4956</color>
+    <color name="status_error_container">#FEECEF</color>
+    <color name="status_warning">#FF9800</color>
+    <color name="status_warning_container">#FFF3E0</color>
+
+    <!-- Icon Tints -->
+    <color name="icon_primary">#262626</color>
+    <color name="icon_secondary">#737373</color>
+    <color name="icon_tertiary">#8E8E8E</color>
+    <color name="icon_button_bg">#FAFAFA</color>
+    <color name="icon_button_bg_pressed">#EFEFEF</color>
+
+    <!-- Instagram Direct Chat Colors -->
+    <color name="chat_bubble_mine">#3797F0</color>
+    <color name="chat_bubble_other">#EFEFEF</color>
+    <color name="chat_bubble_mine_text">#FFFFFF</color>
+    <color name="chat_bubble_other_text">#262626</color>
+    <color name="chat_bubble_mine_secondary">#E1F5FE</color>
+    <color name="chat_composer_bg">#FAFAFA</color>
+
+    <!-- Shimmer Skeleton -->
+    <color name="shimmer_base">#EAEAEA</color>
+    <color name="shimmer_highlight">#F8F8F8</color>
+
+    <!-- Reaction & Badge Colors -->
+    <color name="reaction_like">#ED4956</color>
+    <color name="reaction_love">#ED4956</color>
+    <color name="reaction_haha">#F7B125</color>
+    <color name="reaction_wow">#F7B125</color>
+    <color name="reaction_sad">#F7B125</color>
+    <color name="reaction_angry">#E9710F</color>
+    <color name="online_indicator">#10D876</color>
+    <color name="unread_badge">#FE2C55</color>
 
     <!-- Backward compatibility colors -->
-    <color name="meeto_dark_green">#1877F2</color>
+    <color name="meeto_dark_green">#E1306C</color>
     <color name="meeto_olive">#A4C3A2</color>
     <color name="meeto_light_green">#B0D4B8</color>
-    <color name="meeto_cream">#F0F2F5</color>
-    <color name="meeto_ice_blue">#D7F9FA</color>
+    <color name="meeto_cream">#FFFFFF</color>
+    <color name="meeto_ice_blue">#FCE4EC</color>
 </resources>

@@ -8,10 +8,13 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
+import com.bumptech.glide.request.RequestOptions;
 import com.example.meetomxh.R;
 import com.example.meetomxh.databinding.ItemFriendBinding;
 import com.example.meetomxh.models.FriendItem;
 import com.example.meetomxh.models.User;
+import com.example.meetomxh.ui.AvatarViews;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,6 +40,14 @@ public class FriendItemAdapter extends RecyclerView.Adapter<FriendItemAdapter.Fr
             this.items.addAll(newItems);
         }
         notifyDataSetChanged();
+    }
+
+    public void removeItem(FriendItem item) {
+        int index = items.indexOf(item);
+        if (index != -1) {
+            items.remove(index);
+            notifyItemRemoved(index);
+        }
     }
 
     @NonNull
@@ -71,27 +82,19 @@ public class FriendItemAdapter extends RecyclerView.Adapter<FriendItemAdapter.Fr
 
             String displayName = user.getFullName();
             if (displayName == null || displayName.trim().isEmpty()) displayName = user.getEmail();
-            if (displayName == null || displayName.trim().isEmpty()) displayName = "Người dùng";
+            if (displayName == null || displayName.trim().isEmpty()) displayName = "Người dùng Meeto";
             binding.tvFriendName.setText(displayName);
 
-            if (user.getAvatarUrl() != null && !user.getAvatarUrl().isEmpty()) {
-                Glide.with(binding.ivFriendAvatar.getContext())
-                        .applyDefaultRequestOptions(new com.bumptech.glide.request.RequestOptions().diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.NONE).skipMemoryCache(true)).load(user.getAvatarUrl())
-                        .placeholder(R.drawable.ic_home)
-                        .error(R.drawable.ic_home)
-                        .into(binding.ivFriendAvatar);
-            } else {
-                Glide.with(binding.ivFriendAvatar.getContext()).clear(binding.ivFriendAvatar);
-                binding.ivFriendAvatar.setImageResource(R.drawable.ic_home);
-            }
+            AvatarViews.load(binding.ivFriendAvatar, user.getAvatarUrl(), user.getAvatarPreset());
 
             // Relationship Status Buttons Logic
             FriendItem.RelationshipStatus status = item.getRelationshipStatus();
             if (status == FriendItem.RelationshipStatus.NO_RELATION) {
-                binding.tvFriendSubtext.setText("Gợi ý kết bạn");
+                binding.tvFriendSubtext.setText("Gợi ý cho bạn");
                 binding.btnPrimaryAction.setText("Thêm bạn bè");
+                binding.btnSecondaryAction.setText("Gỡ");
                 binding.btnPrimaryAction.setVisibility(View.VISIBLE);
-                binding.btnSecondaryAction.setVisibility(View.GONE);
+                binding.btnSecondaryAction.setVisibility(View.VISIBLE);
             } else if (status == FriendItem.RelationshipStatus.PENDING_SENT) {
                 binding.tvFriendSubtext.setText("Đã gửi lời mời kết bạn");
                 binding.btnPrimaryAction.setText("Hủy lời mời");
@@ -100,14 +103,15 @@ public class FriendItemAdapter extends RecyclerView.Adapter<FriendItemAdapter.Fr
             } else if (status == FriendItem.RelationshipStatus.PENDING_RECEIVED) {
                 binding.tvFriendSubtext.setText("Đã gửi cho bạn lời mời kết bạn");
                 binding.btnPrimaryAction.setText("Chấp nhận");
-                binding.btnSecondaryAction.setText("Xóa / Từ chối");
+                binding.btnSecondaryAction.setText("Từ chối");
                 binding.btnPrimaryAction.setVisibility(View.VISIBLE);
                 binding.btnSecondaryAction.setVisibility(View.VISIBLE);
             } else if (status == FriendItem.RelationshipStatus.ACCEPTED) {
                 binding.tvFriendSubtext.setText("Bạn bè");
-                binding.btnPrimaryAction.setText("Hủy kết bạn");
+                binding.btnPrimaryAction.setText("Bạn bè");
+                binding.btnSecondaryAction.setText("Hủy kết bạn");
                 binding.btnPrimaryAction.setVisibility(View.VISIBLE);
-                binding.btnSecondaryAction.setVisibility(View.GONE);
+                binding.btnSecondaryAction.setVisibility(View.VISIBLE);
             } else { // SELF
                 binding.tvFriendSubtext.setText("Trang cá nhân của bạn");
                 binding.btnPrimaryAction.setVisibility(View.GONE);

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Spacing Scale -->
+    <dimen name="spacing_2">2dp</dimen>
+    <dimen name="spacing_4">4dp</dimen>
+    <dimen name="spacing_6">6dp</dimen>
+    <dimen name="spacing_8">8dp</dimen>
+    <dimen name="spacing_10">10dp</dimen>
+    <dimen name="spacing_12">12dp</dimen>
+    <dimen name="spacing_14">14dp</dimen>
+    <dimen name="spacing_16">16dp</dimen>
+    <dimen name="spacing_20">20dp</dimen>
+    <dimen name="spacing_24">24dp</dimen>
+    <dimen name="spacing_32">32dp</dimen>
+    <dimen name="spacing_40">40dp</dimen>
+    <dimen name="spacing_48">48dp</dimen>
+
+    <!-- Corner Radii -->
+    <dimen name="corner_radius_small">6dp</dimen>
+    <dimen name="corner_radius_medium">10dp</dimen>
+    <dimen name="corner_radius_card">12dp</dimen>
+    <dimen name="corner_radius_large">16dp</dimen>
+    <dimen name="corner_radius_pill">24dp</dimen>
+    <dimen name="corner_radius_circle">999dp</dimen>
+
+    <!-- Touch Targets & Heights -->
+    <dimen name="touch_target_min">48dp</dimen>
+    <dimen name="button_height_standard">48dp</dimen>
+    <dimen name="button_height_dense">36dp</dimen>
+    <dimen name="input_height_standard">50dp</dimen>
+    <dimen name="app_bar_height">56dp</dimen>
+
+    <!-- Avatar Sizes -->
+    <dimen name="avatar_size_small">32dp</dimen>
+    <dimen name="avatar_size_medium">40dp</dimen>
+    <dimen name="avatar_size_large">52dp</dimen>
+    <dimen name="avatar_size_xlarge">64dp</dimen>
+    <dimen name="avatar_size_profile">104dp</dimen>
+
+    <!-- Elevation -->
+    <dimen name="elevation_none">0dp</dimen>
+    <dimen name="elevation_low">1dp</dimen>
+    <dimen name="elevation_card">2dp</dimen>
+    <dimen name="elevation_raised">4dp</dimen>
+    <dimen name="elevation_dialog">8dp</dimen>
+</resources>

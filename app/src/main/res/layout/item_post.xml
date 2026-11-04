@@ -4,10 +4,10 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="8dp"
+    android:layout_marginBottom="6dp"
     app:cardBackgroundColor="@color/surface_bg"
     app:cardCornerRadius="0dp"
-    app:cardElevation="1dp"
+    app:cardElevation="0dp"
     app:strokeWidth="0dp">
 
     <LinearLayout
@@ -15,21 +15,22 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <!-- Header: Avatar, Name, Time, More button -->
+        <!-- Post Header: Avatar, Username, Timestamp, More Options -->
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:paddingHorizontal="12dp"
-            android:paddingTop="12dp"
+            android:paddingTop="10dp"
             android:paddingBottom="8dp">
 
             <com.google.android.material.imageview.ShapeableImageView
                 android:id="@+id/ivAvatar"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:contentDescription="@null"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:contentDescription="Avatar"
                 android:scaleType="centerCrop"
-                android:src="@drawable/ic_home"
+                android:src="@drawable/avatar_neutral"
+                app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
                 app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full" />
@@ -40,22 +41,23 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="10dp"
                 android:layout_marginEnd="8dp"
+                android:fontFamily="sans-serif-bold"
                 android:textColor="@color/text_primary"
-                android:textSize="15sp"
+                android:textSize="14sp"
                 android:textStyle="bold"
                 app:layout_constraintEnd_toStartOf="@id/ibMore"
                 app:layout_constraintStart_toEndOf="@id/ivAvatar"
                 app:layout_constraintTop_toTopOf="@id/ivAvatar"
-                tools:text="Nguyễn Văn A" />
+                tools:text="meeto_official" />
 
             <TextView
                 android:id="@+id/tvTimeAgo"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="10dp"
-                android:layout_marginTop="2dp"
+                android:layout_marginTop="1dp"
                 android:textColor="@color/text_secondary"
-                android:textSize="12sp"
+                android:textSize="11sp"
                 app:layout_constraintEnd_toStartOf="@id/ibMore"
                 app:layout_constraintStart_toEndOf="@id/ivAvatar"
                 app:layout_constraintTop_toBottomOf="@id/tvUserName"
@@ -63,174 +65,316 @@
 
             <ImageView
                 android:id="@+id/ibMore"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
                 android:background="?android:attr/selectableItemBackgroundBorderless"
-                android:contentDescription="@null"
+                android:clickable="true"
+                android:contentDescription="Tùy chọn bài viết"
+                android:focusable="true"
+                android:padding="6dp"
                 android:src="@drawable/ic_more"
+                app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="@id/ivAvatar"
-                app:tint="@color/text_secondary" />
+                app:layout_constraintTop_toTopOf="parent"
+                app:tint="@color/text_primary" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 
-        <!-- Post Text Content -->
-        <TextView
-            android:id="@+id/tvContent"
+        <!-- Shared Post Embedded Card (If Any) -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardSharedPost"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingHorizontal="12dp"
-            android:paddingBottom="8dp"
-            android:textColor="@color/text_primary"
-            android:textSize="15sp"
-            tools:text="Chào mừng mọi người đến với mạng xã hội MeetoMXH! Chúc các bạn một ngày làm việc vui vẻ." />
+            android:layout_marginHorizontal="12dp"
+            android:layout_marginBottom="8dp"
+            android:visibility="gone"
+            app:cardBackgroundColor="@color/surface_bg"
+            app:cardCornerRadius="8dp"
+            app:strokeColor="@color/divider_color"
+            app:strokeWidth="1dp">
 
-        <!-- Post Image -->
-        <ImageView
-            android:id="@+id/ivPostImage"
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="10dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.imageview.ShapeableImageView
+                        android:id="@+id/ivSharedPostAvatar"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:contentDescription="Tác giả gốc"
+                        android:scaleType="centerCrop"
+                        android:src="@drawable/avatar_neutral"
+                        app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full" />
+
+                    <TextView
+                        android:id="@+id/tvSharedPostAuthor"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:textColor="@color/text_primary"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/tvSharedPostBody"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:ellipsize="end"
+                    android:maxLines="5"
+                    android:textColor="@color/text_primary"
+                    android:textSize="13sp" />
+
+                <ImageView
+                    android:id="@+id/ivSharedPostMedia"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:adjustViewBounds="true"
+                    android:maxHeight="260dp"
+                    android:scaleType="centerCrop"
+                    android:visibility="gone" />
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Edge-to-Edge Media Container -->
+        <FrameLayout
+            android:id="@+id/layoutMediaContainer"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:adjustViewBounds="true"
-            android:contentDescription="@null"
-            android:maxHeight="400dp"
-            android:scaleType="fitCenter"
-            android:visibility="visible"
-            tools:src="@drawable/ic_home" />
+            android:layout_height="wrap_content">
 
-        <VideoView
-            android:id="@+id/videoPostPlayer"
+            <!-- Post Image -->
+            <ImageView
+                android:id="@+id/ivPostImage"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:adjustViewBounds="true"
+                android:contentDescription="Ảnh bài viết"
+                android:maxHeight="500dp"
+                android:scaleType="fitCenter"
+                android:visibility="visible"
+                tools:src="@drawable/avatar_neutral" />
+
+            <!-- Post Video Player -->
+            <FrameLayout
+                android:id="@+id/videoPostPlayer"
+                android:layout_width="match_parent"
+                android:layout_height="320dp"
+                android:background="#000000"
+                android:clickable="true"
+                android:focusable="true"
+                android:visibility="gone">
+
+                <ImageView
+                    android:id="@+id/ivVideoThumbnail"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:contentDescription="Video thumbnail"
+                    android:scaleType="centerCrop" />
+
+                <ImageView
+                    android:id="@+id/btnVideoPlay"
+                    android:layout_width="56dp"
+                    android:layout_height="56dp"
+                    android:layout_gravity="center"
+                    android:background="@drawable/bg_icon_circle"
+                    android:contentDescription="Phát video"
+                    android:padding="14dp"
+                    android:src="@drawable/ic_play"
+                    app:tint="@color/white" />
+
+                <ProgressBar
+                    android:id="@+id/progressVideoThumbnail"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_gravity="center"
+                    android:visibility="gone" />
+
+            </FrameLayout>
+
+            <!-- Large Heart Overlay for Double-Tap Like Animation -->
+            <ImageView
+                android:id="@+id/ivHeartOverlay"
+                android:layout_width="100dp"
+                android:layout_height="100dp"
+                android:layout_gravity="center"
+                android:alpha="0"
+                android:elevation="8dp"
+                android:src="@drawable/ic_like_filled"
+                android:visibility="gone"
+                app:tint="#FFFFFF" />
+
+        </FrameLayout>
+
+        <!-- Instagram Action Bar: Like (Heart), Comment, Share, Bookmark -->
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="240dp"
-            android:visibility="gone" />
+            android:layout_height="44dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="10dp">
 
-        <!-- Stats Row: Likes & Comments count -->
+            <!-- Heart / Like Button -->
+            <LinearLayout
+                android:id="@+id/btnLike"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:paddingHorizontal="6dp">
+
+                <ImageView
+                    android:id="@+id/ivLikeIcon"
+                    android:layout_width="25dp"
+                    android:layout_height="25dp"
+                    android:contentDescription="Thích"
+                    android:src="@drawable/ic_like_outline"
+                    app:tint="@color/text_primary" />
+
+                <!-- Retain tvLikeText view ID for adapter binding -->
+                <TextView
+                    android:id="@+id/tvLikeText"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:visibility="gone" />
+
+            </LinearLayout>
+
+            <!-- Comment Bubble Button -->
+            <LinearLayout
+                android:id="@+id/btnComment"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_marginStart="4dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:paddingHorizontal="6dp">
+
+                <ImageView
+                    android:layout_width="25dp"
+                    android:layout_height="25dp"
+                    android:contentDescription="Bình luận"
+                    android:src="@drawable/ic_comment"
+                    app:tint="@color/text_primary" />
+
+            </LinearLayout>
+
+            <!-- Paper Plane Share Button -->
+            <LinearLayout
+                android:id="@+id/btnShare"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_marginStart="4dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:paddingHorizontal="6dp">
+
+                <ImageView
+                    android:layout_width="23dp"
+                    android:layout_height="23dp"
+                    android:contentDescription="Chia sẻ"
+                    android:src="@drawable/ic_share"
+                    app:tint="@color/text_primary" />
+
+            </LinearLayout>
+
+            <!-- Spacer to push Bookmark to the right -->
+            <View
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <!-- Bookmark Save Icon on Right -->
+            <ImageView
+                android:id="@+id/btnBookmark"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true"
+                android:contentDescription="Lưu bài viết"
+                android:padding="6dp"
+                android:src="@drawable/ic_bookmark_outline"
+                app:tint="@color/text_primary" />
+
+        </LinearLayout>
+
+        <!-- Social Stats & Caption Section -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:paddingHorizontal="12dp"
-            android:paddingVertical="8dp">
+            android:orientation="vertical"
+            android:paddingHorizontal="14dp"
+            android:paddingBottom="12dp">
 
+            <!-- Bold Likes Count -->
             <TextView
                 android:id="@+id/tvLikesCount"
-                android:layout_width="0dp"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:textColor="@color/text_secondary"
+                android:fontFamily="sans-serif-bold"
+                android:textColor="@color/text_primary"
                 android:textSize="13sp"
-                tools:text="👍 12 lượt thích" />
+                android:textStyle="bold"
+                tools:text="142 lượt thích" />
 
+            <!-- Post Caption (Author bold + text content) -->
+            <TextView
+                android:id="@+id/tvContent"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3dp"
+                android:lineSpacingExtra="2dp"
+                android:textColor="@color/text_primary"
+                android:textSize="13sp"
+                tools:text="Chào mừng mọi người đến với Meeto! Trải nghiệm mạng xã hội hiện đại phong cách Instagram." />
+
+            <!-- Tagged People -->
+            <TextView
+                android:id="@+id/tvTaggedPeople"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textColor="@color/brand_blue"
+                android:textSize="12sp"
+                android:visibility="gone" />
+
+            <!-- Comments Count Link -->
             <TextView
                 android:id="@+id/tvCommentsCount"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
                 android:textColor="@color/text_secondary"
                 android:textSize="13sp"
-                tools:text="5 bình luận" />
+                tools:text="Xem tất cả 18 bình luận" />
 
         </LinearLayout>
 
-        <!-- Divider line -->
+        <!-- Hairline Divider between posts -->
         <View
             android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:layout_marginHorizontal="12dp"
+            android:layout_height="0.5dp"
             android:background="@color/divider_color" />
-
-        <!-- Footer Actions Bar: Like, Comment, Share -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="40dp"
-            android:baselineAligned="false"
-            android:orientation="horizontal">
-
-            <LinearLayout
-                android:id="@+id/btnLike"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:background="?android:attr/selectableItemBackground"
-                android:clickable="true"
-                android:focusable="true"
-                android:gravity="center">
-
-                <ImageView
-                    android:id="@+id/ivLikeIcon"
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:contentDescription="@null"
-                    android:src="@drawable/ic_like_outline"
-                    app:tint="@color/text_secondary" />
-
-                <TextView
-                    android:id="@+id/tvLikeText"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="6dp"
-                    android:text="Thích"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="13sp"
-                    android:textStyle="bold" />
-
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/btnComment"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:background="?android:attr/selectableItemBackground"
-                android:clickable="true"
-                android:focusable="true"
-                android:gravity="center">
-
-                <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:contentDescription="@null"
-                    android:src="@drawable/ic_comment"
-                    app:tint="@color/text_secondary" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="6dp"
-                    android:text="Bình luận"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="13sp"
-                    android:textStyle="bold" />
-
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/btnShare"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:background="?android:attr/selectableItemBackground"
-                android:clickable="true"
-                android:focusable="true"
-                android:gravity="center">
-
-                <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:contentDescription="@null"
-                    android:src="@drawable/ic_share"
-                    app:tint="@color/text_secondary" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="6dp"
-                    android:text="Chia sẻ"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="13sp"
-                    android:textStyle="bold" />
-
-            </LinearLayout>
-
-        </LinearLayout>
 
     </LinearLayout>
 

@@ -1,0 +1,43 @@
+MEETO - TASK 22: ADVANCED SHARE & REPOST
+Date: 2026-11-03
+
+FEED REGRESSION
+- Pixel 4 API 37 Fragment instrumentation confirms the composer remains visible and the refresh failure state is shown. Feed and Share Sheet UI tests passed.
+- No authenticated Cloud session was available to verify live posts, gesture refresh, reconnect, Reaction, or Comment against backend data.
+
+IMPLEMENTED
+- Shared Material Bottom Sheet entry point for Feed, Profile, Search, Saved Posts, and Group Feed.
+- Feed repost uses share_post, safe get_post preview, and public/friends/private audience selection. Original body and media are not copied into the new post.
+- Messenger uses structured shared_post_id via send_shared_post, with idempotency and conversation authorization. Recipients without source access see an unavailable state.
+- Group repost uses share_community_post with membership, source-read, and post_approval checks.
+- Shared post card fetches the original through get_post and displays authorized author/body/media. meeto://post/{uuid} copy/open path added.
+- Share notifications are deduplicated, preference-gated, and sent through private Realtime. Share count tracks published Feed/Group repost rows only. Pending Group shares and Messenger references are excluded; Group publish/removal transitions adjust count once.
+
+MIGRATION
+- New forward migration: supabase/migrations/20261103001100_advanced_share.sql (029), to run after 028.
+- Supports group repost references and structured Messenger references; revokes the legacy direct original_post_id column grant so clients use safe post_json/get_post.
+- SHA-256: B88B8CB71259C083668183765F693B73DC0DC7A130F94CFA36E8D7F367C14F73.
+- Manifest: 29 entries; all checksums match. Static checks confirmed the exact constraint replacement, RPC grants, RLS preservation, transaction delimiters, and balanced dollar quotes. No Cloud or local database execution was performed.
+
+TESTS
+- Android assembleDebug: PASS.
+- Pixel 4 API 37 instrumentation: FeedLayoutRecoveryTest and ShareActionsTest, 3 tests PASS.
+- Cloud A/B privacy, blocks, Messenger recipient, group approval, signed media URL, and real share notifications remain unverified; migration is not deployed.
+
+ACCEPTANCE MATRIX
+FEED REGRESSION: PASS (Fragment/layout; live backend not E2E)
+SHARE SHEET: PASS (instrumentation)
+FEED REPOST: PARTIAL
+MESSENGER SHARE: PARTIAL
+GROUP SHARE: PARTIAL
+COPY LINK: PARTIAL (requires compatible app/session)
+SHARED POST RENDERING: PARTIAL
+SHARE PRIVACY: PARTIAL (static review; Cloud not deployed)
+SHARE COUNTS: PARTIAL (Cloud not verified)
+SHARE NOTIFICATIONS: PARTIAL (Cloud not verified)
+ANIMATION/UX: PARTIAL (Material default bottom-sheet motion)
+ANDROID BUILD: PASS
+MIGRATION REQUIRED: YES (029)
+CLOUD DEPLOYED: NO
+EMULATOR E2E: PARTIAL (3 targeted UI tests; no Cloud session)
+READY FOR TASK 23: CONDITIONAL (after manual 029 deployment and Cloud privacy E2E)

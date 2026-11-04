@@ -8,8 +8,10 @@ public class User {
     private String email;
     private String phoneNumber;
     private String avatarUrl;
+    private String avatarPreset = "neutral";
     private String coverUrl;
     private String bio;
+    private String location;
     private boolean contactVerified;
     private boolean profileCompleted;
     private long createdAt;
@@ -84,6 +86,12 @@ public class User {
         this.avatarUrl = avatarUrl;
     }
 
+    public String getAvatarPreset() { return avatarPreset; }
+
+    public void setAvatarPreset(String value) {
+        avatarPreset = "male".equals(value) || "female".equals(value) ? value : "neutral";
+    }
+
     public String getCoverUrl() {
         return coverUrl;
     }
@@ -99,6 +107,9 @@ public class User {
     public void setBio(String bio) {
         this.bio = bio;
     }
+
+    public String getLocation() { return location; }
+    public void setLocation(String location) { this.location = location; }
 
     public boolean isContactVerified() {
         return contactVerified;

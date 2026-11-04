@@ -1,0 +1,76 @@
+MEETO — BÁO CÁO NHIỆM VỤ 14B
+Sửa và rà soát candidate Direct Storage migration
+Ngày: 03/11/2026 · Project mục tiêu: qjpohzpapiwdrxsionyr
+
+1. Kết quả
+
+- Đã sửa candidate `supabase/migrations/20261103000100_direct_storage_upload.sql`: biến `bucket_private` đổi thành `bucket_is_public`; cột vẫn đọc từ `storage.buckets.public`; finalize từ chối mọi giá trị trừ FALSE bằng `bucket_is_public IS DISTINCT FROM false`.
+- Đã cập nhật duy nhất checksum entry của migration `20261103000100_direct_storage_upload.sql`. Không cập nhật checksum các migration cũ.
+- Candidate chưa áp dụng lên Cloud. Không có Supabase CLI, access token, biến môi trường PostgreSQL/Supabase hoặc kết nối database trong phiên này. Do đó không thể đọc schema/RPC/policies/ledger thật, không thể deploy và không chạy Cloud E2E.
+- Upload avatar, cover, post image/video: CHƯA PASS. Không chạy upload synthetic lên Cloud và không ghi dữ liệu/object.
+
+2. Rà soát logic candidate
+
+- Ownership: asset được truy vấn theo `owner_id=actor`; object phải có `owner_id=actor::text`, đúng bucket và đúng object path do asset xác định. Message finalize khóa conversation rồi khóa lại asset.
+- MIME: chỉ nhận PNG/JPEG/WebP; MP4 chỉ cho post/message. MIME object phải khớp MIME asset và allowlist của bucket.
+- Size: metadata size chỉ cast sang bigint khi là số dương có tối đa 12 chữ số; phải lớn hơn 0, không vượt trần 10 MiB cho profile hoặc 50 MiB cho social/chat, cũng không vượt `file_size_limit` live.
+- Object existence: join object với bucket theo bucket ID và object name; thiếu object hoặc object ID bị null thì từ chối. Object ID được lưu lại ở metadata sau finalize.
+- Idempotency: asset đã `ready` vẫn đi qua kiểm tra object ownership/metadata/private trước khi trả lại; trạng thái pending hết hạn bị từ chối. Không thể xác nhận các hành vi trên có khớp schema thật nếu chưa đọc Cloud.
+- Private Storage: đã sửa điều kiện để chỉ chấp nhận bucket có `public = false`. Candidate không bật public, tắt RLS hoặc thay Storage policies.
+- Hai hàm prepare dùng `started_at := transaction_timestamp()`; nếu helper trả về asset không có marker direct, chỉ nâng marker khi asset pending và `created_at = started_at`. `now()` là transaction timestamp nên phù hợp với default `created_at DEFAULT now()` trong schema local. Nhánh lookup ban đầu từ chối intent legacy đã tồn tại. Cần xác minh default/schema Cloud trước deploy.
+- Quyền EXECUTE trong candidate: private helper mới bị revoke khỏi PUBLIC/anon/authenticated/service_role, rồi cấp cho authenticated để SQL SECURITY INVOKER wrapper hoạt động. Wrapper public bị revoke PUBLIC/anon và cấp authenticated. Finalize private chỉ cấp authenticated. Schema `private` không nên nằm trong exposed schemas của PostgREST; cần kiểm tra cấu hình/grants thật trên Cloud. Đây là review file, chưa chứng minh effective privilege live.
+- Storage policies local được tham chiếu từ migrations cũ: INSERT giới hạn owner, intent/path hợp lệ và standard upload; policy restrictive yêu cầu `object.upload` cho ba bucket ứng dụng; SELECT yêu cầu authenticated read operation và `can_read_object`. Bucket social-media local khai báo private với allowlist PNG/JPEG/WebP/MP4, tối đa 50 MiB. Chưa xác nhận policy/bucket thật trên Cloud, đặc biệt `social-media`.
+
+3. Kiểm tra đã chạy
+
+- PostgreSQL parser (libpg_query qua pg-query-emscripten) chấp nhận 14 SQL statements ở cấp PostgreSQL.
+- Parser này không phân tích thân PL/pgSQL nằm trong dollar-quoted function bodies; chưa có PostgreSQL server để compile thân hàm hoặc chạy candidate.
+- Chưa xác minh Cloud preconditions, grants/policies/ledger, chưa deploy. SQL precondition block trong candidate không thay thế live catalog review.
+- Checksum mới: `8408DD8E4F28C75F107C66EBF3B7D865F40F36950BA3CFF66B81E2DE75856E80`.
+- Chưa chạy test upload.
+
+4. Thao tác Cloud cần thực hiện
+
+Vì chưa có kết nối Cloud hợp lệ tại workspace, không thể tự triển khai. Trên Supabase Dashboard:
+
+1. Chọn đúng project ref `qjpohzpapiwdrxsionyr`.
+2. Mở SQL Editor, chạy truy vấn chỉ đọc dưới đây và đối chiếu kết quả với candidate cùng migrations nền. Dừng nếu thiếu signature/prerequisite, bucket không private, limits/MIME khác, quyền rộng hơn dự kiến hoặc policy rộng/permissive không tương ứng:
+
+```sql
+SELECT p.oid::regprocedure AS signature, p.prosecdef AS security_definer,
+       has_function_privilege('anon', p.oid, 'EXECUTE') AS anon_exec,
+       has_function_privilege('authenticated', p.oid, 'EXECUTE') AS authenticated_exec,
+       pg_get_functiondef(p.oid) AS definition
+FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+WHERE n.nspname IN ('private','public')
+  AND p.proname IN ('prepare_upload','prepare_message_upload','phase_b_finalize_upload',
+                    'c_lock','b_actor','require_identity','lock_profile','finalize_upload');
+
+SELECT id, public, file_size_limit, allowed_mime_types
+FROM storage.buckets
+WHERE id IN ('profile-media','social-media','chat-media');
+
+SELECT schemaname, tablename, policyname, permissive, roles, cmd, qual, with_check
+FROM pg_policies
+WHERE schemaname='storage' AND tablename='objects'
+ORDER BY policyname;
+
+SELECT to_regclass('supabase_migrations.schema_migrations') AS migration_ledger;
+```
+
+Sau đó kiểm tra ledger bằng giao diện Migration History/CLI đang được project hỗ trợ; câu truy vấn cuối chỉ xác định ledger table có tồn tại, không thay cho việc đọc version rows.
+3. Chỉ khi review đạt, mở candidate `supabase/migrations/20261103000100_direct_storage_upload.sql` trong workspace, copy toàn bộ SQL và chạy tại SQL Editor. Không chạy reset database.
+4. SQL Editor không tự ghi nhận migration version vào Supabase CLI ledger. Sau khi SQL thành công, dùng một Supabase CLI đã đăng nhập đúng project để đánh dấu version `20261103000100` applied (`supabase migration repair 20261103000100 --status applied --project-ref qjpohzpapiwdrxsionyr`), rồi xác minh ledger và RPC qua Dashboard/CLI. Không tự chèn ledger row bằng SQL nếu chưa kiểm tra schema ledger live.
+5. Sau ledger/RPC verification mới chạy Cloud E2E bằng tài khoản và fixture synthetic nhỏ đã được phép: avatar, cover, post image, post video; xác nhận asset state `ready`, profile/post attachment thật, đọc lại object bằng quyền hợp lệ, và kiểm tra truy cập sai quyền bị từ chối. Ghi cleanup đã xác nhận. Chỉ đánh dấu PASS cho từng đường upload sau khi E2E tương ứng thành công.
+
+Không bật Public, không tắt RLS, không reset database, không dùng local worker.
+
+8. Cập nhật triển khai Migration 019 — 03/11/2026
+
+- Đã kiểm tra candidate có đủ 174 dòng, checksum khớp manifest và PostgreSQL parser chấp nhận 14 statements. Các guard `bucket_is_public IS DISTINCT FROM false`, precondition `private.c_lock(uuid,boolean)` và kiểm tra `created_at`/`started_at` đều có mặt.
+- Đối chiếu helper với migrations nền: `private.prepare_upload` (005), `private.prepare_message_upload` và `private.phase_b_finalize_upload` (011), `private.c_lock(uuid,boolean DEFAULT false)` (013), cùng `private.b_actor` (004) và `private.require_identity`/`private.lock_profile(boolean DEFAULT true)` (003). Default `created_at DEFAULT now()` khớp `transaction_timestamp()` trong transaction. Helper tạo object path `{actor}/{asset}/original.{ext}` khớp finalize. Grants candidate cấp execute cho authenticated qua wrapper SECURITY INVOKER; helper private mới được revoke trước khi cấp theo hợp đồng wrapper.
+- Supabase CLI tạm chạy bằng `npx`, nhưng `supabase projects list` thất bại: `Access token not provided`. Không có access token hoặc DB password trong session; chưa thể push lên project. Không sửa ledger và chưa đánh dấu applied.
+- Android Emulator đang kết nối (`emulator-5554`), nhưng chưa gọi prepare/upload vì migration/RPC chưa có trên Cloud. Không tạo intent/object synthetic và không đánh dấu avatar upload PASS.
+- Thao tác Dashboard khi operator có quyền: chọn chính xác project `qjpohzpapiwdrxsionyr` → SQL Editor → mở và chạy toàn bộ `supabase/migrations/20261103000100_direct_storage_upload.sql` từ workspace. Chỉ sau khi SQL Editor báo chạy thành công, xác minh ledger/RPC. Vì SQL Editor không tự ghi migration history, khi đã xác nhận SQL thành công mới chạy `npx supabase migration repair 20261103000100 --status applied --remote=qjpohzpapiwdrxsionyr` trong CLI đã đăng nhập đúng project; không chạy lệnh repair trước.
+- Sau khi xác nhận RPC và ledger, chạy upload avatar JPEG synthetic nhỏ từ emulator, xác nhận finalize trả `ready` và asset được attach vào profile. Chưa thực hiện bước này do thiếu quyền deploy Cloud.
+

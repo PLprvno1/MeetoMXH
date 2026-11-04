@@ -67,30 +67,22 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
 
         public void bind(Post post, OnPostClickListener listener) {
             binding.tvUserName.setText(post.getUserName());
-            binding.tvTimeAgo.setText(post.getTimeAgo());
+            binding.tvTimeAgo.setText(com.example.meetomxh.ui.PostTimestampFormatter.format(post.serverCreatedAt));
             binding.tvContent.setText(post.getContent());
 
             binding.tvLikesCount.setText(post.getLikesCount() + " lượt thích");
             binding.tvCommentsCount.setText(post.getCommentsCount() + " bình luận");
 
             // Xử lý avatar
-            if (post.getUserAvatar() != null && !post.getUserAvatar().isEmpty()) {
-                Glide.with(binding.ivAvatar.getContext())
-                        .applyDefaultRequestOptions(new com.bumptech.glide.request.RequestOptions().diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.NONE).skipMemoryCache(true)).load(post.getUserAvatar())
-                        .placeholder(R.drawable.ic_home)
-                        .error(R.drawable.ic_home)
-                        .into(binding.ivAvatar);
-            } else {
-                binding.ivAvatar.setImageResource(R.drawable.ic_home);
-            }
+            com.example.meetomxh.ui.AvatarViews.load(binding.ivAvatar,post.getUserAvatar(),post.getUserAvatarPreset());
 
             // Xử lý ảnh bài đăng
             if (post.getPostImage() != null && !post.getPostImage().isEmpty()) {
                 binding.ivPostImage.setVisibility(View.VISIBLE);
                 Glide.with(binding.ivPostImage.getContext())
                         .applyDefaultRequestOptions(new com.bumptech.glide.request.RequestOptions().diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.NONE).skipMemoryCache(true)).load(post.getPostImage())
-                        .placeholder(R.drawable.ic_home)
-                        .error(R.drawable.ic_home)
+                        .placeholder(R.drawable.avatar_neutral)
+                        .error(R.drawable.avatar_neutral)
                         .into(binding.ivPostImage);
             } else {
                 binding.ivPostImage.setVisibility(View.GONE);
