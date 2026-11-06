@@ -1,11 +1,11 @@
 package com.example.meetomxh.adapters;
 
-import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
@@ -81,8 +81,8 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
                 binding.ivPostImage.setVisibility(View.VISIBLE);
                 Glide.with(binding.ivPostImage.getContext())
                         .applyDefaultRequestOptions(new com.bumptech.glide.request.RequestOptions().diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.NONE).skipMemoryCache(true)).load(post.getPostImage())
-                        .placeholder(R.drawable.avatar_neutral)
-                        .error(R.drawable.avatar_neutral)
+                        .placeholder(R.drawable.ic_media_error)
+                        .error(R.drawable.ic_media_error)
                         .into(binding.ivPostImage);
             } else {
                 binding.ivPostImage.setVisibility(View.GONE);
@@ -91,10 +91,10 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
             // Trạng thái nút Like
             if (post.isLiked()) {
                 binding.ivLikeIcon.setImageResource(R.drawable.ic_like_filled);
-                binding.tvLikeText.setTextColor(Color.parseColor("#1877F2"));
+                binding.tvLikeText.setTextColor(ContextCompat.getColor(binding.tvLikeText.getContext(), R.color.brand_blue));
             } else {
                 binding.ivLikeIcon.setImageResource(R.drawable.ic_like_outline);
-                binding.tvLikeText.setTextColor(Color.parseColor("#65676B"));
+                binding.tvLikeText.setTextColor(ContextCompat.getColor(binding.tvLikeText.getContext(), R.color.text_secondary));
             }
 
             // Sự kiện click nút Like

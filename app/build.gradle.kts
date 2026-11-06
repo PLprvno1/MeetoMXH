@@ -65,6 +65,10 @@ dependencies {
     implementation("io.tus.java.client:tus-java-client:0.5.1")
     implementation("androidx.media3:media3-exoplayer:1.11.1")
     implementation("androidx.media3:media3-ui:1.11.1")
+    implementation("androidx.camera:camera-camera2:1.6.2")
+    implementation("androidx.camera:camera-lifecycle:1.6.2")
+    implementation("androidx.camera:camera-video:1.6.2")
+    implementation("androidx.camera:camera-view:1.6.2")
     // Glide
     implementation("com.github.bumptech.glide:glide:4.16.0")
     // Facebook Shimmer

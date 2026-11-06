@@ -97,6 +97,7 @@ public class NotificationsActivity extends AppCompatActivity {
         });
     }
     private void navigate(NotificationItem item){
+        if("follow_request".equals(item.kind)||"message_request".equals(item.kind)||"group_invite".equals(item.kind)){startActivity(new Intent(this,RequestCenterActivity.class).putExtra("mode","follow_request".equals(item.kind)?"follow":"message_request".equals(item.kind)?"message":"group"));return;}
         switch(item.targetType){
             case "post":
                 com.example.meetomxh.supabase.PostDetails.show(this,item.targetId);break;

@@ -89,15 +89,54 @@
 
         </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
-        <!-- Search Results List (Shown when user is actively searching) -->
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rvSearchResults"
+        <!-- Search results contain separate, scrollable people and post sections. -->
+        <LinearLayout
+            android:id="@+id/searchResultsContainer"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:background="@color/app_bg"
-            android:clipToPadding="false"
-            android:paddingBottom="72dp"
-            android:visibility="gone" />
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/tvPeopleHeader"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingHorizontal="16dp"
+                android:paddingTop="12dp"
+                android:paddingBottom="6dp"
+                android:text="Mọi người"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvSearchResults"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:clipToPadding="false" />
+
+            <TextView
+                android:id="@+id/tvPostsHeader"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingHorizontal="16dp"
+                android:paddingTop="12dp"
+                android:paddingBottom="6dp"
+                android:text="Bài viết"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvSearchPosts"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:clipToPadding="false"
+                android:paddingBottom="72dp" />
+        </LinearLayout>
 
         <!-- Loading / Empty Progress Indicator -->
         <ProgressBar

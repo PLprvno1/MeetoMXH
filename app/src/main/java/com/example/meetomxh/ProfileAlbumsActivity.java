@@ -32,7 +32,7 @@ public final class ProfileAlbumsActivity extends AppCompatActivity {
     private RecyclerView grid;
     private TextView status;
     private String albumId, ownerId;
-    private JSONObject album;
+    private JSONObject album; private String afterTime,afterId;private boolean loadingPage,morePages;
     private final List<JSONObject> items = new ArrayList<>();
     private final List<JSONObject> albums = new ArrayList<>();
 
@@ -83,28 +83,20 @@ public final class ProfileAlbumsActivity extends AppCompatActivity {
         root.addView(header, new LinearLayout.LayoutParams(-1,-2));
         Button back = new Button(this); back.setText("‹"); back.setContentDescription("Back");
         header.addView(back); back.setOnClickListener(v -> finish());
-        TextView title = new TextView(this); title.setText("Photo albums"); title.setTextSize(20); title.setTextColor(getColor(R.color.text_primary)); title.setTypeface(null,1);
+        TextView title = new TextView(this); title.setText("Album ảnh"); title.setTextSize(20); title.setTextColor(getColor(R.color.text_primary)); title.setTypeface(null,1);
         LinearLayout.LayoutParams tp=new LinearLayout.LayoutParams(0,-2,1); tp.leftMargin=dp(12); header.addView(title,tp);
-        Button action = new Button(this); action.setText("＋"); action.setContentDescription("Create album"); header.addView(action); action.setVisibility(ownerId.equals(com.example.meetomxh.supabase.SessionManager.getInstance().uid()) ? View.VISIBLE : View.GONE);
+        Button action = new Button(this); action.setText("＋"); action.setContentDescription("Tạo album"); header.addView(action); action.setVisibility(ownerId.equals(com.example.meetomxh.supabase.SessionManager.getInstance().uid()) ? View.VISIBLE : View.GONE);
         action.setOnClickListener(v -> { if (albumId == null) showAlbumForm(null); else showAlbumActions(); });
-        grid = new RecyclerView(this); grid.setLayoutManager(new GridLayoutManager(this,2));
+        grid = new RecyclerView(this); grid.setLayoutManager(new GridLayoutManager(this,2));grid.addOnScrollListener(new RecyclerView.OnScrollListener(){public void onScrolled(RecyclerView r,int dx,int dy){if(dy>0&&!r.canScrollVertically(1)&&morePages&&!loadingPage){if(albumId==null)pageAlbums(true);else pagePhotos(true);}}});
         root.addView(grid,new LinearLayout.LayoutParams(-1,0,1));
         status = new TextView(this); status.setTextColor(getColor(R.color.text_secondary)); status.setGravity(Gravity.CENTER); status.setPadding(dp(16),dp(12),dp(16),dp(12));
-        status.setText("Albums use photos already attached to your posts. Access follows the source post."); root.addView(status);
+        status.setText("Chọn ảnh từ các bài viết của bạn để tạo album."); root.addView(status);
     }
-    private void loadAlbums() {
-        grid.setAdapter(null); albums.clear(); status.setVisibility(View.VISIBLE); status.setText("Loading albums…");
-        Api.run(() -> (JSONArray)albumRpc("list_profile_albums",Api.obj("p_owner_id",ownerId,"p_after_time",null,"p_after_id",null,"p_limit",50)), new Api.Callback<JSONArray>() {
-            public void success(JSONArray rows) {
-                albums.clear(); for(int i=0;i<rows.length();i++){JSONObject x=rows.optJSONObject(i); if(x!=null)albums.add(x);}
-                renderAlbums();
-                status.setText(albums.isEmpty()?"No albums yet. Tap + to create one.":"Albums use existing post photos; source post access still applies.");
-                status.setVisibility(albums.isEmpty()?View.VISIBLE:View.GONE);
-            }
-            public void error(String e) {
-                status.setText("Could not load albums. Tap here to retry.\n"+e); status.setVisibility(View.VISIBLE);
-                status.setOnClickListener(v->loadAlbums()); toast(e);
-            }
+    private void loadAlbums(){pageAlbums(false);}
+    private void pageAlbums(boolean append){if(loadingPage)return;loadingPage=true;if(!append){albums.clear();afterTime=null;afterId=null;grid.setAdapter(null);}status.setVisibility(View.VISIBLE);status.setText("Đang tải album…");
+        Api.run(()->(JSONArray)albumRpc("list_profile_albums",Api.obj("p_owner_id",ownerId,"p_after_time",afterTime,"p_after_id",afterId,"p_limit",50)),new Api.Callback<JSONArray>(){
+            public void success(JSONArray page){loadingPage=false;int old=albums.size();for(int i=0;i<page.length();i++){JSONObject row=page.optJSONObject(i);if(row!=null){albums.add(row);afterTime=row.optString("created_at");afterId=row.optString("id");}}morePages=page.length()==50;if(!append)renderAlbums();else if(grid.getAdapter()!=null)grid.getAdapter().notifyItemRangeInserted(old,albums.size()-old);status.setText(albums.isEmpty()?"Chưa có album. Nhấn + để tạo album của bạn.":"");status.setVisibility(albums.isEmpty()?View.VISIBLE:View.GONE);}
+            public void error(String e){loadingPage=false;status.setText(e+" · Chạm để thử lại");status.setVisibility(View.VISIBLE);status.setOnClickListener(v->pageAlbums(append));}
         });
     }    private void renderAlbums() {
         grid.setLayoutManager(new GridLayoutManager(this,2));
@@ -115,51 +107,44 @@ public final class ProfileAlbumsActivity extends AppCompatActivity {
                 TextView label=new TextView(ProfileAlbumsActivity.this); label.setTextColor(getColor(R.color.text_primary)); label.setPadding(dp(6),dp(8),dp(6),dp(8)); card.addView(label);
                 return new CardHolder(card,image,label);
             }
-            public void onBindViewHolder(CardHolder h,int pos) { JSONObject a=albums.get(pos); h.label.setText(a.optString("title")+" · "+a.optInt("photo_count")+" photos\n"+a.optString("audience")); String ref=Dto.asset(Dto.nullable(a,"cover_asset_id")); if(ref!=null) Glide.with(ProfileAlbumsActivity.this).load(ref).centerCrop().into(h.image); else h.image.setImageResource(R.drawable.bg_cover_placeholder); h.itemView.setOnClickListener(v->{albumId=a.optString("id"); loadAlbum();}); }
+            public void onBindViewHolder(CardHolder h,int pos) { JSONObject a=albums.get(pos); h.label.setText(a.optString("title")+" · "+a.optInt("photo_count")+" ảnh\n"+com.example.meetomxh.supabase.AudienceChoices.label(a.optString("audience"))); String ref=Dto.asset(Dto.nullable(a,"cover_asset_id")); if(ref!=null) Glide.with(ProfileAlbumsActivity.this).load(ref).centerCrop().into(h.image); else h.image.setImageResource(R.drawable.bg_cover_placeholder); h.itemView.setOnClickListener(v->{if(loadingPage)return;albumId=a.optString("id"); loadAlbum();}); }
             public int getItemCount(){return albums.size();}
         });
     }
-    private void loadAlbum() {
-        grid.setAdapter(null); items.clear(); status.setVisibility(View.VISIBLE); status.setText("Loading album photos…");
-        Api.run(() -> (JSONObject)albumRpc("get_profile_album",Api.obj("p_album_id",albumId,"p_after_time",null,"p_after_id",null,"p_limit",50)), new Api.Callback<JSONObject>() {
-            public void success(JSONObject value) {
-                album=value.optJSONObject("album"); if(album==null){status.setText("Album unavailable.");status.setVisibility(View.VISIBLE);return;}
-                JSONArray rows=value.optJSONArray("items"); if(rows!=null)for(int i=0;i<rows.length();i++){JSONObject x=rows.optJSONObject(i);if(x!=null)items.add(x);}
-                renderItems(); status.setText(items.isEmpty()?"No photos yet. Tap + to add existing post photos.":"Album photos remain subject to source post privacy.");
-                status.setVisibility(items.isEmpty()?View.VISIBLE:View.GONE);
-            }
-            public void error(String e) {
-                status.setText("Could not load this album. Tap to retry.\n"+e); status.setVisibility(View.VISIBLE);
-                status.setOnClickListener(v->loadAlbum()); toast(e);
-            }
+    private void loadAlbum(){pagePhotos(false);}
+    private void pagePhotos(boolean append){if(loadingPage)return;loadingPage=true;if(!append){items.clear();afterTime=null;afterId=null;grid.setAdapter(null);}status.setVisibility(View.VISIBLE);status.setText("Đang tải ảnh…");
+        Api.run(()->(JSONObject)albumRpc("get_profile_album",Api.obj("p_album_id",albumId,"p_after_time",afterTime,"p_after_id",afterId,"p_limit",50)),new Api.Callback<JSONObject>(){
+            public void success(JSONObject result){loadingPage=false;album=result.optJSONObject("album");if(album==null){status.setText("Album không còn khả dụng.");return;}JSONArray page=result.optJSONArray("items");int old=items.size();if(page!=null)for(int i=0;i<page.length();i++){JSONObject row=page.optJSONObject(i);if(row!=null){items.add(row);afterTime=row.optString("created_at");afterId=row.optString("id");}}morePages=page!=null&&page.length()==50;if(!append)renderItems();else if(grid.getAdapter()!=null)grid.getAdapter().notifyItemRangeInserted(old,items.size()-old);status.setText(items.isEmpty()?"Album chưa có ảnh. Nhấn + để thêm ảnh từ bài viết.":"");status.setVisibility(items.isEmpty()?View.VISIBLE:View.GONE);}
+            public void error(String e){loadingPage=false;status.setText(e+" · Chạm để thử lại");status.setVisibility(View.VISIBLE);status.setOnClickListener(v->pagePhotos(append));}
         });
     }    private void renderItems() {
         grid.setLayoutManager(new GridLayoutManager(this,3));
         grid.setAdapter(new RecyclerView.Adapter<PhotoHolder>() {
-            public PhotoHolder onCreateViewHolder(android.view.ViewGroup p,int t) { ImageView im=new ImageView(ProfileAlbumsActivity.this); im.setScaleType(ImageView.ScaleType.CENTER_CROP); return new PhotoHolder(im); }
-            public void onBindViewHolder(PhotoHolder h,int pos) { JSONObject x=items.get(pos); String ref=Dto.asset(Dto.nullable(x,"asset_id")); Glide.with(ProfileAlbumsActivity.this).load(ref).centerCrop().into(h.image); h.image.setContentDescription("Album photo"); h.image.setOnClickListener(v->{JSONArray refs=new JSONArray(); for(JSONObject it:items)refs.put("asset://"+it.optString("asset_id")); startActivity(ProfilePhotoViewerActivity.intent(ProfileAlbumsActivity.this,refs,pos));}); h.image.setOnLongClickListener(v->{if(!ownerId.equals(com.example.meetomxh.supabase.SessionManager.getInstance().uid()))return false;String[] actions={"Set as album cover","Remove from album"}; new AlertDialog.Builder(ProfileAlbumsActivity.this).setItems(actions,(d,which)->{String rpc=which==0?"set_profile_album_cover":"remove_profile_album_photo"; JSONObject args=which==0?Api.obj("p_album_id",albumId,"p_item_id",x.optString("id")):Api.obj("p_album_id",albumId,"p_item_id",x.optString("id")); Api.run(()->RpcClient.call(rpc,args),new Api.Callback<Object>(){public void success(Object r){loadAlbum();}public void error(String e){toast(e);}});}).show();return true;}); }
+            public PhotoHolder onCreateViewHolder(android.view.ViewGroup p,int t) { ImageView im=new ImageView(ProfileAlbumsActivity.this);im.setLayoutParams(new RecyclerView.LayoutParams(-1,dp(130))); im.setScaleType(ImageView.ScaleType.CENTER_CROP); return new PhotoHolder(im); }
+            public void onBindViewHolder(PhotoHolder h,int pos) { JSONObject x=items.get(pos); String ref=Dto.asset(Dto.nullable(x,"asset_id")); Glide.with(ProfileAlbumsActivity.this).load(ref).centerCrop().into(h.image); h.image.setContentDescription("Album photo"); h.image.setOnClickListener(v->{JSONArray refs=new JSONArray(); for(JSONObject it:items)refs.put("asset://"+it.optString("asset_id")); startActivity(ProfilePhotoViewerActivity.intent(ProfileAlbumsActivity.this,refs,pos));}); h.image.setOnLongClickListener(v->{if(!ownerId.equals(com.example.meetomxh.supabase.SessionManager.getInstance().uid()))return false;String[] actions={"Đặt làm ảnh bìa","Xóa khỏi album"}; new AlertDialog.Builder(ProfileAlbumsActivity.this).setItems(actions,(d,which)->{String rpc=which==0?"set_profile_album_cover":"remove_profile_album_photo"; JSONObject args=which==0?Api.obj("p_album_id",albumId,"p_item_id",x.optString("id")):Api.obj("p_album_id",albumId,"p_item_id",x.optString("id")); Api.run(()->RpcClient.call(rpc,args),new Api.Callback<Object>(){public void success(Object r){loadAlbum();}public void error(String e){toast(e);}});}).show();return true;}); }
             public int getItemCount(){return items.size();}
         });
     }
     private void showAlbumActions() {
-        String[] actions={"Add existing photos","Edit album","Delete album"};
-        new AlertDialog.Builder(this).setTitle(album==null?"Album":album.optString("title")).setItems(actions,(d,i)->{if(i==0)addPhotos();else if(i==1)showAlbumForm(album);else new AlertDialog.Builder(this).setMessage("Delete this album? Original posts and media stay unchanged.").setNegativeButton("Cancel",null).setPositiveButton("Delete",(a,b)->Api.run(()->albumRpc("delete_profile_album",Api.obj("p_album_id",albumId)),new Api.Callback<Object>(){public void success(Object r){albumId=null;loadAlbums();}public void error(String e){toast(e);}})).show();}).show();
+        String[] actions={"Thêm ảnh từ bài viết","Chỉnh sửa album","Xóa album"};
+        new AlertDialog.Builder(this).setTitle(album==null?"Album":album.optString("title")).setItems(actions,(d,i)->{if(i==0)addPhotos();else if(i==1)showAlbumForm(album);else new AlertDialog.Builder(this).setMessage("Xóa album này? Bài viết và ảnh gốc vẫn được giữ.").setNegativeButton("Hủy",null).setPositiveButton("Xóa",(a,b)->Api.run(()->albumRpc("delete_profile_album",Api.obj("p_album_id",albumId)),new Api.Callback<Object>(){public void success(Object r){albumId=null;loadAlbums();}public void error(String e){toast(e);}})).show();}).show();
     }
     private void showAlbumForm(JSONObject existing) {
         LinearLayout form=new LinearLayout(this); form.setPadding(dp(20),dp(8),dp(20),dp(8)); form.setOrientation(LinearLayout.VERTICAL);
-        EditText name=new EditText(this); name.setHint("Album name"); name.setText(existing==null?"":existing.optString("title")); form.addView(name);
-        EditText description=new EditText(this); description.setHint("Description"); description.setText(existing==null?"":existing.optString("description")); form.addView(description);
-        Spinner audience=new Spinner(this); String[] options={"friends","public","private"}; audience.setAdapter(new ArrayAdapter<>(this,android.R.layout.simple_spinner_dropdown_item,options)); if(existing!=null){for(int i=0;i<options.length;i++)if(options[i].equals(existing.optString("audience")))audience.setSelection(i);} form.addView(audience);
-        new AlertDialog.Builder(this).setTitle(existing==null?"Create album":"Edit album").setView(form).setNegativeButton("Cancel",null).setPositiveButton("Save",(d,w)->{
+        EditText name=new EditText(this); name.setHint("Tên album"); name.setText(existing==null?"":existing.optString("title")); form.addView(name);
+        EditText description=new EditText(this); description.setHint("Mô tả"); description.setText(existing==null?"":existing.optString("description")); form.addView(description);
+        Spinner audience=new Spinner(this); com.example.meetomxh.supabase.AudienceChoices.spinner(this,audience,existing==null?"followers":existing.optString("audience"));form.addView(audience);
+        AlertDialog dialog=new AlertDialog.Builder(this).setTitle(existing==null?"Tạo album":"Chỉnh sửa album").setView(form).setNegativeButton("Hủy",null).setPositiveButton("Lưu",null).create();dialog.setOnShowListener(d->dialog.getButton(-1).setOnClickListener(w->{
+            if(!audience.isEnabled())return;if(name.getText().toString().trim().isEmpty()||name.getText().length()>100){name.setError("Nhập tên album từ 1 đến 100 ký tự");return;}dialog.getButton(-1).setEnabled(false);
             JSONObject args; String rpc;
-            if(existing==null){rpc="create_profile_album";args=Api.obj("p_title",name.getText().toString(),"p_description",description.getText().toString(),"p_audience",audience.getSelectedItem().toString());}
-            else{rpc="update_profile_album";args=Api.obj("p_album_id",albumId,"p_title",name.getText().toString(),"p_description",description.getText().toString(),"p_audience",audience.getSelectedItem().toString(),"p_expected_version",existing.optLong("version",1));}
-            Api.run(()->(JSONObject)albumRpc(rpc,args),new Api.Callback<JSONObject>(){public void success(JSONObject r){if(albumId==null)loadAlbums();else loadAlbum();}public void error(String e){toast(e);}});
-        }).show();
+            if(existing==null){rpc="create_profile_album";args=Api.obj("p_title",name.getText().toString(),"p_description",description.getText().toString(),"p_audience",com.example.meetomxh.supabase.AudienceChoices.value(audience));}
+            else{rpc="update_profile_album";args=Api.obj("p_album_id",albumId,"p_title",name.getText().toString(),"p_description",description.getText().toString(),"p_audience",com.example.meetomxh.supabase.AudienceChoices.value(audience),"p_expected_version",existing.optLong("version",1));}
+            Api.run(()->(JSONObject)albumRpc(rpc,args),new Api.Callback<JSONObject>(){public void success(JSONObject r){dialog.dismiss();if(albumId==null)loadAlbums();else loadAlbum();}public void error(String e){dialog.getButton(-1).setEnabled(true);toast(e);}});
+        }));dialog.show();
     }
     private void addPhotos() {
         Api.run(()->(JSONArray)albumRpc("list_profile_photo_candidates",Api.obj("p_after_time",null,"p_after_id",null,"p_limit",50)),new Api.Callback<JSONArray>(){
-            public void success(JSONArray rows){if(rows==null||rows.length()==0){toast("No eligible photos found. Add a photo to a personal post first.");return;} List<JSONObject> choices=new ArrayList<>();List<String> labels=new ArrayList<>();for(int i=0;i<rows.length();i++){JSONObject x=rows.optJSONObject(i);if(x!=null){choices.add(x);labels.add("Photo from "+x.optString("created_at","post"));}} String[] l=labels.toArray(new String[0]); boolean[] checked=new boolean[l.length]; new AlertDialog.Builder(ProfileAlbumsActivity.this).setTitle("Choose photos").setMultiChoiceItems(l,checked,(d,index,on)->checked[index]=on).setNegativeButton("Cancel",null).setPositiveButton("Add",(d,w)->addCandidates(choices,checked)).show();}
+            public void success(JSONArray rows){if(rows==null||rows.length()==0){toast("Chưa có ảnh phù hợp. Hãy thêm ảnh vào bài viết cá nhân trước.");return;} List<JSONObject> choices=new ArrayList<>();List<String> labels=new ArrayList<>();for(int i=0;i<rows.length();i++){JSONObject x=rows.optJSONObject(i);if(x!=null){choices.add(x);labels.add("Ảnh "+(i+1));}} String[] l=labels.toArray(new String[0]); boolean[] checked=new boolean[l.length]; new AlertDialog.Builder(ProfileAlbumsActivity.this).setTitle("Chọn ảnh").setMultiChoiceItems(l,checked,(d,index,on)->checked[index]=on).setNegativeButton("Hủy",null).setPositiveButton("Thêm",(d,w)->addCandidates(choices,checked)).show();}
             public void error(String e){toast(e);}
         });
     }
@@ -172,6 +157,7 @@ public final class ProfileAlbumsActivity extends AppCompatActivity {
             return Boolean.TRUE;
         },new Api.Callback<Boolean>(){public void success(Boolean added){if(added)loadAlbum();}public void error(String e){toast(e);}});
     }
+    @Override protected void onResume(){super.onResume();if(ownerId!=null&&!ownerId.equals(com.example.meetomxh.supabase.SessionManager.getInstance().uid())&&!loadingPage){if(albumId==null)loadAlbums();else loadAlbum();}}
     private void toast(String value){Toast.makeText(this,value,Toast.LENGTH_LONG).show();}
     private static class CardHolder extends RecyclerView.ViewHolder { ImageView image;TextView label;CardHolder(View v,ImageView i,TextView t){super(v);image=i;label=t;} }
     private static class PhotoHolder extends RecyclerView.ViewHolder { ImageView image;PhotoHolder(View v){super(v);image=(ImageView)v;} }

@@ -12,6 +12,7 @@ import java.util.Map;
 public class Chat {
     public long version,highWater,lastReadSeq,lastDeliveredSeq,unreadCount;
     public String title,state,role;
+    public boolean archived,muted; public String avatar; public String ownerId;
     private String chatId;
     private String type;
     private List<String> participants;

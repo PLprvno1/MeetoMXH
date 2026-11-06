@@ -29,7 +29,6 @@ import com.example.meetomxh.databinding.ActivitySearchBinding;
 import com.example.meetomxh.fragments.CommentsBottomSheetFragment;
 import com.example.meetomxh.models.Post;
 import com.example.meetomxh.repositories.AdvancedSearchRepository;
-import com.example.meetomxh.repositories.CommunityGroupRepository;
 import com.example.meetomxh.supabase.Api;
 import com.example.meetomxh.supabase.Dto;
 import com.example.meetomxh.supabase.PostDetails;
@@ -47,21 +46,20 @@ import java.util.Locale;
 import java.util.TimeZone;
 
 public class SearchActivity extends AppCompatActivity implements FeedAdapter.OnPostClickListener {
-    private static final int ALL=0, PEOPLE=1, POSTS=2, GROUPS=3, HISTORY=4;
+    private static final int ALL=0, PEOPLE=1, POSTS=2, HISTORY=3;
     private static final int ALL_LIMIT=5, PAGE_LIMIT=20;
     private ActivitySearchBinding binding;
     private final Handler handler=new Handler(Looper.getMainLooper());
     private Runnable pendingSearch;
     private int generation=0,tab=ALL,pendingInitial=0;
-    private String query="",sort="relevance",afterName,peopleAfterTime,peopleAfterId,groupAfterTime,groupAfterId,postAfterTime,postAfterId;
+    private String query="",sort="relevance",afterName,peopleAfterTime,peopleAfterId,postAfterTime,postAfterId;
     private float postAfterRank=-1f;
-    private boolean mediaOnly,hasMorePeople,hasMorePosts,hasMoreGroups,loadingMore,spinnersReady,searchError;
+    private boolean mediaOnly,hasMorePeople,hasMorePosts,loadingMore,spinnersReady,searchError;
     private boolean resumedOnce;
     private String since;
-    private JSONArray people=new JSONArray(),groups=new JSONArray(),history=new JSONArray();
+    private JSONArray people=new JSONArray(),history=new JSONArray();
     private List<Post> posts=new ArrayList<>();
     private PeopleAdapter peopleAdapter;
-    private GroupAdapter groupAdapter;
     private FeedAdapter postAdapter;
 
     @Override protected void onCreate(Bundle savedInstanceState) {
@@ -69,7 +67,7 @@ public class SearchActivity extends AppCompatActivity implements FeedAdapter.OnP
         binding=ActivitySearchBinding.inflate(getLayoutInflater());setContentView(binding.getRoot());
         if(savedInstanceState!=null){query=savedInstanceState.getString("query","");tab=savedInstanceState.getInt("tab",ALL);}
         setup();
-        if(tab!=ALL)binding.searchTabs.check(tab==PEOPLE?R.id.tabPeople:tab==POSTS?R.id.tabPosts:R.id.tabGroups);
+        if(tab!=ALL)binding.searchTabs.check(tab==PEOPLE?R.id.tabPeople:R.id.tabPosts);
         if(!query.isEmpty())binding.etQuery.setText(query);
         loadHistory();
         if(query.length()>=2) { if(pendingSearch!=null)handler.removeCallbacks(pendingSearch);binding.etQuery.post(()->runSearch(false)); }
@@ -82,9 +80,9 @@ public class SearchActivity extends AppCompatActivity implements FeedAdapter.OnP
         binding.searchTabs.check(R.id.tabAll);
         binding.searchTabs.addOnButtonCheckedListener((group,checkedId,isChecked)->{
             if(!isChecked)return;
-            tab=checkedId==R.id.tabPeople?PEOPLE:checkedId==R.id.tabPosts?POSTS:checkedId==R.id.tabGroups?GROUPS:ALL;
+            tab=checkedId==R.id.tabPeople?PEOPLE:checkedId==R.id.tabPosts?POSTS:ALL;
             showCurrent();
-            if(query.length()>=2 && (tab==PEOPLE&&people.length()==0 || tab==POSTS&&posts.isEmpty() || tab==GROUPS&&groups.length()==0)) runSearch(false);
+            if(query.length()>=2 && (tab==PEOPLE&&people.length()==0 || tab==POSTS&&posts.isEmpty())) runSearch(false);
         });
         binding.etQuery.setOnEditorActionListener((v,action,event)->{
             if(action==EditorInfo.IME_ACTION_SEARCH){submitQuery(binding.etQuery.getText().toString());return true;}return false;
@@ -93,7 +91,7 @@ public class SearchActivity extends AppCompatActivity implements FeedAdapter.OnP
             @Override public void beforeTextChanged(CharSequence s,int start,int count,int after){}
             @Override public void onTextChanged(CharSequence s,int start,int before,int count){
                 generation++;if(pendingSearch!=null)handler.removeCallbacks(pendingSearch);
-                query=s.toString().trim();searchError=false;pendingInitial=query.length()>=2?3:0;binding.btnClear.setVisibility(query.isEmpty()?View.GONE:View.VISIBLE);
+                query=s.toString().trim();searchError=false;pendingInitial=query.length()>=2?2:0;binding.btnClear.setVisibility(query.isEmpty()?View.GONE:View.VISIBLE);
                 resetPages();
                 if(query.length()<2){showCurrent();return;}
                 setStatus("Searching…",false);showCurrent();
@@ -108,10 +106,8 @@ public class SearchActivity extends AppCompatActivity implements FeedAdapter.OnP
         setupFilters();
 
         peopleAdapter=new PeopleAdapter(this::openProfile);
-        groupAdapter=new GroupAdapter(this::openGroup);
         postAdapter=new FeedAdapter(this,false);
         binding.rvPeople.setLayoutManager(new LinearLayoutManager(this));binding.rvPeople.setAdapter(peopleAdapter);
-        binding.rvGroups.setLayoutManager(new LinearLayoutManager(this));binding.rvGroups.setAdapter(groupAdapter);
         binding.rvPosts.setLayoutManager(new LinearLayoutManager(this));binding.rvPosts.setAdapter(postAdapter);
     }
 
@@ -151,22 +147,21 @@ public class SearchActivity extends AppCompatActivity implements FeedAdapter.OnP
         ((android.view.inputmethod.InputMethodManager)getSystemService(INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(binding.etQuery.getWindowToken(),0);
     }
 
-    private void resetPages(){people=new JSONArray();groups=new JSONArray();posts=new ArrayList<>();resetPeoplePage();resetGroupPage();resetPostPage();}
+    private void resetPages(){people=new JSONArray();posts=new ArrayList<>();resetPeoplePage();resetPostPage();}
     private void resetPeoplePage(){afterName=null;peopleAfterTime=null;peopleAfterId=null;hasMorePeople=false;}
-    private void resetGroupPage(){groupAfterTime=null;groupAfterId=null;hasMoreGroups=false;}
+
     private void resetPostPage(){postAfterTime=null;postAfterId=null;postAfterRank=-1f;hasMorePosts=false;}
 
     private void runSearch(boolean append){
         if(query.trim().length()<2){showCurrent();return;}
         final int token=generation;
         if(!append){resetPages();searchError=false;}
-        loadingMore=append;pendingInitial=append?1:3;binding.swipeSearch.setRefreshing(append);
+        loadingMore=append;pendingInitial=append?1:2;binding.swipeSearch.setRefreshing(append);
         if(!append)setStatus("Searching…",false);showCurrent();
         if(!append){
-            loadPeople(token,false,ALL_LIMIT);loadPosts(token,false,ALL_LIMIT);loadGroups(token,false,ALL_LIMIT);
+            loadPeople(token,false,ALL_LIMIT);loadPosts(token,false,ALL_LIMIT);
         }else if(tab==PEOPLE)loadPeople(token,true,PAGE_LIMIT);
         else if(tab==POSTS)loadPosts(token,true,PAGE_LIMIT);
-        else if(tab==GROUPS)loadGroups(token,true,PAGE_LIMIT);
     }
 
     private void loadPeople(int token,boolean append,int limit){
@@ -182,19 +177,14 @@ public class SearchActivity extends AppCompatActivity implements FeedAdapter.OnP
             @Override public void error(String message){if(token!=generation)return;binding.swipeSearch.setRefreshing(false);markError("Post search failed. Tap to retry.",append);}
         });
     }
-    private void loadGroups(int token,boolean append,int limit){
-        CommunityGroupRepository.searchAdvanced(query,append?groupAfterTime:null,append?groupAfterId:null,limit,new CommunityGroupRepository.Callback<JSONArray>(){
-            @Override public void success(JSONArray page){if(token!=generation)return;binding.swipeSearch.setRefreshing(false);if(!append)groups=new JSONArray();merge(groups,page);hasMoreGroups=page.length()==limit;updateGroupCursor(page);if(!append)finishInitial();else{loadingMore=false;showCurrent();}}
-            @Override public void error(String message){if(token!=generation)return;binding.swipeSearch.setRefreshing(false);markError("Group search failed. Tap to retry.",append);}
-        });
-    }
+
 
     private void finishInitial(){pendingInitial=Math.max(0,pendingInitial-1);if(pendingInitial==0){if(!searchError)setStatus("",false);showCurrent();}}
     private void markError(String message,boolean append){loadingMore=false;searchError=true;setStatus(message,true);if(!append)finishInitial();showCurrent();}
     private void updatePeopleCursor(JSONArray page){if(page.length()>0){JSONObject last=page.optJSONObject(page.length()-1);afterName=last.optString("cursor_name");peopleAfterId=last.optString("profile_id");}}
-    private void updateGroupCursor(JSONArray page){if(page.length()>0){JSONObject last=page.optJSONObject(page.length()-1);groupAfterTime=last.optString("created_at");groupAfterId=last.optString("id");}}
+
     private static void merge(JSONArray into,JSONArray page){for(int i=0;i<page.length();i++)into.put(page.opt(i));}
-    private void loadMore(){if(loadingMore)return;int token=generation;if(tab==PEOPLE&&hasMorePeople)loadPeople(token,true,PAGE_LIMIT);else if(tab==POSTS&&hasMorePosts)loadPosts(token,true,PAGE_LIMIT);else if(tab==GROUPS&&hasMoreGroups)loadGroups(token,true,PAGE_LIMIT);}
+    private void loadMore(){if(loadingMore)return;int token=generation;if(tab==PEOPLE&&hasMorePeople)loadPeople(token,true,PAGE_LIMIT);else if(tab==POSTS&&hasMorePosts)loadPosts(token,true,PAGE_LIMIT);}
 
     private void loadHistory(){
         AdvancedSearchRepository.history(new AdvancedSearchRepository.Callback<JSONArray>(){
@@ -208,18 +198,17 @@ public class SearchActivity extends AppCompatActivity implements FeedAdapter.OnP
         binding.allScroll.setVisibility(tab==ALL?View.VISIBLE:View.GONE);
         binding.rvPeople.setVisibility(tab==PEOPLE?View.VISIBLE:View.GONE);
         binding.rvPosts.setVisibility(tab==POSTS?View.VISIBLE:View.GONE);
-        binding.rvGroups.setVisibility(tab==GROUPS?View.VISIBLE:View.GONE);
         binding.historyScroll.setVisibility(tab==HISTORY?View.VISIBLE:View.GONE);
         binding.postFilters.setVisibility(tab==POSTS?View.VISIBLE:View.GONE);
-        binding.btnLoadMore.setVisibility(tab==PEOPLE&&hasMorePeople||tab==POSTS&&hasMorePosts||tab==GROUPS&&hasMoreGroups?View.VISIBLE:View.GONE);
-        peopleAdapter.setItems(people);groupAdapter.setItems(groups);postAdapter.setPosts(posts);
+        binding.btnLoadMore.setVisibility(tab==PEOPLE&&hasMorePeople||tab==POSTS&&hasMorePosts?View.VISIBLE:View.GONE);
+        peopleAdapter.setItems(people);postAdapter.setPosts(posts);
         if(tab==ALL)renderAll();if(tab==HISTORY)renderHistory();
         if(query.length()<2&&tab!=HISTORY){binding.tvStatus.setVisibility(View.VISIBLE);binding.tvStatus.setText("Tìm người, bài viết và nhóm. Nhập ít nhất 2 ký tự.");}
-        else if(query.length()>=2&&pendingInitial==0&&!searchError){boolean empty=tab==PEOPLE?people.length()==0:tab==POSTS?posts.isEmpty():tab==GROUPS?groups.length()==0:false;if(empty)setStatus("Không có kết quả trong mục này.",false);}
+        else if(query.length()>=2&&pendingInitial==0&&!searchError){boolean empty=tab==PEOPLE?people.length()==0:tab==POSTS?posts.isEmpty():false;if(empty)setStatus("Không có kết quả trong mục này.",false);}
     }
 
     private void renderAll(){
-        binding.historySection.removeAllViews();binding.peopleSection.removeAllViews();binding.postsSection.removeAllViews();binding.groupsSection.removeAllViews();
+        binding.historySection.removeAllViews();binding.peopleSection.removeAllViews();binding.postsSection.removeAllViews();
         if(query.length()<2){renderHistoryRows(binding.historySection,true);return;}
         addSectionTitle(binding.peopleSection,"Mọi người",()->selectTab(PEOPLE));
         for(int i=0;i<Math.min(people.length(),ALL_LIMIT);i++)addPersonSummary(binding.peopleSection,people.optJSONObject(i));
@@ -227,9 +216,6 @@ public class SearchActivity extends AppCompatActivity implements FeedAdapter.OnP
         addSectionTitle(binding.postsSection,"Bài viết",()->selectTab(POSTS));
         for(int i=0;i<Math.min(posts.size(),ALL_LIMIT);i++)addPostSummary(binding.postsSection,posts.get(i));
         if(posts.isEmpty())addEmpty(binding.postsSection,"Không tìm thấy bài viết phù hợp");
-        addSectionTitle(binding.groupsSection,"Nhóm",()->selectTab(GROUPS));
-        for(int i=0;i<Math.min(groups.length(),ALL_LIMIT);i++)addGroupSummary(binding.groupsSection,groups.optJSONObject(i));
-        if(groups.length()==0)addEmpty(binding.groupsSection,"Không tìm thấy nhóm phù hợp");
         if(searchError)setStatus("Một số kết quả chưa tải được. Chạm để thử lại.",true);
         else if(pendingInitial>0)setStatus("Đang tìm kiếm…",false);
         else setStatus("",false);
@@ -270,28 +256,23 @@ public class SearchActivity extends AppCompatActivity implements FeedAdapter.OnP
     private void addPersonSummary(LinearLayout parent,JSONObject row){
         if(row==null)return;LinearLayout card=summaryCard(parent);ImageView avatar=new ImageView(this);avatar.setScaleType(ImageView.ScaleType.CENTER_CROP);LinearLayout.LayoutParams al=new LinearLayout.LayoutParams(48,48);card.addView(avatar,al);AvatarViews.load(avatar,Dto.asset(Dto.nullable(row,"avatar_asset_id")),row.optString("avatar_preset","neutral"));
         LinearLayout text=new LinearLayout(this);text.setOrientation(LinearLayout.VERTICAL);text.setPadding(12,0,0,0);card.addView(text,new LinearLayout.LayoutParams(0,-2,1));
-        addText(text,row.optString("display_name"),16,true);String state=relationLabel(row.optString("friend_status"))+(row.optBoolean("following")?" · Đang theo dõi":"");addText(text,state,13,false);
+        addText(text,row.optString("display_name"),16,true);String state=relationLabel("")+(row.optBoolean("following")?" · Đang theo dõi":"");addText(text,state,13,false);
         card.setOnClickListener(v->openProfile(row.optString("profile_id")));
     }
-    private String relationLabel(String state){switch(state){case "friend":return "Bạn bè";case "outgoing":return "Đã gửi lời mời";case "incoming":return "Có lời mời kết bạn";default:return "Thành viên Meeto";}}
+    private String relationLabel(String s){return "Thành viên Meeto";}
     private void addPostSummary(LinearLayout parent,Post post){
         LinearLayout card=summaryCard(parent);addText(card,post.getUserName(),14,true);String body=post.getContent().trim();if(body.isEmpty())body="Bài viết có ảnh hoặc video";if(body.length()>160)body=body.substring(0,157)+"…";addText(card,body,15,false);
         addText(card,post.getLikesCount()+" lượt cảm xúc · "+post.getCommentsCount()+" bình luận",13,false);card.setOnClickListener(v->PostDetails.show(this,post.getPostId()));
     }
-    private void addGroupSummary(LinearLayout parent,JSONObject group){
-        if(group==null)return;LinearLayout card=summaryCard(parent);ImageView cover=new ImageView(this);cover.setScaleType(ImageView.ScaleType.CENTER_CROP);cover.setImageResource(R.drawable.bg_cover_placeholder);card.addView(cover,new LinearLayout.LayoutParams(-1,120));String ref=Dto.asset(Dto.nullable(group,"cover_asset_id"));if(!ref.isEmpty())Glide.with(this).load(ref).placeholder(R.drawable.bg_cover_placeholder).into(cover);
-        addText(card,group.optString("name"),17,true);addText(card,("public".equals(group.optString("privacy"))?"Công khai":"Riêng tư")+" · "+group.optInt("member_count")+" thành viên",13,false);
-        String membership=group.optString("membership_state");String request=group.optString("request_state");addText(card,"active".equals(membership)?"Thành viên":"pending".equals(request)?"Đang chờ duyệt":"Tham gia hoặc gửi yêu cầu",13,false);
-        card.setOnClickListener(v->openGroup(group.optString("id")));
-    }
+
     private LinearLayout summaryCard(LinearLayout parent){LinearLayout card=new LinearLayout(this);card.setOrientation(LinearLayout.VERTICAL);card.setPadding(14,12,14,12);card.setBackgroundResource(R.drawable.bg_card_rounded);LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,-2);lp.bottomMargin=8;parent.addView(card,lp);return card;}
     private void addText(LinearLayout parent,String value,int size,boolean bold){TextView t=new TextView(this);t.setText(value);t.setTextSize(size);t.setTextColor(getColor(R.color.text_primary));if(bold)t.setTypeface(null,Typeface.BOLD);t.setPadding(2,3,2,3);parent.addView(t);}
 
-    private void selectTab(int value){tab=value;binding.searchTabs.check(value==PEOPLE?R.id.tabPeople:value==POSTS?R.id.tabPosts:value==GROUPS?R.id.tabGroups:R.id.tabAll);showCurrent();}
+    private void selectTab(int value){tab=value;binding.searchTabs.check(value==PEOPLE?R.id.tabPeople:value==POSTS?R.id.tabPosts:R.id.tabAll);showCurrent();}
     private void showStatus(String text,boolean retry){binding.tvStatus.setText(text);binding.tvStatus.setVisibility(text==null||text.isEmpty()?View.GONE:View.VISIBLE);binding.tvStatus.setClickable(retry);}
     private void setStatus(String text,boolean retry){showStatus(text,retry);binding.progressSearch.setVisibility("Searching…".equals(text)?View.VISIBLE:View.GONE);}
     private void openProfile(String id){if(id!=null&&!id.isEmpty())startActivity(new Intent(this,ProfileActivity.class).putExtra("target_uid",id));}
-    private void openGroup(String id){if(id!=null&&!id.isEmpty())startActivity(new Intent(this,CommunityGroupDetailActivity.class).putExtra("group_id",id));}
+
     @Override protected void onSaveInstanceState(@NonNull Bundle out){out.putString("query",query);out.putInt("tab",tab);super.onSaveInstanceState(out);}
     @Override protected void onResume(){super.onResume();if(resumedOnce&&query.length()>=2)runSearch(false);resumedOnce=true;}
     @Override protected void onDestroy(){if(pendingSearch!=null)handler.removeCallbacks(pendingSearch);binding=null;super.onDestroy();}
@@ -314,18 +295,10 @@ public class SearchActivity extends AppCompatActivity implements FeedAdapter.OnP
         interface Click{void open(String id);}private final Click click;private final List<JSONObject> rows=new ArrayList<>();
         PeopleAdapter(Click c){click=c;}void setItems(JSONArray data){rows.clear();for(int i=0;i<data.length();i++)if(data.optJSONObject(i)!=null)rows.add(data.optJSONObject(i));notifyDataSetChanged();}
         @NonNull @Override public PeopleHolder onCreateViewHolder(@NonNull ViewGroup parent,int type){LinearLayout row=new LinearLayout(parent.getContext());row.setGravity(Gravity.CENTER_VERTICAL);row.setPadding(12,10,12,10);row.setBackgroundResource(R.drawable.bg_card_rounded);ImageView avatar=new ImageView(parent.getContext());avatar.setScaleType(ImageView.ScaleType.CENTER_CROP);row.addView(avatar,new LinearLayout.LayoutParams(52,52));LinearLayout txt=new LinearLayout(parent.getContext());txt.setOrientation(LinearLayout.VERTICAL);txt.setPadding(12,0,0,0);row.addView(txt,new LinearLayout.LayoutParams(0,-2,1));TextView name=new TextView(parent.getContext());name.setTextSize(16);name.setTypeface(null,Typeface.BOLD);name.setTextColor(parent.getContext().getColor(R.color.text_primary));txt.addView(name);TextView meta=new TextView(parent.getContext());meta.setTextSize(13);meta.setTextColor(parent.getContext().getColor(R.color.text_secondary));txt.addView(meta);return new PeopleHolder(row,avatar,name,meta);}
-        @Override public void onBindViewHolder(@NonNull PeopleHolder h,int p){JSONObject row=rows.get(p);h.name.setText(row.optString("display_name"));h.meta.setText(relationLabelStatic(row.optString("friend_status"))+(row.optBoolean("following")?" · Đang theo dõi":""));AvatarViews.load(h.avatar,Dto.asset(Dto.nullable(row,"avatar_asset_id")),row.optString("avatar_preset","neutral"));h.itemView.setOnClickListener(v->click.open(row.optString("profile_id")));}
+        @Override public void onBindViewHolder(@NonNull PeopleHolder h,int p){JSONObject row=rows.get(p);h.name.setText(row.optString("display_name"));h.meta.setText(relationLabelStatic("")+(row.optBoolean("following")?" · Đang theo dõi":""));AvatarViews.load(h.avatar,Dto.asset(Dto.nullable(row,"avatar_asset_id")),row.optString("avatar_preset","neutral"));h.itemView.setOnClickListener(v->click.open(row.optString("profile_id")));}
         @Override public int getItemCount(){return rows.size();}
     }
-    private static String relationLabelStatic(String s){switch(s){case "friend":return "Bạn bè";case "outgoing":return "Đã gửi lời mời";case "incoming":return "Có lời mời kết bạn";default:return "Thành viên Meeto";}}
+    private static String relationLabelStatic(String s){return "Thành viên Meeto";}
     private static final class PeopleHolder extends RecyclerView.ViewHolder{ImageView avatar;TextView name,meta;PeopleHolder(View v,ImageView a,TextView n,TextView m){super(v);avatar=a;name=n;meta=m;}}
 
-    private static final class GroupAdapter extends RecyclerView.Adapter<GroupHolder>{
-        interface Click{void open(String id);}private final Click click;private final List<JSONObject> rows=new ArrayList<>();GroupAdapter(Click c){click=c;}
-        void setItems(JSONArray data){rows.clear();for(int i=0;i<data.length();i++)if(data.optJSONObject(i)!=null)rows.add(data.optJSONObject(i));notifyDataSetChanged();}
-        @NonNull @Override public GroupHolder onCreateViewHolder(@NonNull ViewGroup parent,int type){LinearLayout card=new LinearLayout(parent.getContext());card.setOrientation(LinearLayout.VERTICAL);card.setPadding(10,10,10,10);card.setBackgroundResource(R.drawable.bg_card_rounded);ImageView image=new ImageView(parent.getContext());image.setScaleType(ImageView.ScaleType.CENTER_CROP);card.addView(image,new LinearLayout.LayoutParams(-1,140));TextView name=new TextView(parent.getContext());name.setTextSize(17);name.setTypeface(null,Typeface.BOLD);name.setTextColor(parent.getContext().getColor(R.color.text_primary));name.setPadding(4,8,4,2);card.addView(name);TextView meta=new TextView(parent.getContext());meta.setTextSize(13);meta.setTextColor(parent.getContext().getColor(R.color.text_secondary));card.addView(meta);TextView status=new TextView(parent.getContext());status.setTextSize(13);status.setTextColor(parent.getContext().getColor(R.color.text_secondary));card.addView(status);return new GroupHolder(card,image,name,meta,status);}
-        @Override public void onBindViewHolder(@NonNull GroupHolder h,int p){JSONObject g=rows.get(p);h.name.setText(g.optString("name"));h.meta.setText(("public".equals(g.optString("privacy"))?"Công khai":"Riêng tư")+" · "+g.optInt("member_count")+" thành viên");h.status.setText("active".equals(g.optString("membership_state"))?"Thành viên":"pending".equals(g.optString("request_state"))?"Đang chờ duyệt":"Tham gia hoặc gửi yêu cầu");h.image.setImageResource(R.drawable.bg_cover_placeholder);String ref=Dto.asset(Dto.nullable(g,"cover_asset_id"));if(!ref.isEmpty())Glide.with(h.image).load(ref).placeholder(R.drawable.bg_cover_placeholder).into(h.image);h.itemView.setOnClickListener(v->click.open(g.optString("id")));}
-        @Override public int getItemCount(){return rows.size();}
-    }
-    private static final class GroupHolder extends RecyclerView.ViewHolder{ImageView image;TextView name,meta,status;GroupHolder(View v,ImageView i,TextView n,TextView m,TextView s){super(v);image=i;name=n;meta=m;status=s;}}
 }

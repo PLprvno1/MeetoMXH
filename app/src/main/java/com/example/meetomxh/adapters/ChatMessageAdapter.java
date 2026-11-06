@@ -198,7 +198,7 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<ChatMessageAdapter.
             binding.messageRow.setGravity(mine ? Gravity.END : Gravity.START);
             binding.messageBubble.setBackgroundResource(mine
                     ? R.drawable.bg_chat_bubble_mine : R.drawable.bg_chat_bubble_other);
-            binding.tvMessageText.setText(message.getDisplayText());
+            binding.tvMessageText.setText(message.getDisplayText());binding.sharedAuthorAvatar.setVisibility(message.hasSharedPost()&&message.isSharedPostAvailable()?android.view.View.VISIBLE:android.view.View.GONE);if(message.hasSharedPost()&&message.isSharedPostAvailable())com.example.meetomxh.ui.AvatarViews.load(binding.sharedAuthorAvatar,message.getSharedAvatar(),message.getSharedAvatarPreset());else Glide.with(binding.sharedAuthorAvatar).clear(binding.sharedAuthorAvatar);
             String context = message.isForwarded() ? "Đã chuyển tiếp" : "";
             if (message.getEditedAt() != null && !message.isRecalled())
                 context = context.isEmpty() ? "Đã chỉnh sửa" : context + " · Đã chỉnh sửa";
@@ -206,25 +206,23 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<ChatMessageAdapter.
             binding.tvMessageContext.setVisibility(context.isEmpty() ? android.view.View.GONE : android.view.View.VISIBLE);
             if(message.hasSharedPost()&&message.isSharedPostAvailable()&&message.getSharedPostId()!=null){
                 binding.tvMessageText.setOnClickListener(v->{
-                    if(message.getSharedPostVideoAssetId()!=null){
-                        v.getContext().startActivity(new android.content.Intent(v.getContext(),com.example.meetomxh.VideoPlayerActivity.class)
-                                .putExtra(com.example.meetomxh.VideoPlayerActivity.EXTRA_ASSET,
-                                        com.example.meetomxh.supabase.Dto.asset(message.getSharedPostVideoAssetId())));
-                    }else com.example.meetomxh.supabase.PostDetails.show((android.app.Activity)v.getContext(),message.getSharedPostId());
+                    com.example.meetomxh.supabase.PostDetails.show((android.app.Activity)v.getContext(),message.getSharedPostId());
                 });
                 binding.tvMessageText.setPaintFlags(binding.tvMessageText.getPaintFlags()|android.graphics.Paint.UNDERLINE_TEXT_FLAG);
             }else{
-                binding.tvMessageText.setOnClickListener(null);
+                binding.tvMessageText.setOnClickListener(message.getStoryAuthor()==null?null:v->v.getContext().startActivity(new android.content.Intent(v.getContext(),com.example.meetomxh.StoryViewActivity.class).putExtra(com.example.meetomxh.StoryViewActivity.EXTRA_AUTHOR_ID,message.getStoryAuthor()).putExtra(com.example.meetomxh.StoryViewActivity.EXTRA_STORY_ID,message.getStoryId())));
                 binding.tvMessageText.setPaintFlags(binding.tvMessageText.getPaintFlags()&~android.graphics.Paint.UNDERLINE_TEXT_FLAG);
             }
-            boolean video = "video".equals(message.getType());
+            boolean shared=message.hasSharedPost()&&message.isSharedPostAvailable()&&message.getSharedPreview()!=null;
+            String mediaReference=shared?message.getSharedPreview():message.getImageUrl();
+            boolean video = shared?message.getSharedMime().startsWith("video/"):"video".equals(message.getType());
             boolean voice = "voice".equals(message.getType()) && !message.isRecalled()
                     && com.example.meetomxh.repositories.ChatRepository.isValidStorageMediaReference(message.getImageUrl());
-            boolean hasMedia = !message.isRecalled() && ("image".equals(message.getType()) || video)
+            boolean hasMedia = shared || !message.isRecalled() && ("image".equals(message.getType()) || video)
                     && com.example.meetomxh.repositories.ChatRepository.isValidStorageMediaReference(message.getImageUrl());
             binding.layoutMessageMedia.setVisibility(hasMedia ? android.view.View.VISIBLE : android.view.View.GONE);
             binding.layoutVoiceMessage.setVisibility(voice ? android.view.View.VISIBLE : android.view.View.GONE);
-            binding.tvMessageText.setVisibility(hasMedia || voice ? android.view.View.GONE : android.view.View.VISIBLE);
+            binding.tvMessageText.setVisibility((hasMedia && !shared) || voice ? android.view.View.GONE : android.view.View.VISIBLE);
             if (voice) {
                 binding.btnVoicePlay.setImageResource(activeVoice && voicePlaying ? R.drawable.ic_pause : R.drawable.ic_play);
                 binding.btnVoicePlay.setImageTintList(ContextCompat.getColorStateList(binding.getRoot().getContext(),
@@ -236,14 +234,14 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<ChatMessageAdapter.
                 binding.btnVoicePlay.setOnClickListener(v -> { if (listener != null) listener.onVoiceTap(message); });
             } else binding.btnVoicePlay.setOnClickListener(null);
             binding.tvVideoPlay.setVisibility(hasMedia && video ? android.view.View.VISIBLE : android.view.View.GONE);
-            binding.tvMessageText.setVisibility(hasMedia || voice ? android.view.View.GONE : android.view.View.VISIBLE);
-            binding.ivMessageImage.setTag(hasMedia ? message.getImageUrl() : null);
+            binding.tvMessageText.setVisibility((hasMedia && !shared) || voice ? android.view.View.GONE : android.view.View.VISIBLE);
+            binding.ivMessageImage.setTag(hasMedia ? mediaReference : null);
             if (hasMedia && !video) {
-                Glide.with(binding.ivMessageImage).applyDefaultRequestOptions(new com.bumptech.glide.request.RequestOptions().diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.NONE).skipMemoryCache(true)).load(message.getImageUrl())
+                Glide.with(binding.ivMessageImage).applyDefaultRequestOptions(new com.bumptech.glide.request.RequestOptions().diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.NONE).skipMemoryCache(true)).load(mediaReference)
                         .placeholder(R.drawable.ic_photo).error(R.drawable.ic_photo).centerCrop().into(binding.ivMessageImage);
             } else if (hasMedia) {
                 Glide.with(binding.ivMessageImage).clear(binding.ivMessageImage);
-                String reference = message.getImageUrl();
+                String reference = mediaReference;
                 com.example.meetomxh.supabase.Api.run(() -> com.example.meetomxh.storage.SupabaseStorage.videoThumbnail(reference),
                         new com.example.meetomxh.supabase.Api.Callback<android.graphics.Bitmap>() {
                             @Override public void success(android.graphics.Bitmap bitmap) {
@@ -259,6 +257,7 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<ChatMessageAdapter.
             }
             if (hasMedia) {
                 binding.ivMessageImage.setOnClickListener(v -> {
+                    if(shared){com.example.meetomxh.supabase.PostDetails.show((android.app.Activity)v.getContext(),message.getSharedPostId());return;}
                     if (video) binding.getRoot().getContext().startActivity(new android.content.Intent(
                             binding.getRoot().getContext(), com.example.meetomxh.VideoPlayerActivity.class)
                             .putExtra(com.example.meetomxh.VideoPlayerActivity.EXTRA_ASSET, message.getImageUrl()));

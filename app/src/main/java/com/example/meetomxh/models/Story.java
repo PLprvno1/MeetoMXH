@@ -2,7 +2,7 @@ package com.example.meetomxh.models;
 
 public class Story {
     private String id, userName, avatarUrl, imageUrl, mediaType = "image/*";
-    private String avatarPreset = "neutral", audience = "friends", caption = "";
+    private String avatarPreset = "neutral", audience = "private", caption = "";
     private String authorId, createdAt, expiresAt;
     private boolean isAddStory, viewed, own;
 
@@ -26,7 +26,7 @@ public class Story {
     public String getAvatarPreset() { return avatarPreset; }
     public void setAvatarPreset(String value) { avatarPreset = "male".equals(value) || "female".equals(value) ? value : "neutral"; }
     public String getAudience() { return audience; }
-    public void setAudience(String value) { audience = value == null ? "friends" : value; }
+    public void setAudience(String value) { audience = value == null ? "private" : value; }
     public String getCaption() { return caption; }
     public void setCaption(String value) { caption = value == null ? "" : value; }
     public String getAuthorId() { return authorId; }

@@ -1,6 +1,7 @@
 package com.example.meetomxh.models;
 
 public class User {
+    public String username; public boolean accountPrivate,contentAllowed=true;
     private String uid;
     private String fullName;
     private String dateOfBirth;

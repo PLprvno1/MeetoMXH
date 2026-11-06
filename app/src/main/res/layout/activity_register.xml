@@ -712,70 +712,39 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
                 android:layout_marginBottom="20dp"
-                android:text="Thêm ảnh đại diện, ảnh bìa và tiểu sử để bạn bè dễ dàng nhận ra bạn trên Meeto."
+                android:text="Hoàn thiện hồ sơ với ảnh đại diện và tiểu sử để bạn bè dễ nhận ra bạn."
                 android:textColor="@color/text_secondary"
                 android:textSize="14sp" />
 
-            <!-- Cover Photo Section -->
+            <!-- Avatar -->
             <FrameLayout
-                android:layout_width="match_parent"
-                android:layout_height="140dp"
+                android:layout_width="84dp"
+                android:layout_height="84dp"
                 android:layout_marginBottom="36dp">
 
-                <ImageView
-                    android:id="@+id/imgCoverPreview"
+                <com.google.android.material.imageview.ShapeableImageView
+                    android:id="@+id/imgAvatarPreview"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:background="@drawable/bg_edittext"
+                    android:background="@color/surface_bg"
                     android:contentDescription="@null"
-                    android:scaleType="centerCrop" />
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/ic_person"
+                    app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full"
+                    app:strokeColor="@color/surface_bg"
+                    app:strokeWidth="3dp" />
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnPickCover"
-                    style="@style/Widget.Material3.Button.ElevatedButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="36dp"
+                <ImageView
+                    android:id="@+id/btnPickAvatar"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
                     android:layout_gravity="bottom|end"
-                    android:layout_margin="8dp"
-                    android:text="Chọn ảnh bìa"
-                    android:textSize="12sp"
-                    app:cornerRadius="6dp" />
-
-                <!-- Avatar Floating Over Cover Photo -->
-                <FrameLayout
-                    android:layout_width="84dp"
-                    android:layout_height="84dp"
-                    android:layout_gravity="bottom|start"
-                    android:layout_marginStart="16dp"
-                    android:layout_marginBottom="-20dp">
-
-                    <com.google.android.material.imageview.ShapeableImageView
-                        android:id="@+id/imgAvatarPreview"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:background="@color/surface_bg"
-                        android:contentDescription="@null"
-                        android:scaleType="centerCrop"
-                        android:src="@drawable/avatar_neutral"
-                        app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full"
-                        app:strokeColor="@color/surface_bg"
-                        app:strokeWidth="3dp" />
-
-                    <ImageView
-                        android:id="@+id/btnPickAvatar"
-                        android:layout_width="28dp"
-                        android:layout_height="28dp"
-                        android:layout_gravity="bottom|end"
-                        android:background="@drawable/bg_button_blue"
-                        android:contentDescription="@null"
-                        android:padding="6dp"
-                        android:src="@drawable/ic_photo"
-                        app:tint="#FFFFFF" />
-
-                </FrameLayout>
-
+                    android:background="@drawable/bg_button_blue"
+                    android:contentDescription="@null"
+                    android:padding="6dp"
+                    android:src="@drawable/ic_photo"
+                    app:tint="#FFFFFF" />
             </FrameLayout>
-
             <!-- Tiểu sử (Bio) -->
             <TextView
                 android:layout_width="wrap_content"

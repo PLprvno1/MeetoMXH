@@ -44,7 +44,7 @@ public final class VideoPlayerActivity extends AppCompatActivity {
         binding = ActivityVideoPlayerBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
         reference = getIntent().getStringExtra(EXTRA_ASSET);
-        if (reference == null || !reference.startsWith("asset://")) { finish(); return; }
+        if (!isValidReference(reference)) { finish(); return; }
         binding.playerView.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_FIT);
         binding.playerView.setControllerShowTimeoutMs(3500);
         binding.playerClose.setOnClickListener(v -> closePlayer());
@@ -58,9 +58,16 @@ public final class VideoPlayerActivity extends AppCompatActivity {
         } else resumeWhenReady = true;
     }
 
-    @Override protected void onStart() { super.onStart(); loadVideo(); }
+    @Override protected void onStart() { super.onStart(); if (isValidReference(reference) && binding != null) loadVideo(); }
+
+    private boolean isValidReference(String value) {
+        if (value == null || !value.startsWith("asset://")) return false;
+        try { java.util.UUID.fromString(value.substring("asset://".length())); return true; }
+        catch (IllegalArgumentException invalid) { return false; }
+    }
 
     private void loadVideo() {
+        if (!isValidReference(reference) || binding == null || isFinishing() || isDestroyed()) return;
         if (request != null) request.remove();
         releasePlayer();
         binding.playerErrorPanel.setVisibility(View.GONE);
@@ -100,7 +107,8 @@ public final class VideoPlayerActivity extends AppCompatActivity {
                     if (state == Player.STATE_READY) binding.playerErrorPanel.setVisibility(View.GONE);
                 }
                 @Override public void onPlayerError(PlaybackException error) {
-                    showError("Không phát được video hoặc quyền xem đã thay đổi.");
+                    android.util.Log.w("MeetoVideo","Playback failure code="+error.errorCode+" name="+error.getErrorCodeName()+" cause="+(error.getCause()==null?"none":error.getCause().getClass().getSimpleName()));
+                    showError("Không phát được video ("+error.getErrorCodeName()+"). Kiểm tra kết nối hoặc quyền xem rồi thử lại.");
                 }
             });
             player.setMediaItem(MediaItem.fromUri(SupabaseStorage.url(asset)));

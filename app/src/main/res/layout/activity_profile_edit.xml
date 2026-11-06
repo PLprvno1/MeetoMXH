@@ -41,6 +41,7 @@
                     app:tint="@color/text_primary" />
 
                 <TextView
+                    android:id="@+id/tvProfileEditTitle"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="14dp"
@@ -186,7 +187,7 @@
                             android:layout_height="100dp"
                             android:contentDescription="Xem trước ảnh đại diện"
                             android:scaleType="centerCrop"
-                            android:src="@drawable/avatar_neutral"
+                            android:src="@drawable/ic_person"
                             app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full"
                             app:strokeColor="@color/outline"
                             app:strokeWidth="2dp" />
@@ -206,68 +207,7 @@
                 </LinearLayout>
 
             </com.google.android.material.card.MaterialCardView>
-
-            <!-- CARD 2: Cover Section -->
-            <com.google.android.material.card.MaterialCardView
-                style="@style/Widget.Meeto.Card"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="0dp"
-                app:strokeColor="@color/outline"
-                app:strokeWidth="1dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:fontFamily="sans-serif-bold"
-                            android:text="Ảnh bìa"
-                            android:textColor="@color/text_primary"
-                            android:textSize="16sp"
-                            android:textStyle="bold" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnPickCover"
-                            style="@style/Widget.Material3.Button.TextButton"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Chỉnh sửa"
-                            android:textAllCaps="false"
-                            android:textColor="@color/brand_blue"
-                            android:textSize="14sp"
-                            android:textStyle="bold" />
-
-                    </LinearLayout>
-
-                    <com.google.android.material.imageview.ShapeableImageView
-                        android:id="@+id/coverPreview"
-                        android:layout_width="match_parent"
-                        android:layout_height="140dp"
-                        android:layout_marginTop="8dp"
-                        android:background="@drawable/bg_cover_placeholder"
-                        android:contentDescription="Xem trước ảnh bìa"
-                        android:scaleType="centerCrop"
-                        app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Medium" />
-
-                </LinearLayout>
-
-            </com.google.android.material.card.MaterialCardView>
-
-            <!-- CARD 3: Public Info (Name, Bio) -->
+            <!-- CARD 2: Public Info (Name, Bio) -->
             <com.google.android.material.card.MaterialCardView
                 style="@style/Widget.Meeto.Card"
                 android:layout_width="match_parent"
@@ -322,6 +262,7 @@
                         android:textColor="@color/text_secondary"
                         android:textSize="13sp" />
 
+                    <EditText android:id="@+id/etUsername" android:layout_width="match_parent" android:layout_height="48dp" android:layout_marginTop="8dp" android:background="@drawable/bg_edittext" android:hint="Tên người dùng (3–30 ký tự)" android:inputType="textNoSuggestions" android:singleLine="true" android:maxLength="30" android:paddingHorizontal="14dp" android:textColor="@color/text_primary" android:textColorHint="@color/text_secondary" />
                     <EditText
                         android:id="@+id/etBio"
                         android:layout_width="match_parent"
@@ -349,22 +290,33 @@
                         android:layout_height="46dp" android:layout_marginTop="8dp"
                         android:text="Quyền xem nơi ở · Chỉ mình tôi" android:textAllCaps="false" />
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnAvatarPreset"
-                        style="@style/Widget.Material3.Button.OutlinedButton"
-                        android:layout_width="match_parent"
-                        android:layout_height="48dp"
-                        android:layout_marginTop="12dp"
-                        android:text="Avatar mặc định · Trung tính"
-                        android:textAllCaps="false" />
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp" android:text="Ngày sinh"
+                        android:textColor="@color/text_secondary" android:textSize="13sp" />
+                    <EditText android:id="@+id/etDob" android:layout_width="match_parent" android:layout_height="48dp"
+                        android:layout_marginTop="4dp" android:background="@drawable/bg_edittext"
+                        android:clickable="true" android:drawableEnd="@drawable/ic_calendar"
+                        android:drawableTint="@color/text_secondary" android:focusable="false"
+                        android:hint="Ngày sinh" android:inputType="datetime" android:paddingHorizontal="14dp"
+                        android:textColor="@color/text_primary" android:textColorHint="@color/text_secondary" android:textSize="15sp" />
+                    <com.google.android.material.button.MaterialButton android:id="@+id/btnBirthDateAudience"
+                        style="@style/Widget.Material3.Button.OutlinedButton" android:layout_width="match_parent"
+                        android:layout_height="46dp" android:layout_marginTop="8dp"
+                        android:text="Quyền xem ngày sinh · Chỉ mình tôi" android:textAllCaps="false" />
 
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:text="Tùy chọn này công khai và độc lập với giới tính riêng tư của bạn."
-                        android:textColor="@color/text_secondary"
-                        android:textSize="12sp" />
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp" android:text="Giới tính"
+                        android:textColor="@color/text_secondary" android:textSize="13sp" />
+                    <EditText android:id="@+id/etGender" android:layout_width="match_parent" android:layout_height="48dp"
+                        android:layout_marginTop="4dp" android:background="@drawable/bg_edittext"
+                        android:clickable="true" android:drawableEnd="@drawable/ic_person"
+                        android:drawableTint="@color/text_secondary" android:focusable="false"
+                        android:hint="Giới tính" android:inputType="text" android:paddingHorizontal="14dp"
+                        android:textColor="@color/text_primary" android:textColorHint="@color/text_secondary" android:textSize="15sp" />
+                    <com.google.android.material.button.MaterialButton android:id="@+id/btnGenderAudience"
+                        style="@style/Widget.Material3.Button.OutlinedButton" android:layout_width="match_parent"
+                        android:layout_height="46dp" android:layout_marginTop="8dp"
+                        android:text="Quyền xem giới tính · Chỉ mình tôi" android:textAllCaps="false" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnSavePublic"
@@ -378,108 +330,6 @@
                         android:textSize="15sp"
                         android:textStyle="bold"
                         app:backgroundTint="@color/brand_blue"
-                        app:cornerRadius="10dp" />
-
-                </LinearLayout>
-
-            </com.google.android.material.card.MaterialCardView>
-
-            <!-- CARD 4: Private Info (DOB, Gender) -->
-            <com.google.android.material.card.MaterialCardView
-                style="@style/Widget.Meeto.Card"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="0dp"
-                app:strokeColor="@color/outline"
-                app:strokeWidth="1dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="sans-serif-bold"
-                        android:text="Thông tin riêng tư"
-                        android:textColor="@color/text_primary"
-                        android:textSize="16sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:text="Chỉ bạn mới có thể xem thông tin này."
-                        android:textColor="@color/text_secondary"
-                        android:textSize="13sp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:text="Ngày sinh"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="13sp" />
-
-                    <EditText
-                        android:id="@+id/etDob"
-                        android:layout_width="match_parent"
-                        android:layout_height="48dp"
-                        android:layout_marginTop="4dp"
-                        android:background="@drawable/bg_edittext"
-                        android:clickable="true"
-                        android:drawableEnd="@drawable/ic_calendar"
-                        android:drawableTint="@color/text_secondary"
-                        android:focusable="false"
-                        android:hint="Ngày sinh"
-                        android:inputType="datetime"
-                        android:paddingHorizontal="14dp"
-                        android:textColor="@color/text_primary"
-                        android:textColorHint="@color/text_secondary"
-                        android:textSize="15sp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:text="Giới tính"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="13sp" />
-
-                    <EditText
-                        android:id="@+id/etGender"
-                        android:layout_width="match_parent"
-                        android:layout_height="48dp"
-                        android:layout_marginTop="4dp"
-                        android:background="@drawable/bg_edittext"
-                        android:clickable="true"
-                        android:drawableEnd="@drawable/ic_person"
-                        android:drawableTint="@color/text_secondary"
-                        android:focusable="false"
-                        android:hint="Giới tính"
-                        android:inputType="text"
-                        android:paddingHorizontal="14dp"
-                        android:textColor="@color/text_primary"
-                        android:textColorHint="@color/text_secondary"
-                        android:textSize="15sp" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnSavePrivate"
-                        style="@style/Widget.Material3.Button.UnelevatedButton"
-                        android:layout_width="match_parent"
-                        android:layout_height="46dp"
-                        android:layout_marginTop="16dp"
-                        android:text="Lưu thông tin riêng"
-                        android:textAllCaps="false"
-                        android:textColor="@color/text_primary"
-                        android:textSize="15sp"
-                        android:textStyle="bold"
-                        app:backgroundTint="@color/surface_variant"
                         app:cornerRadius="10dp" />
 
                 </LinearLayout>

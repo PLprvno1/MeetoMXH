@@ -526,6 +526,7 @@ public final class SupabaseStorage {
     }
 
     public static JSONObject info(String reference) throws Exception {
+        com.example.meetomxh.supabase.SocialContract.require();
         String id = Dto.assetId(reference);
         java.util.UUID.fromString(id);
         JSONArray rows = (JSONArray) SupabaseHttpClient.authorized("GET",

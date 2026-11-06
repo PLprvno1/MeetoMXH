@@ -36,7 +36,7 @@ public final class AdvancedSearchRepository {
     public static void posts(String query,boolean mediaOnly,String since,String sort,float afterRank,
                               String afterTime,String afterId,int limit,Callback<PostPage> cb) {
         Api.run(() -> {
-            JSONArray rows=(JSONArray)RpcClient.call("search_advanced_posts",Api.obj(
+            JSONArray rows=query==null||query.trim().isEmpty()?(JSONArray)RpcClient.call("get_explore_posts",Api.obj("p_after_time",afterTime,"p_after_id",afterId,"p_limit",limit)):(JSONArray)RpcClient.call("search_advanced_posts",Api.obj(
                     "p_query",query,"p_media_only",mediaOnly,"p_since",since,"p_until",null,
                     "p_sort",sort,"p_after_rank",afterRank<0?null:afterRank,
                     "p_after_time",afterTime,"p_after_id",afterId,"p_limit",limit));

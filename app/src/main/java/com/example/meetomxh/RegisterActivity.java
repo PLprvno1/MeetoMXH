@@ -18,7 +18,8 @@ import com.example.meetomxh.supabase.SupabaseAuthClient;
 import org.json.JSONObject;
 
 public class RegisterActivity extends AppCompatActivity {
-    private EditText name, dob, email, password;
+    private EditText name, dob, email, password, confirmPassword;
+    private android.widget.Button submitButton;
     private EditText gender, location;
     private boolean onboarding;
     private final ActivityResultLauncher<Intent> photoEditor = registerForActivityResult(
@@ -40,6 +41,8 @@ public class RegisterActivity extends AppCompatActivity {
         location.setOnClickListener(v -> ProfileFieldSelectors.location(this, location));
         email = Forms.field(form, "Email", "", InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
         password = Forms.field(form, "Mật khẩu (ít nhất 8 ký tự)", "", InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        confirmPassword=Forms.field(form,"Nhập lại mật khẩu","",InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        confirmPassword.setVisibility(onboarding?android.view.View.GONE:android.view.View.VISIBLE);
         email.setVisibility(onboarding ? android.view.View.GONE : android.view.View.VISIBLE);
         password.setVisibility(onboarding ? android.view.View.GONE : android.view.View.VISIBLE);
         if (onboarding) {
@@ -50,8 +53,8 @@ public class RegisterActivity extends AppCompatActivity {
             location.setText(SessionManager.getInstance().pending("signup_location"));
         }
         Forms.status(this, onboarding ? "Chào mừng bạn đến với Meeto! Hoàn tất hồ sơ để bắt đầu. Nơi ở đã chọn được giữ lại và mặc định chỉ mình bạn xem." : "Email và mật khẩu để tạo tài khoản. Ngày sinh để hoàn tất hồ sơ; giới tính và nơi ở là tùy chọn. Nơi ở mặc định riêng tư.");
-        Forms.button(form, onboarding ? "Hoàn tất hồ sơ" : "Đăng ký bằng email", this::submit);
         Forms.button(form, "Quay lại đăng nhập", () -> { if (onboarding) SessionManager.getInstance().signOut(); startActivity(new Intent(this, LoginActivity.class)); finish(); });
+        submitButton=Forms.button(form, onboarding ? "Hoàn tất hồ sơ" : "Xác nhận", this::submit);
     }
 
     private void submit() {
@@ -64,10 +67,12 @@ public class RegisterActivity extends AppCompatActivity {
         if (!onboarding) {
             if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email.getText().toString().trim()).matches()) { Forms.status(this, "Vui lòng nhập địa chỉ email hợp lệ."); return; }
             if (password.getText().length() < 8) { Forms.status(this, "Mật khẩu phải có ít nhất 8 ký tự."); return; }
+            if(!password.getText().toString().equals(confirmPassword.getText().toString())){confirmPassword.setError("Hai mật khẩu chưa khớp");return;}
         }
         final String genderValue = selectedGender;
         final String locationValue = location.getText().toString().trim();
         Forms.status(this, "Đang xử lý…");
+        submitButton.setEnabled(false);
         if (onboarding) {
             Api.run(() -> {
                 JSONObject current = ProfileClient.self();
@@ -78,7 +83,7 @@ public class RegisterActivity extends AppCompatActivity {
                         "p_expected_version", current.getLong("version")));
             }, new Api.Callback<JSONObject>() {
                 public void success(JSONObject profile) { chooseProfilePhotos(); }
-                public void error(String error) { Forms.status(RegisterActivity.this, error); }
+                public void error(String error) { submitButton.setEnabled(true);Forms.status(RegisterActivity.this, error); }
             });
         } else {
             try {
@@ -88,16 +93,35 @@ public class RegisterActivity extends AppCompatActivity {
                 SessionManager.getInstance().pending("signup_location", locationValue);
             } catch (Exception e) { Forms.status(this, "Không lưu được thông tin đăng ký."); return; }
             SupabaseAuthClient.signup(email.getText().toString().trim(), password.getText().toString(), new Api.Callback<JSONObject>() {
-                public void success(JSONObject response) { Forms.status(RegisterActivity.this, "Đã gửi yêu cầu xác minh email. Mở liên kết trong email, sau đó đăng nhập để hoàn tất hồ sơ."); }
-                public void error(String error) { Forms.status(RegisterActivity.this, error); }
+                public void success(JSONObject response) {
+                    submitButton.setEnabled(true);
+                    if (!response.isNull("access_token") && !response.optString("access_token").isEmpty()) {
+                        try { SessionManager.getInstance().accept(response); }
+                        catch (Exception e) { Forms.status(RegisterActivity.this, "Không thể xử lý kết quả đăng ký."); return; }
+                        Api.run(() -> {
+                            RpcClient.object("bootstrap_profile", Api.obj());
+                            return OnboardingFlow.completeProfileFromPending();
+                        }, new Api.Callback<JSONObject>() {
+                            @Override public void success(JSONObject profile) { openEmailConfirmation(email.getText().toString().trim()); }
+                            @Override public void error(String error) { Forms.status(RegisterActivity.this, error); }
+                        });
+                        return;
+                    }
+                    openEmailConfirmation(email.getText().toString().trim());
+                }
+                public void error(String error) { submitButton.setEnabled(true); Forms.status(RegisterActivity.this, error); }
             });
         }
+    }
+    private void openEmailConfirmation(String address) {
+        startActivity(new Intent(this, EmailConfirmationActivity.class).putExtra(EmailConfirmationActivity.EXTRA_EMAIL, address));
+        finish();
     }
 
     private void chooseProfilePhotos() {
         new AlertDialog.Builder(this)
-                .setTitle("Ảnh đại diện & Ảnh bìa")
-                .setMessage("Thêm ảnh đại diện và ảnh bìa để bạn bè dễ dàng nhận ra bạn trên Meeto. Bạn có thể chọn ảnh ngay bây giờ hoặc bỏ qua để khám phá ứng dụng.")
+                .setTitle("Ảnh đại diện")
+                .setMessage("Bạn có thể thêm ảnh đại diện ngay hoặc bỏ qua.")
                 .setPositiveButton("Chọn ảnh ngay", (dialog, which) -> photoEditor.launch(new Intent(this, ProfileEditActivity.class)))
                 .setNegativeButton("Bỏ qua", (dialog, which) -> enterMain())
                 .setOnCancelListener(dialog -> enterMain())

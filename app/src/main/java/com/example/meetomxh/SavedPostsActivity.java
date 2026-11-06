@@ -44,7 +44,7 @@ public class SavedPostsActivity extends AppCompatActivity {
                 });
             }
         }, false);
-        binding.rvSavedPosts.setLayoutManager(new LinearLayoutManager(this)); binding.rvSavedPosts.setAdapter(adapter);
+        binding.rvSavedPosts.setLayoutManager(new LinearLayoutManager(this)); binding.rvSavedPosts.setAdapter(adapter);com.example.meetomxh.supabase.PostUpdates.counts.observe(this,c->{if(c!=null)adapter.updateCommentCount(c.id,c.comments);});
         binding.btnBack.setOnClickListener(v -> finish());
         binding.btnRefresh.setOnClickListener(v -> load(false));
         binding.btnRetry.setOnClickListener(v -> load(false));
@@ -57,6 +57,7 @@ public class SavedPostsActivity extends AppCompatActivity {
         load(false);
     }
 
+    @Override protected void onResume(){super.onResume();if(binding!=null&&!loading)load(false);}
     private void load(boolean append) {
         if (loading) return;
         if (!append) { afterTime=null; afterId=null; hasMore=false; }

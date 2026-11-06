@@ -24,7 +24,6 @@ public final class SearchLayoutSmokeTest {
         assertNotNull(root.findViewById(R.id.allScroll));
         assertNotNull(root.findViewById(R.id.rvPeople));
         assertNotNull(root.findViewById(R.id.rvPosts));
-        assertNotNull(root.findViewById(R.id.rvGroups));
         assertNotNull(root.findViewById(R.id.historyRows));
     }
 }

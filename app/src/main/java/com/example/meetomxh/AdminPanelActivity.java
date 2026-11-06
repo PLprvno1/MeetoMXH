@@ -8,19 +8,18 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.app.AppCompatDelegate;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.example.meetomxh.supabase.Api;
 import com.example.meetomxh.supabase.AdminRoleResolver;
-import com.example.meetomxh.supabase.MeetoPrefs;
 import com.example.meetomxh.supabase.RpcClient;
 import com.example.meetomxh.supabase.SessionManager;
 import com.google.android.material.button.MaterialButton;
@@ -144,7 +143,7 @@ public final class AdminPanelActivity extends AppCompatActivity {
     private void selectSection(String value) {
         if("Tài khoản".equals(value))value="Người dùng";
         if("Thêm".equals(value)){
-            String[] more={"Bài viết","Reels","Bình luận","Nhóm","Nhật ký","Cài đặt"};
+            String[] more={"Bài viết","Reels","Bình luận","Nhật ký","Cài đặt"};
             new AlertDialog.Builder(this).setTitle("Quản lý hệ thống").setItems(more,(d,which)->selectSection(more[which])).show();
             return;
         }
@@ -212,7 +211,6 @@ public final class AdminPanelActivity extends AppCompatActivity {
         addCard("Người dùng", number(d,"users_total")+" tổng · "+number(d,"users_active")+" đang hoạt động",null);
         addCard("Bài viết", number(d,"posts_total")+" bài",()->selectSection("Bài viết"));
         addCard("Reels", number(d,"reels_total")+" reels",()->selectSection("Reels"));
-        addCard("Nhóm", number(d,"groups_total")+" nhóm",()->selectSection("Nhóm"));
         addCard("Báo cáo", number(d,"reports_pending")+" chờ · "+number(d,"reports_resolved")+" đã xử lý",()->selectSection("Báo cáo"));
         addHeader("Báo cáo gần đây"); renderInlineRows(d.optJSONArray("recent_reports"),true);
         addHeader("Thao tác gần đây"); renderInlineRows(d.optJSONArray("recent_actions"),false);
@@ -223,16 +221,6 @@ public final class AdminPanelActivity extends AppCompatActivity {
         addHeader("Tài khoản quản trị");
         com.example.meetomxh.supabase.SessionUser user=SessionManager.getInstance().getCurrentUser();
         addCard("Meeto Admin",user==null?"Phiên đăng nhập không khả dụng":user.getEmail(),null);
-        addHeader("Giao diện");
-        int current=MeetoPrefs.theme(this);
-        String theme=current==AppCompatDelegate.MODE_NIGHT_YES?"Tối":current==AppCompatDelegate.MODE_NIGHT_NO?"Sáng":"Theo hệ thống";
-        addCard("Chế độ hiển thị",theme+" · Đồng bộ với giao diện Meeto",()->new AlertDialog.Builder(this)
-            .setTitle("Chế độ hiển thị")
-            .setItems(new String[]{"Theo hệ thống","Sáng","Tối"},(d,which)->{
-                int mode=which==0?AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM:which==1
-                    ?AppCompatDelegate.MODE_NIGHT_NO:AppCompatDelegate.MODE_NIGHT_YES;
-                MeetoPrefs.setTheme(this,mode);AppCompatDelegate.setDefaultNightMode(mode);
-            }).show());
         addHeader("Ứng dụng");
         addCard("Meeto Admin","Phiên bản "+BuildConfig.VERSION_NAME,null);
         content.addView(button("Đăng xuất",this::confirmLogout));
@@ -337,12 +325,12 @@ public final class AdminPanelActivity extends AppCompatActivity {
                 "\nTrạng thái: "+stateName(r.optString("state"));
         if(target!=null) text+="\n\nNội dung: "+target.optString("body",target.optString("name",target.optString("display_name",target.optString("preview","(không còn khả dụng)"))))+
                 "\nTác giả: "+target.optString("author_name","")+"\nTrạng thái nội dung: "+stateName(target.optString("state"));
-        new AlertDialog.Builder(this).setTitle("Chi tiết báo cáo").setMessage(text).setNeutralButton("Đóng",null)
-                .setPositiveButton("Xử lý",(d,w)->reportDecision(r,"warn")).setNegativeButton("Bỏ qua",(d,w)->reportDecision(r,"dismiss")).show();
+        LinearLayout details=new LinearLayout(this);details.setOrientation(1);TextView summary=new TextView(this);summary.setText(text);summary.setTextColor(getColor(R.color.text_primary));details.addView(summary);JSONArray media=r.optJSONArray("media");if(media!=null)for(int i=0;i<media.length();i++){JSONObject asset=media.optJSONObject(i);if(asset==null)continue;Button preview=new Button(this);boolean video=asset.optString("mime_type").startsWith("video/");preview.setText(video?"Xem video được báo cáo":"Xem ảnh được báo cáo");details.addView(preview);preview.setOnClickListener(v->startActivity(video?new Intent(this,VideoPlayerActivity.class).putExtra(VideoPlayerActivity.EXTRA_ASSET,com.example.meetomxh.supabase.Dto.asset(asset.optString("asset_id"))):new Intent(this,ChatImageViewerActivity.class).putExtra("image_url",com.example.meetomxh.supabase.Dto.asset(asset.optString("asset_id")))));}android.widget.ScrollView scroll=new android.widget.ScrollView(this);scroll.addView(details);new AlertDialog.Builder(this).setTitle("Chi tiết báo cáo").setView(scroll).setNeutralButton("Đóng",null)
+                .setPositiveButton("Chọn quyết định",(d,w)->{java.util.List<String> labels=new java.util.ArrayList<>(),actions=new java.util.ArrayList<>();labels.add("Không vi phạm / Bác bỏ");actions.add("dismiss");labels.add("Cảnh cáo tài khoản");actions.add("warn");String kind=r.optString("target_kind");if("post".equals(kind)||"comment".equals(kind)){labels.add("Ẩn nội dung");actions.add("hide");}if(!"profile".equals(kind)){labels.add("Gỡ nội dung");actions.add("remove");}labels.add("Khóa tài khoản tác giả");actions.add("suspend");new AlertDialog.Builder(this).setTitle("Quyết định kiểm duyệt").setItems(labels.toArray(new String[0]),(x,n)->reportDecision(r,actions.get(n))).setNegativeButton("Hủy",null).show();}).show();
     }
 
     private void reportDecision(JSONObject r,String action) {
-        EditText reason=reasonField(); new AlertDialog.Builder(this).setTitle(action.equals("warn")?"Ghi nhận cảnh cáo":"Bỏ qua báo cáo")
+        EditText reason=reasonField(); new AlertDialog.Builder(this).setTitle(action.equals("dismiss")?"Bác bỏ báo cáo":action.equals("warn")?"Cảnh cáo tài khoản":action.equals("hide")?"Ẩn nội dung":action.equals("remove")?"Gỡ nội dung":"Khóa tài khoản")
                 .setView(reason).setNegativeButton("Hủy",null).setPositiveButton("Lưu",(d,w)->{
                     String text=reason.getText().toString().trim(); if(text.isEmpty()){toast("Cần nhập lý do.");return;}
                     Api.run(()->RpcClient.object("resolve_platform_report",Api.obj("p_report_id",r.optString("id"),"p_action",action,"p_reason",text)),

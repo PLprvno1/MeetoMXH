@@ -140,7 +140,7 @@
                             android:layout_width="22dp"
                             android:layout_height="22dp"
                             android:contentDescription="@null"
-                            android:src="@drawable/avatar_neutral"
+                            android:src="@drawable/ic_person"
                             app:tint="@color/brand_blue" />
 
                         <TextView
@@ -177,8 +177,12 @@
                 app:cardCornerRadius="14dp">
 
                 <LinearLayout
+                    android:id="@+id/rowThemeModeSettings"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:background="?android:attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
                     android:paddingHorizontal="16dp"
@@ -196,15 +200,17 @@
                         android:layout_height="wrap_content"
                         android:layout_marginStart="14dp"
                         android:layout_weight="1"
-                        android:text="Chế độ tối (Dark Mode)"
+                        android:text="Giao diện"
                         android:textColor="@color/text_primary"
                         android:textSize="15sp" />
 
-                    <com.google.android.material.materialswitch.MaterialSwitch
-                        android:id="@+id/switchDarkModeSettings"
+                    <TextView
+                        android:id="@+id/tvThemeModeSettings"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:saveEnabled="false" />
+                        android:text="Theo hệ thống"
+                        android:textColor="@color/brand_blue"
+                        android:textSize="14sp" />
 
                 </LinearLayout>
 

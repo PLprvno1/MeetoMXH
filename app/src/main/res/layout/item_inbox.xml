@@ -17,7 +17,7 @@
         android:layout_height="56dp"
         android:contentDescription="Avatar cuộc trò chuyện"
         android:scaleType="centerCrop"
-        android:src="@drawable/avatar_neutral"
+        android:src="@drawable/ic_person"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"

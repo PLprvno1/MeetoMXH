@@ -36,7 +36,7 @@ public class CreatePostActivity extends AppCompatActivity {
     private ActivityCreatePostBinding binding;
     private final List<Uri> selected = new ArrayList<>();
     private final List<String> assets = new ArrayList<>();
-    private String audience = "public", editingId, groupId;
+    private String audience = "followers", editingId;
     private long version;
     private boolean busy;
     private String previewKey;
@@ -77,9 +77,7 @@ public class CreatePostActivity extends AppCompatActivity {
             taggedUsers=parseArray(state.getString("tagged_users_json"));taggedPeople=parseArray(state.getString("tagged_people_json"));renderTags();
         }
         editingId = getIntent().getStringExtra("post_id");
-        groupId = getIntent().getStringExtra("group_id");
         if (editingId != null) setComposerReady(false);
-        if (groupId != null) binding.btnAudience.setVisibility(View.GONE);
         binding.btnTagPeople.setOnClickListener(v->PostTagPicker.show(this,taggedPeople,(ids,people)->{taggedUsers=ids;taggedPeople=people;renderTags();}));
         binding.btnBack.setOnClickListener(v -> finish());
         binding.btnPickImage.setOnClickListener(v -> {
@@ -96,24 +94,19 @@ public class CreatePostActivity extends AppCompatActivity {
             preview();
             if (busy) { busy = false; binding.btnPostSubmit.setEnabled(true); binding.btnPostSubmit.setText("Đăng"); }
         });
-        binding.btnAudience.setOnClickListener(v -> new android.app.AlertDialog.Builder(this).setTitle("Quyền xem")
-                .setItems(new String[]{"Công khai", "Bạn bè", "Chỉ mình tôi"}, (dialog, index) -> {
-                    audience = new String[]{"public", "friends", "private"}[index];
-                    binding.btnAudience.setText(new String[]{"Công khai", "Bạn bè", "Chỉ mình tôi"}[index]);
-                }).show());
+        binding.btnAudience.setOnClickListener(v->com.example.meetomxh.supabase.AudienceChoices.choose(this,(value,label)->{audience=value;binding.btnAudience.setText(label);}));
         binding.btnPostSubmit.setOnClickListener(v -> submit());
         ProfileClient.get(SessionManager.getInstance().uid(), new Api.Callback<com.example.meetomxh.models.User>() {
             @Override public void success(com.example.meetomxh.models.User user) {
                 if (!alive()) return;
-                binding.tvAuthorName.setText(user.getFullName());
+                binding.tvAuthorName.setText(user.getFullName());if(user.accountPrivate&&"public".equals(audience)){audience="followers";binding.btnAudience.setText("Người theo dõi");}
                 Glide.with(CreatePostActivity.this).load(user.getAvatarUrl()).into(binding.ivAuthorAvatar);
             }
             @Override public void error(String error) { toast(error); }
         });
         if (editingId != null) loadPostForEdit();
         else {
-            if (groupId != null) audience = "group";
-            String label = "friends".equals(audience) ? "Bạn bè" : "private".equals(audience) ? "Chỉ mình tôi" : "Công khai";
+            String label = "followers".equals(audience) ? "Người theo dõi" : "private".equals(audience) ? "Chỉ mình tôi" : "Công khai";
             binding.btnAudience.setText(label);
             preview();
         }
@@ -133,7 +126,7 @@ public class CreatePostActivity extends AppCompatActivity {
                 JSONArray existingTags=post.optJSONArray("tags");if(existingTags!=null){taggedPeople=existingTags;taggedUsers=new JSONArray();for(int i=0;i<existingTags.length();i++){JSONObject tag=existingTags.optJSONObject(i);if(tag!=null&&!tag.isNull("user_id"))taggedUsers.put(tag.optString("user_id"));}renderTags();}
                 audience = post.optString("audience", "public");
                 version = post.optLong("version");
-                binding.btnAudience.setText("private".equals(audience) ? "Chỉ mình tôi" : "friends".equals(audience) ? "Bạn bè" : "Công khai");
+                binding.btnAudience.setText("private".equals(audience) ? "Chỉ mình tôi" : "followers".equals(audience) ? "Người theo dõi" : "Công khai");
                 binding.btnPostSubmit.setText("Lưu thay đổi");
                 JSONArray media = post.optJSONArray("media");
                 if (media != null) for (int i = 0; i < media.length(); i++) assets.add(Dto.asset(media.optJSONObject(i).optString("asset_id")));
@@ -170,7 +163,7 @@ public class CreatePostActivity extends AppCompatActivity {
                 }
             } else {
                 previewKey = key;
-                Glide.with(this).load(uri).placeholder(R.drawable.avatar_neutral).error(R.drawable.ic_media_error).into(binding.ivSelectedImagePreview);
+                Glide.with(this).load(uri).placeholder(R.drawable.ic_media_error).error(R.drawable.ic_media_error).into(binding.ivSelectedImagePreview);
             }
         } else if (!assets.isEmpty()) {
             String ref = assets.get(0);
@@ -183,10 +176,10 @@ public class CreatePostActivity extends AppCompatActivity {
                     public void success(Bitmap frame) {
                         if (!alive() || !ref.equals(previewKey)) return;
                         if (frame != null) binding.ivSelectedImagePreview.setImageBitmap(frame);
-                        else Glide.with(CreatePostActivity.this).load(ref).placeholder(R.drawable.avatar_neutral).error(R.drawable.ic_media_error).into(binding.ivSelectedImagePreview);
+                        else Glide.with(CreatePostActivity.this).load(ref).placeholder(R.drawable.ic_media_error).error(R.drawable.ic_media_error).into(binding.ivSelectedImagePreview);
                     }
                     public void error(String ignored) {
-                        if (alive() && ref.equals(previewKey)) Glide.with(CreatePostActivity.this).load(ref).placeholder(R.drawable.avatar_neutral).error(R.drawable.ic_media_error).into(binding.ivSelectedImagePreview);
+                        if (alive() && ref.equals(previewKey)) Glide.with(CreatePostActivity.this).load(ref).placeholder(R.drawable.ic_media_error).error(R.drawable.ic_media_error).into(binding.ivSelectedImagePreview);
                     }
                 });
             }
@@ -242,34 +235,7 @@ public class CreatePostActivity extends AppCompatActivity {
                 input.put("p_post_id", editingId).put("p_expected_version", version);
                 return RpcClient.call("edit_post_with_mentions", input);
             }
-            if (groupId != null) {
-                String requestKey=groupId + "|" + fingerprint;
-                input.put("p_group_id",groupId).put("p_client_request_id",RequestIds.get("community_post",requestKey));
-                Object result;
-                try {
-                    result=RpcClient.call("create_community_post_with_mentions",input);
-                } catch (ErrorMapper.HttpError error) {
-                    String code = error.code != null && error.code.matches("[A-Za-z0-9_.-]{1,80}")
-                            ? error.code : "unknown";
-                    android.util.Log.w("SupabaseGroupPost", "Create failed: HTTP " + error.status + " code=" + code);
-                    JSONArray mentions = mentionComposer.getMentions();
-                    if ("PGRST202".equals(error.code) && (mentions == null || mentions.length() == 0)
-                            && (taggedUsers == null || taggedUsers.length() == 0)) {
-                        // Older deployed projects have the original group-post RPC but not
-                        // migration 030's metadata wrapper. Preserve the same server-side
-                        // membership, approval, and idempotency checks for plain posts.
-                        android.util.Log.i("SupabaseGroupPost", "Using authenticated legacy RPC for plain group post");
-                        result = RpcClient.call("create_community_post", Api.obj(
-                                "p_group_id", groupId, "p_body", body, "p_assets", ids,
-                                "p_client_request_id", RequestIds.get("community_post", requestKey)));
-                        RequestIds.complete("community_post",requestKey);
-                        return result;
-                    }
-                    throw error;
-                }
-                RequestIds.complete("community_post",requestKey);
-                return result;
-            }
+
             input.put("p_client_request_id", RequestIds.get("post", fingerprint));
             Object result = RpcClient.call("create_post_with_mentions", input);
             RequestIds.complete("post", fingerprint);
@@ -277,8 +243,6 @@ public class CreatePostActivity extends AppCompatActivity {
         }, new Api.Callback<Object>() {
             @Override public void success(Object result) {
                 if (!alive()) return;
-                if (groupId != null && result instanceof JSONObject && "pending_review".equals(((JSONObject)result).optString("state")))
-                    Toast.makeText(CreatePostActivity.this,"Bài viết đang chờ quản trị viên duyệt.",Toast.LENGTH_LONG).show();
                 FeedRepository.getInstance().refresh();
                 setResult(RESULT_OK);
                 finish();
@@ -294,7 +258,7 @@ public class CreatePostActivity extends AppCompatActivity {
     }
 
     private boolean alive() { return !isFinishing() && !isDestroyed(); }
-    private void renderTags(){if(binding==null)return;binding.chipsTaggedPeople.removeAllViews();for(int i=0;i<taggedPeople.length();i++){JSONObject person=taggedPeople.optJSONObject(i);if(person==null)continue;String id=person.optString("user_id",null);if(id==null||id.equals("null"))continue;Chip chip=new Chip(this);chip.setText(person.optString("display_name","Bạn bè"));chip.setCloseIconVisible(true);chip.setOnCloseIconClickListener(v->{JSONArray ids=new JSONArray(),people=new JSONArray();for(int j=0;j<taggedPeople.length();j++){JSONObject p=taggedPeople.optJSONObject(j);if(p!=null&&!id.equals(p.optString("user_id"))){ids.put(p.optString("user_id"));people.put(p);}}taggedUsers=ids;taggedPeople=people;renderTags();});binding.chipsTaggedPeople.addView(chip);}binding.chipsTaggedPeople.setVisibility(taggedPeople.length()>0?View.VISIBLE:View.GONE);binding.btnTagPeople.setText(taggedPeople.length()==0?"Gắn thẻ bạn bè":"Gắn thẻ bạn bè · "+taggedPeople.length());}
+    private void renderTags(){if(binding==null)return;binding.chipsTaggedPeople.removeAllViews();for(int i=0;i<taggedPeople.length();i++){JSONObject person=taggedPeople.optJSONObject(i);if(person==null)continue;String id=person.optString("user_id",null);if(id==null||id.equals("null"))continue;Chip chip=new Chip(this);chip.setText(person.optString("display_name","Người theo dõi"));chip.setCloseIconVisible(true);chip.setOnCloseIconClickListener(v->{JSONArray ids=new JSONArray(),people=new JSONArray();for(int j=0;j<taggedPeople.length();j++){JSONObject p=taggedPeople.optJSONObject(j);if(p!=null&&!id.equals(p.optString("user_id"))){ids.put(p.optString("user_id"));people.put(p);}}taggedUsers=ids;taggedPeople=people;renderTags();});binding.chipsTaggedPeople.addView(chip);}binding.chipsTaggedPeople.setVisibility(taggedPeople.length()>0?View.VISIBLE:View.GONE);binding.btnTagPeople.setText(taggedPeople.length()==0?"Gắn thẻ người dùng":"Gắn thẻ người dùng · "+taggedPeople.length());}
     private static JSONArray parseArray(String json){try{return json==null?new JSONArray():new JSONArray(json);}catch(Exception ignored){return new JSONArray();}}
     private void toast(String text) { if (alive()) Toast.makeText(this, text, Toast.LENGTH_LONG).show(); }
 

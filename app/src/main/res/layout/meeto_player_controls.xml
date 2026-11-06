@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent" android:layout_height="match_parent">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:layout_gravity="bottom" android:orientation="vertical" android:padding="12dp"
+        android:background="#D9202020">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center">
+            <ImageButton android:id="@id/exo_rew" android:layout_width="48dp" android:layout_height="48dp"
+                android:src="@android:drawable/ic_media_rew" android:tint="#FFFFFF" android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="Lùi video" />
+            <ImageButton android:id="@id/exo_play_pause" android:layout_width="56dp" android:layout_height="48dp"
+                android:src="@drawable/ic_play" android:tint="#FFFFFF" android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="Phát hoặc tạm dừng" />
+            <ImageButton android:id="@id/exo_ffwd" android:layout_width="48dp" android:layout_height="48dp"
+                android:src="@android:drawable/ic_media_ff" android:tint="#FFFFFF" android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="Tua video" />
+        </LinearLayout>
+        <LinearLayout android:layout_width="match_parent" android:layout_height="40dp" android:gravity="center_vertical">
+            <TextView android:id="@id/exo_position" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="#FFFFFF" android:textSize="12sp" />
+            <androidx.media3.ui.DefaultTimeBar android:id="@id/exo_progress" android:layout_width="0dp" android:layout_height="40dp" android:layout_weight="1" app:played_color="#FF5B9B" app:scrubber_color="#FFFFFF" app:unplayed_color="#99FFFFFF" app:buffered_color="#DDDDDD" />
+            <TextView android:id="@id/exo_duration" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="#FFFFFF" android:textSize="12sp" />
+        </LinearLayout>
+    </LinearLayout>
+</FrameLayout>

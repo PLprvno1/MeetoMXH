@@ -49,8 +49,15 @@ final class ProfileFieldSelectors {
     }
 
     static void gender(Context context, TextView field) {
+        gender(context, field, null);
+    }
+
+    static void gender(Context context, TextView field, Runnable onChanged) {
         new android.app.AlertDialog.Builder(context).setTitle("Ch\u1ecdn gi\u1edbi t\u00ednh")
-                .setItems(GENDERS, (dialog, which) -> field.setText(GENDERS[which]))
+                .setItems(GENDERS, (dialog, which) -> {
+                    field.setText(GENDERS[which]);
+                    if (onChanged != null) onChanged.run();
+                })
                 .setNegativeButton("H\u1ee7y", null).show();
     }
 

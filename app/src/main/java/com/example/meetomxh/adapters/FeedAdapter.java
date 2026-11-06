@@ -75,6 +75,7 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private final boolean showFeedHeader;
     private final boolean memoryMode;
     private final boolean hiddenMemoryMode;
+    private boolean showPersonFallback = true;
 
     public FeedAdapter(OnPostClickListener listener) {
         this(listener, true);
@@ -91,6 +92,8 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         this.memoryMode = memoryMode;
         this.hiddenMemoryMode = hiddenMemoryMode;
     }
+
+    public void setShowPersonFallback(boolean show) { showPersonFallback = show; }
 
     public void refreshStories() {
         com.example.meetomxh.supabase.Api.run(() -> {
@@ -110,6 +113,7 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private int getHeaderOffset() { return showFeedHeader ? 1 : 0; }
     private void setStoryList(List<Story> rows) { storyList.clear(); if(rows!=null)storyList.addAll(rows); if(showFeedHeader) notifyItemChanged(0); }
 
+    public void updateCommentCount(String id,int count){for(int i=0;i<postList.size();i++)if(id.equals(postList.get(i).getPostId())){postList.get(i).setCommentsCount(count);notifyItemChanged(getHeaderOffset()+i);break;}}
     public void setPosts(List<Post> posts) {
         List<Post> next = posts == null ? java.util.Collections.emptyList() : posts;
         int oldSize = postList.size();
@@ -183,7 +187,7 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         } else if (holder instanceof PostViewHolder) {
             int postIndex = position - getHeaderOffset();
             if (postIndex >= 0 && postIndex < postList.size()) {
-                ((PostViewHolder) holder).bind(postList.get(postIndex), listener);
+                ((PostViewHolder) holder).bind(postList.get(postIndex), listener, showPersonFallback);
             }
         }
     }
@@ -324,7 +328,7 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             }
             binding.tvLikeText.setVisibility(View.GONE);
         }
-        public void bind(Post post, OnPostClickListener listener) {
+        public void bind(Post post, OnPostClickListener listener, boolean showPersonFallback) {
             boundPostId = post.getPostId();
             binding.btnLike.setEnabled(true);
             binding.tvUserName.setText(post.getUserName());
@@ -343,12 +347,13 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 binding.tvTaggedPeople.setVisibility(View.VISIBLE);
                 binding.tvTaggedPeople.setOnClickListener(v->{String[] labels=new String[tags.length()];String[] ids=new String[tags.length()];for(int i=0;i<tags.length();i++){JSONObject tag=tags.optJSONObject(i);labels[i]=tag==null?"Meeto user":tag.optString("display_name","Meeto user");ids[i]=tag==null?null:tag.optString("user_id",null);}new android.app.AlertDialog.Builder(v.getContext()).setTitle("Được gắn thẻ trong bài viết").setItems(labels,(dialog,index)->{if(ids[index]!=null&&!ids[index].equals("null"))v.getContext().startActivity(new android.content.Intent(v.getContext(),com.example.meetomxh.ProfileActivity.class).putExtra("target_uid",ids[index]));}).setPositiveButton("Đóng",null).show();});
             }else{binding.tvTaggedPeople.setText("");binding.tvTaggedPeople.setVisibility(View.GONE);binding.tvTaggedPeople.setOnClickListener(null);}
-            bindSharedPost(post);
+            bindSharedPost(post, showPersonFallback);
 
             binding.tvLikesCount.setText(post.getLikesCount() + " lượt thích");
             binding.tvCommentsCount.setText(post.getCommentsCount() + " bình luận");
 
-            AvatarViews.load(binding.ivAvatar, post.getUserAvatar(), post.getUserAvatarPreset());
+            if (showPersonFallback) AvatarViews.load(binding.ivAvatar, post.getUserAvatar(), post.getUserAvatarPreset());
+            else AvatarViews.loadWithoutPersonFallback(binding.ivAvatar, post.getUserAvatar());
 
             View.OnClickListener authorClickListener = v -> {
                 if (listener != null) listener.onAuthorClick(post);
@@ -404,7 +409,7 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                     Glide.with(binding.ivPostImage.getContext())
                             .applyDefaultRequestOptions(new com.bumptech.glide.request.RequestOptions().diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.NONE).skipMemoryCache(true))
                             .load(postImg)
-                            .placeholder(R.drawable.avatar_neutral)
+                            .placeholder(R.drawable.ic_media_error)
                             .error(R.drawable.ic_media_error)
                             .into(binding.ivPostImage);
                 }
@@ -546,7 +551,7 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             });
         }
 
-        private void bindSharedPost(Post post) {
+        private void bindSharedPost(Post post, boolean showPersonFallback) {
             binding.cardSharedPost.setVisibility(View.GONE);
             binding.ivSharedPostMedia.setVisibility(View.GONE);
             if (!"share".equals(post.getType())) return;
@@ -562,10 +567,10 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                     if(!post.getPostId().equals(boundPostId))return;
                     org.json.JSONObject author=original.optJSONObject("author");
                     binding.tvSharedPostAuthor.setText(author==null?"Meeto user":author.optString("display_name","Meeto user"));
-                    com.example.meetomxh.ui.AvatarViews.load(binding.ivSharedPostAvatar,com.example.meetomxh.supabase.Dto.asset(author==null?null:com.example.meetomxh.supabase.Dto.nullable(author,"avatar_asset_id")),"neutral");
+                    String sharedAvatar=com.example.meetomxh.supabase.Dto.asset(author==null?null:com.example.meetomxh.supabase.Dto.nullable(author,"avatar_asset_id"));if(showPersonFallback)com.example.meetomxh.ui.AvatarViews.load(binding.ivSharedPostAvatar,sharedAvatar,"neutral");else com.example.meetomxh.ui.AvatarViews.loadWithoutPersonFallback(binding.ivSharedPostAvatar,sharedAvatar);
                     binding.tvSharedPostBody.setText(original.optString("body",""));
                     org.json.JSONArray media=original.optJSONArray("media");
-                    if(media!=null&&media.length()>0){String ref=com.example.meetomxh.supabase.Dto.asset(media.optJSONObject(0).optString("asset_id"));binding.ivSharedPostMedia.setVisibility(View.VISIBLE);Glide.with(binding.ivSharedPostMedia).load(ref).placeholder(R.drawable.avatar_neutral).error(R.drawable.ic_media_error).into(binding.ivSharedPostMedia);}
+                    if(media!=null&&media.length()>0){String ref=com.example.meetomxh.supabase.Dto.asset(media.optJSONObject(0).optString("asset_id"));binding.ivSharedPostMedia.setVisibility(View.VISIBLE);Glide.with(binding.ivSharedPostMedia).load(ref).placeholder(R.drawable.ic_media_error).error(R.drawable.ic_media_error).into(binding.ivSharedPostMedia);}
                 }
                 @Override public void error(String error) { if(post.getPostId().equals(boundPostId)){binding.tvSharedPostAuthor.setText("Bài viết gốc không còn khả dụng với bạn.");binding.tvSharedPostBody.setText("");} }
             });

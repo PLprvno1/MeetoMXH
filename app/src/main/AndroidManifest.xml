@@ -3,7 +3,9 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-feature android:name="android.hardware.camera.any" android:required="false" />
 
     <application
         android:name=".MeetoApplication"
@@ -42,6 +44,7 @@
         <activity
             android:name=".MainActivity"
             android:exported="false" />
+        <activity android:name=".PostDetailsActivity" android:exported="false" />
         <activity android:name=".SearchActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
 
         <activity
@@ -49,6 +52,8 @@
             android:exported="false" />
         <activity android:name=".ProfileEditActivity" android:exported="false" />
         <activity android:name=".UserPostsActivity" android:exported="false" />
+        <activity android:name=".EmailConfirmationActivity" android:exported="false" />
+        <activity android:name=".PeopleSuggestionsActivity" android:exported="false" />
         <activity android:name=".AuthCallbackActivity" android:exported="true">
             <intent-filter><action android:name="android.intent.action.VIEW"/><category android:name="android.intent.category.DEFAULT"/><category android:name="android.intent.category.BROWSABLE"/><data android:scheme="meeto" android:host="auth" android:path="/callback"/></intent-filter>
         </activity>
@@ -61,12 +66,16 @@
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
         <activity android:name=".ConversationDetailsActivity" android:exported="false" />
+        <activity android:name=".ConversationSearchActivity" android:exported="false" />
+        <activity android:name=".SharedPostsActivity" android:exported="false" />
+        <activity android:name=".GroupMembersActivity" android:exported="false" />
         <activity android:name=".SharedMediaGalleryActivity" android:exported="false" />
 
         <activity
             android:name=".ChatImageViewerActivity"
             android:exported="false" />
         <activity android:name=".VideoPlayerActivity" android:exported="false" />
+        <activity android:name=".ReelsCameraActivity" android:exported="false" android:screenOrientation="portrait" android:configChanges="orientation|screenSize|keyboardHidden" />
         <activity android:name=".CreateReelActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".ProfileAlbumsActivity" android:exported="false" />
         <activity android:name=".ProfilePhotoViewerActivity" android:exported="false" />
@@ -79,17 +88,10 @@
         <activity android:name=".TagManagementActivity" android:exported="false" />
         <activity android:name=".StoryCreateActivity" android:exported="false" />
         <activity android:name=".StoryViewActivity" android:exported="false" />
-        <activity android:name=".GroupsHomeActivity" android:exported="false" />
-        <activity android:name=".CreateCommunityGroupActivity" android:exported="false" />
-        <activity android:name=".CommunityGroupDetailActivity" android:exported="false" />
-        <activity android:name=".CommunityGroupMembersActivity" android:exported="false" />
-        <activity android:name=".CommunityGroupAdminActivity" android:exported="false" />
-        <activity android:name=".CommunityGroupInvitesActivity" android:exported="false" />
         <activity android:name=".NotificationsActivity" android:exported="false" />
         <activity android:name=".SavedPostsActivity" android:exported="false" />
+        <activity android:name=".RequestCenterActivity" android:exported="false" />
         <activity android:name=".FollowListActivity" android:exported="false" />
-        <activity android:name=".MemoriesActivity" android:exported="false" />
-        <activity android:name=".MarketplaceActivity" android:exported="false" />
         <activity android:name=".ReportContentActivity" android:exported="false" />
         <activity android:name=".ModerationDashboardActivity" android:exported="false" />
         <activity android:name=".AdminPanelActivity" android:exported="false" />

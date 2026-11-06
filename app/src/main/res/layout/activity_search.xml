@@ -65,7 +65,7 @@
             <com.google.android.material.button.MaterialButton android:id="@+id/tabAll" style="@style/Widget.Material3.Button.OutlinedButton" android:layout_width="wrap_content" android:layout_height="40dp" android:text="Tất cả" />
             <com.google.android.material.button.MaterialButton android:id="@+id/tabPeople" style="@style/Widget.Material3.Button.OutlinedButton" android:layout_width="wrap_content" android:layout_height="40dp" android:text="Mọi người" />
             <com.google.android.material.button.MaterialButton android:id="@+id/tabPosts" style="@style/Widget.Material3.Button.OutlinedButton" android:layout_width="wrap_content" android:layout_height="40dp" android:text="Bài viết" />
-            <com.google.android.material.button.MaterialButton android:id="@+id/tabGroups" style="@style/Widget.Material3.Button.OutlinedButton" android:layout_width="wrap_content" android:layout_height="40dp" android:text="Nhóm" />
+
         </com.google.android.material.button.MaterialButtonToggleGroup>
     </HorizontalScrollView>
 
@@ -115,12 +115,12 @@
                     <LinearLayout android:id="@+id/historySection" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" />
                     <LinearLayout android:id="@+id/peopleSection" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" />
                     <LinearLayout android:id="@+id/postsSection" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" />
-                    <LinearLayout android:id="@+id/groupsSection" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" />
+
                 </LinearLayout>
             </androidx.core.widget.NestedScrollView>
             <androidx.recyclerview.widget.RecyclerView android:id="@+id/rvPeople" android:layout_width="match_parent" android:layout_height="match_parent" android:padding="12dp" android:clipToPadding="false" android:visibility="gone" />
             <androidx.recyclerview.widget.RecyclerView android:id="@+id/rvPosts" android:layout_width="match_parent" android:layout_height="match_parent" android:padding="8dp" android:clipToPadding="false" android:visibility="gone" />
-            <androidx.recyclerview.widget.RecyclerView android:id="@+id/rvGroups" android:layout_width="match_parent" android:layout_height="match_parent" android:padding="12dp" android:clipToPadding="false" android:visibility="gone" />
+
             <androidx.core.widget.NestedScrollView android:id="@+id/historyScroll" android:layout_width="match_parent" android:layout_height="match_parent" android:padding="12dp" android:visibility="gone">
                 <LinearLayout android:id="@+id/historyRows" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" />
             </androidx.core.widget.NestedScrollView>

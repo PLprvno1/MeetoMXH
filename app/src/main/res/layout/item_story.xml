@@ -35,7 +35,7 @@
                     android:layout_height="match_parent"
                     android:contentDescription="Ảnh đại diện"
                     android:scaleType="centerCrop"
-                    android:src="@drawable/avatar_neutral"
+                    android:src="@drawable/ic_person"
                     app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full" />
 
             </FrameLayout>

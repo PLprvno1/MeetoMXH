@@ -1,7 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.swiperefreshlayout.widget.SwipeRefreshLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:id="@+id/swipeProfile">
+
+<androidx.core.widget.NestedScrollView
     android:id="@+id/scrollProfile"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -112,7 +117,6 @@
                         android:layout_height="match_parent"
                         android:contentDescription="Ảnh đại diện"
                         android:scaleType="centerCrop"
-                        android:src="@drawable/avatar_neutral"
                         app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full"
                         app:strokeColor="@color/surface_bg"
                         app:strokeWidth="2dp" />
@@ -145,9 +149,9 @@
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
-                <!-- Posts / Friends Stat -->
+                <!-- Posts Stat -->
                 <LinearLayout
-                    android:id="@+id/layoutStatFriends"
+                    android:id="@+id/layoutStatPosts"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
@@ -155,7 +159,7 @@
                     android:orientation="vertical">
 
                     <TextView
-                        android:id="@+id/tvFriendsCountSummary"
+                        android:id="@+id/tvPostsCount"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:fontFamily="sans-serif-bold"
@@ -170,11 +174,11 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
                         android:gravity="center"
-                        android:text="Bạn bè"
+                        android:text="Bài viết"
                         android:textColor="@color/text_secondary"
                         android:textSize="12sp" />
-
                 </LinearLayout>
+
 
                 <!-- Followers Stat -->
                 <LinearLayout
@@ -267,6 +271,7 @@
                 android:textStyle="bold"
                 tools:text="Hồ Long" />
 
+            <TextView android:id="@+id/tvUsername" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/text_secondary" android:textSize="13sp" android:visibility="gone" />
             <TextView
                 android:id="@+id/tvBio"
                 android:layout_width="match_parent"
@@ -492,21 +497,9 @@
                 android:textSize="13sp"
                 android:textStyle="bold" />
 
-            <!-- Tab 2: Photos -->
+            <!-- Tab 2: Reels -->
             <Button
-                android:id="@+id/btnProfilePhotos"
-                style="@style/Widget.Material3.Button.TextButton"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:text="Ảnh"
-                android:textAllCaps="false"
-                android:textColor="@color/text_secondary"
-                android:textSize="13sp" />
-
-            <!-- Tab 3: Videos -->
-            <Button
-                android:id="@+id/btnProfileVideos"
+                android:id="@+id/btnProfileReels"
                 style="@style/Widget.Material3.Button.TextButton"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
@@ -516,7 +509,7 @@
                 android:textColor="@color/text_secondary"
                 android:textSize="13sp" />
 
-            <!-- Tab 4: About -->
+            <!-- Tab 3: About -->
             <Button
                 android:id="@+id/btnProfileAbout"
                 style="@style/Widget.Material3.Button.TextButton"
@@ -536,7 +529,7 @@
             android:layout_height="0.5dp"
             android:background="@color/divider_color" />
 
-        <!-- Content Area 1: 3-Column Square Grid for Media / Photos / Videos -->
+        <!-- Content Area: authorized Reels posted by this account -->
         <LinearLayout
             android:id="@+id/layoutProfileMedia"
             android:layout_width="match_parent"
@@ -569,7 +562,7 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_horizontal"
                 android:layout_margin="12dp"
-                android:text="Xem thêm"
+                android:text="Xem thêm Reels"
                 android:visibility="gone" />
 
         </LinearLayout>
@@ -609,29 +602,7 @@
 
             </com.google.android.material.card.MaterialCardView>
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                android:orientation="horizontal"
-                android:padding="12dp">
 
-                <Button
-                    android:id="@+id/btnTimelineRefresh"
-                    style="@style/Widget.Material3.Button.TextButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Làm mới bài viết" />
-
-                <Button
-                    android:id="@+id/btnTimelineMore"
-                    style="@style/Widget.Material3.Button.TextButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:text="Tải thêm" />
-
-            </LinearLayout>
 
         </LinearLayout>
 
@@ -690,33 +661,6 @@
 
                 </LinearLayout>
 
-                <!-- Gender Row -->
-                <LinearLayout
-                    android:id="@+id/layoutGenderRow"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:visibility="gone">
-
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:contentDescription="@null"
-                        android:src="@drawable/ic_person"
-                        app:tint="@color/text_secondary" />
-
-                    <TextView
-                        android:id="@+id/tvGender"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:textColor="@color/text_primary"
-                        android:textSize="13sp" />
-
-                </LinearLayout>
-
                 <!-- Date of Birth Row -->
                 <LinearLayout
                     android:id="@+id/layoutDobRow"
@@ -744,105 +688,39 @@
 
                 </LinearLayout>
 
-                <TextView
-                    android:id="@+id/tvFriendsCount"
-                    android:layout_width="wrap_content"
+                <!-- Gender Row -->
+                <LinearLayout
+                    android:id="@+id/layoutGenderRow"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="13sp"
-                    tools:text="15 người bạn" />
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:visibility="gone">
 
-                <TextView
-                    android:id="@+id/tvFriendsStatus"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="13sp"
-                    android:visibility="gone" />
+                    <TextView
+                        android:id="@+id/tvGender"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/text_primary"
+                        android:textSize="13sp" />
+
+                </LinearLayout>
+
+
+
+
+
+
 
             </LinearLayout>
 
         </com.google.android.material.card.MaterialCardView>
 
         <!-- Friends Preview Container (Retained view IDs for ProfileActivity) -->
-        <LinearLayout
-            android:id="@+id/cardFriendsPreview"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingHorizontal="16dp"
-            android:paddingVertical="8dp"
-            android:visibility="gone">
 
-            <Button
-                android:id="@+id/btnSeeAllFriends"
-                style="@style/Widget.Material3.Button.TextButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Xem tất cả bạn bè" />
-
-            <GridLayout
-                android:id="@+id/layoutFriendsGrid"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:columnCount="3" />
-
-        </LinearLayout>
-
-        <!-- Quick Create Post Container (Retained view IDs for ProfileActivity) -->
-        <LinearLayout
-            android:id="@+id/cardCreatePost"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:visibility="gone">
-
-            <TextView
-                android:id="@+id/tvCreatePostPrompt"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content" />
-
-            <ImageView
-                android:id="@+id/btnCreatePostPhoto"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:contentDescription="@null" />
-
-            <ImageView
-                android:id="@+id/ivCreatePostAvatar"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:contentDescription="@null" />
-
-        </LinearLayout>
-
-        <!-- Albums Shortcut Button -->
-        <Button
-            android:id="@+id/btnProfileAlbums"
-            style="@style/Widget.Material3.Button.TextButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:layout_marginBottom="24dp"
-            android:text="Xem album ảnh"
-            android:visibility="gone" />
-
-        <!-- Zero-height elements to safely bind unused legacy views -->
-        <ImageView
-            android:id="@+id/imgCover"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:contentDescription="@null"
-            android:visibility="gone" />
-
-        <ImageView
-            android:id="@+id/btnChangeCover"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:contentDescription="@null"
-            android:visibility="gone" />
 
     </LinearLayout>
 
 </androidx.core.widget.NestedScrollView>
+</androidx.swiperefreshlayout.widget.SwipeRefreshLayout>

@@ -93,7 +93,7 @@ public final class ChatImageViewerActivity extends AppCompatActivity {
                 Glide.with(ChatImageViewerActivity.this)
                         .load(reference)
                         .apply(new RequestOptions().diskCacheStrategy(DiskCacheStrategy.NONE).skipMemoryCache(true))
-                        .placeholder(R.drawable.avatar_neutral)
+                        .placeholder(R.drawable.ic_media_error)
                         .listener(new RequestListener<android.graphics.drawable.Drawable>() {
                             @Override public boolean onLoadFailed(@Nullable com.bumptech.glide.load.engine.GlideException e,
                                     Object model, Target<android.graphics.drawable.Drawable> target, boolean first) {

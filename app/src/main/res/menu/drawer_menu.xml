@@ -2,25 +2,9 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <group android:checkableBehavior="single">
         <item
-            android:id="@+id/drawer_friends"
-            android:icon="@drawable/ic_friends"
-            android:title="Bạn bè" />
-        <item
-            android:id="@+id/drawer_groups"
-            android:icon="@drawable/ic_groups"
-            android:title="Nhóm cộng đồng" />
-        <item
             android:id="@+id/drawer_saved"
             android:icon="@drawable/ic_bookmark"
             android:title="Đã lưu" />
-        <item
-            android:id="@+id/drawer_memories"
-            android:icon="@drawable/ic_memories"
-            android:title="Kỷ niệm" />
-        <item
-            android:id="@+id/drawer_marketplace"
-            android:icon="@drawable/ic_marketplace"
-            android:title="Marketplace" />
         <item
             android:id="@+id/drawer_settings"
             android:icon="@drawable/ic_settings"

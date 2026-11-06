@@ -19,6 +19,8 @@
         android:paddingTop="9dp"
         android:paddingBottom="7dp">
 
+        <ImageView android:id="@+id/sharedAuthorAvatar" android:layout_width="32dp" android:layout_height="32dp" android:layout_marginBottom="6dp" android:contentDescription="Tác giả bài viết gốc" android:visibility="gone" />
+
         <TextView
             android:id="@+id/tvMessageContext"
             android:layout_width="wrap_content"

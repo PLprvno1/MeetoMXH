@@ -30,13 +30,13 @@ public class StoryAdapter extends RecyclerView.Adapter<StoryAdapter.Holder> {
             if (s.isAddStory()) {
                 b.layoutAvatarRing.setVisibility(View.GONE);
                 b.ivAddStoryIcon.setVisibility(View.VISIBLE);
-                b.ivStoryBg.setImageResource(R.drawable.avatar_neutral);
+                b.ivStoryBg.setImageResource(R.drawable.ic_person);
             } else {
                 b.layoutAvatarRing.setVisibility(View.VISIBLE);
                 b.ivAddStoryIcon.setVisibility(View.GONE);
                 b.layoutAvatarRing.setBackgroundResource(s.isViewed() ? R.drawable.shape_story_ring_seen : R.drawable.shape_story_ring);
                 b.layoutAvatarRing.setAlpha(s.isViewed() ? 0.7f : 1f);
-                Glide.with(b.ivStoryBg).load(s.getImageUrl()).placeholder(R.drawable.avatar_neutral).error(R.drawable.ic_media_error).into(b.ivStoryBg);
+                Glide.with(b.ivStoryBg).load(s.getImageUrl()).placeholder(R.drawable.ic_media_error).error(R.drawable.ic_media_error).into(b.ivStoryBg);
             }
             b.getRoot().setOnClickListener(v -> {
                 b.getRoot().animate().scaleX(0.92f).scaleY(0.92f).setDuration(70)

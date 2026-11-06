@@ -39,7 +39,7 @@ public class StoryViewActivity extends AppCompatActivity {
         b.tvStoryAuthorName.setText(s.getUserName());AvatarViews.load(b.ivAuthorStoryAvatar,s.getAvatarUrl(),s.getAvatarPreset());
         b.tvStoryTimeRemaining.setText("Tin 24 giờ · "+(index+1)+"/"+rows.size());b.tvStoryBackendNotice.setText(s.getCaption());
         b.tvStoryBackendNotice.setVisibility(s.getCaption().isEmpty()?View.GONE:View.VISIBLE);b.layoutStoryReplyBar.setVisibility(s.isOwn()?View.GONE:View.VISIBLE);
-        Glide.with(this).load(s.getImageUrl()).placeholder(R.drawable.avatar_neutral).error(R.drawable.ic_media_error).into(b.ivStoryMedia);
+        Glide.with(this).load(s.getImageUrl()).placeholder(R.drawable.ic_media_error).error(R.drawable.ic_media_error).into(b.ivStoryMedia);
         Api.run(()->{StoryClient.viewed(s.getId());return true;},new Api.Callback<Boolean>(){public void success(Boolean v){}public void error(String e){}});
         if(s.getMediaType().startsWith("video/")){pendingVideoLaunch=()->{pendingVideoLaunch=null;if(!paused&&!isFinishing()&&!isDestroyed()&&index<rows.size()&&rows.get(index)==s)startActivityForResult(new Intent(this,VideoPlayerActivity.class).putExtra(VideoPlayerActivity.EXTRA_ASSET,s.getImageUrl()).putExtra(VideoPlayerActivity.EXTRA_STORY_MODE,true),990);};handler.postDelayed(pendingVideoLaunch,180);}
         else schedule();
@@ -51,8 +51,8 @@ public class StoryViewActivity extends AppCompatActivity {
     private void next(){handler.removeCallbacks(tick);if(index+1<rows.size()){index++;show();}else finish();}
     private void previous(){handler.removeCallbacks(tick);if(index>0){index--;show();}else schedule();}
     private void sendReply(){String text=b.etStoryReply.getText().toString().trim();if(text.isEmpty()||index>=rows.size())return;Story s=rows.get(index);String key=s.getId()+"|"+text,id=RequestIds.get("story_reply_v1",key);
-        b.btnSendStoryReply.setEnabled(false);Api.run(()->{StoryClient.reply(s.getId(),text,id);RequestIds.complete("story_reply_v1",key);return true;},new Api.Callback<Boolean>(){
-            public void success(Boolean v){b.btnSendStoryReply.setEnabled(true);b.etStoryReply.setText("");toast("Đã gửi trả lời qua tin nhắn");}
+        b.btnSendStoryReply.setEnabled(false);Api.run(()->{org.json.JSONObject result=StoryClient.reply(s.getId(),text,id);RequestIds.complete("story_reply_v1",key);return result;},new Api.Callback<org.json.JSONObject>(){
+            public void success(org.json.JSONObject result){b.btnSendStoryReply.setEnabled(true);b.etStoryReply.setText("");String request=result.optString("request_state");if("rejected".equals(request)){toast("Yêu cầu tin nhắn đã bị từ chối.");return;}if("pending".equals(request)){toast("Đã gửi trả lời vào tin nhắn chờ.");return;}String cid=com.example.meetomxh.supabase.Dto.nullable(result,"conversation_id");if(cid!=null)startActivity(new Intent(StoryViewActivity.this,ChatActivity.class).putExtra(ChatActivity.EXTRA_CHAT_ID,cid));else toast("Đã gửi trả lời qua tin nhắn");}
             public void error(String e){b.btnSendStoryReply.setEnabled(true);toast(e);}});
     }
     private void showViewers(){if(index>=rows.size())return;String id=rows.get(index).getId();Api.run(()->StoryClient.viewers(id),new Api.Callback<List<org.json.JSONObject>>(){

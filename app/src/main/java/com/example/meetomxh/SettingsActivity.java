@@ -23,8 +23,6 @@ import org.json.JSONObject;
 
 public class SettingsActivity extends AppCompatActivity {
     private ActivitySettingsBinding binding;
-    private boolean updatingThemeControl;
-
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
         binding = ActivitySettingsBinding.inflate(getLayoutInflater());
@@ -34,20 +32,12 @@ public class SettingsActivity extends AppCompatActivity {
             Button tagButton=new Button(this);tagButton.setText("Quyền gắn thẻ & bài viết có gắn thẻ");
             tagButton.setOnClickListener(v->startActivity(new Intent(this,TagManagementActivity.class)));
             ((LinearLayout)settingsScroll.getChildAt(0)).addView(tagButton,0);
+            Button requests=new Button(this);requests.setText("Yêu cầu theo dõi");requests.setOnClickListener(v->startActivity(new Intent(this,RequestCenterActivity.class).putExtra("mode","follow")));((LinearLayout)settingsScroll.getChildAt(0)).addView(requests,1);
+            Button messages=new Button(this);messages.setText("Tin nhắn chờ");messages.setOnClickListener(v->startActivity(new Intent(this,RequestCenterActivity.class).putExtra("mode","message")));((LinearLayout)settingsScroll.getChildAt(0)).addView(messages,2);
         }
         binding.btnBack.setOnClickListener(v -> finish());
-        int nightMode = MeetoPrefs.theme(this);
-        binding.switchDarkModeSettings.setChecked(nightMode == AppCompatDelegate.MODE_NIGHT_YES);
-        binding.switchDarkModeSettings.setOnCheckedChangeListener((v, checked) -> {
-            if (!updatingThemeControl) setThemeMode(checked ? AppCompatDelegate.MODE_NIGHT_YES : AppCompatDelegate.MODE_NIGHT_NO);
-        });
-        binding.switchDarkModeSettings.setOnLongClickListener(v -> {
-            new AlertDialog.Builder(this).setTitle("Giao diện")
-                    .setItems(new String[]{"Theo hệ thống", "Sáng", "Tối"}, (d, i) -> setThemeMode(
-                            i == 0 ? AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM : i == 1
-                                    ? AppCompatDelegate.MODE_NIGHT_NO : AppCompatDelegate.MODE_NIGHT_YES)).show();
-            return true;
-        });
+        binding.rowThemeModeSettings.setOnClickListener(v -> chooseThemeMode());
+        updateThemeModeLabel();
         binding.rowEditProfile.setOnClickListener(v -> startActivity(new Intent(this, ProfileEditActivity.class)));
         binding.rowAccountInfo.setOnClickListener(v -> accountInfo());
         binding.rowPrivacy.setOnClickListener(v -> privacyCenter());
@@ -70,12 +60,29 @@ public class SettingsActivity extends AppCompatActivity {
         });
     }
 
+    private void chooseThemeMode() {
+        int current=MeetoPrefs.theme(this);
+        int selected=current==AppCompatDelegate.MODE_NIGHT_NO?1:current==AppCompatDelegate.MODE_NIGHT_YES?2:0;
+        new AlertDialog.Builder(this).setTitle("Giao diện")
+                .setSingleChoiceItems(new String[]{"Theo hệ thống","Sáng","Tối"},selected,(dialog,which)->{
+                    int mode=which==0?AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM:
+                            which==1?AppCompatDelegate.MODE_NIGHT_NO:AppCompatDelegate.MODE_NIGHT_YES;
+                    setThemeMode(mode);
+                    dialog.dismiss();
+                }).setNegativeButton("Đóng",null).show();
+    }
+
+    private void updateThemeModeLabel() {
+        int mode=MeetoPrefs.theme(this);
+        String label=mode==AppCompatDelegate.MODE_NIGHT_YES?"Tối":
+                mode==AppCompatDelegate.MODE_NIGHT_NO?"Sáng":"Theo hệ thống";
+        binding.tvThemeModeSettings.setText(label);
+    }
+
     private void setThemeMode(int mode) {
         MeetoPrefs.setTheme(this, mode);
         AppCompatDelegate.setDefaultNightMode(mode);
-        updatingThemeControl = true;
-        binding.switchDarkModeSettings.setChecked(mode == AppCompatDelegate.MODE_NIGHT_YES);
-        updatingThemeControl = false;
+        updateThemeModeLabel();
     }
 
     private void accountInfo() {
@@ -102,7 +109,7 @@ public class SettingsActivity extends AppCompatActivity {
                 JSONObject values = new JSONObject();
                 try {
                     values.put("profile", settings == null ? "public" : settings.optString("profile_audience", "public"));
-                    values.put("last_seen", settings == null ? "friends" : settings.optString("last_seen_audience", "friends"));
+                    values.put("last_seen", settings == null ? "private" : settings.optString("last_seen_audience", "private"));
                     values.put("location", profile.optString("location_audience", "private"));
                     values.put("preset", profile.optString("avatar_preset", "neutral"));
                 } catch (Exception ignored) { }
@@ -113,60 +120,31 @@ public class SettingsActivity extends AppCompatActivity {
     }
 
     private void showPrivacyChoices(JSONObject v) {
-        String[] labels = {"Ai xem hồ sơ", "Ai xem trạng thái hoạt động", "Ai xem nơi ở", "Avatar công khai"};
-        String[][] choices = {{"Công khai", "Bạn bè", "Chỉ mình tôi"}, {"Công khai", "Bạn bè", "Chỉ mình tôi"},
-                {"Công khai", "Bạn bè", "Chỉ mình tôi"}, {"Trung tính", "Nam", "Nữ"}};
-        String[] keys = {"profile", "last_seen", "location", "preset"};
-        String[][] values = {{"public", "friends", "private"}, {"public", "friends", "private"},
-                {"public", "friends", "private"}, {"neutral", "male", "female"}};
-        LinearLayout list = new LinearLayout(this); list.setOrientation(LinearLayout.VERTICAL); list.setPadding(32, 8, 32, 8);
-        for (int row = 0; row < labels.length; row++) {
-            final int index = row;
-            int selected = index == 3 ? presetIndex(v.optString(keys[index])) : audienceIndex(v.optString(keys[index]));
-            android.widget.Button button = new android.widget.Button(this);
-            button.setText(labels[row] + ": " + choices[row][selected]);
-            button.setOnClickListener(view -> new AlertDialog.Builder(this).setTitle(labels[index]).setItems(choices[index], (d, choice) -> {
-                try { v.put(keys[index], values[index][choice]); } catch (Exception ignored) { }
-                button.setText(labels[index] + ": " + choices[index][choice]);
-            }).show());
-            list.addView(button);
-        }
-        new AlertDialog.Builder(this).setTitle("Trung tâm quyền riêng tư").setView(list)
-                .setNegativeButton("Đóng", null).setPositiveButton("Lưu", (d, w) -> savePrivacy(v)).show();
+        String[] labels={"Tài khoản","Trạng thái hoạt động","Nơi ở"};
+        String[][] choices={{"Công khai","Riêng tư"},{"Mọi người","Người theo dõi","Chỉ mình tôi"},{"Mọi người","Người theo dõi","Chỉ mình tôi"}};
+        String[][] values={{"public","private"},{"public","followers","private"},{"public","followers","private"}};
+        String[] keys={"profile","last_seen","location"};LinearLayout list=new LinearLayout(this);list.setOrientation(1);
+        for(int i=0;i<labels.length;i++){final int row=i;int selected=java.util.Arrays.asList(values[i]).indexOf(v.optString(keys[i]));if(selected<0)selected=i==0?1:2;
+            try{v.put(keys[i],values[i][selected]);}catch(Exception ignored){}
+            Button button=new Button(this);button.setText(labels[i]+": "+choices[i][selected]);list.addView(button);button.setOnClickListener(x->new AlertDialog.Builder(this).setTitle(labels[row]).setItems(choices[row],(d,n)->{try{v.put(keys[row],values[row][n]);}catch(Exception ignored){}button.setText(labels[row]+": "+choices[row][n]);}).show());}
+        AlertDialog dialog=new AlertDialog.Builder(this).setTitle("Quyền riêng tư").setMessage("Tài khoản riêng tư chỉ cho người theo dõi đã được duyệt xem nội dung. Yêu cầu đang chờ không tự được chấp nhận khi chuyển công khai.").setView(list).setNegativeButton("Hủy",null).setPositiveButton("Lưu",null).create();
+        dialog.setOnShowListener(d->dialog.getButton(-1).setOnClickListener(x->{dialog.getButton(-1).setEnabled(false);Api.run(()->RpcClient.object("update_privacy_settings",Api.obj("p_profile_audience",v.optString("profile"),"p_last_seen_audience",v.optString("last_seen"),"p_location_audience",v.optString("location"))),new Api.Callback<JSONObject>(){
+            public void success(JSONObject r){dialog.dismiss();toast("Đã lưu quyền riêng tư.");com.example.meetomxh.repositories.FeedRepository.getInstance().refresh();}
+            public void error(String e){dialog.getButton(-1).setEnabled(true);toast(e);}
+        });}));dialog.show();
     }
 
-    private int audienceIndex(String value) { return "friends".equals(value) ? 1 : "private".equals(value) ? 2 : 0; }
-    private int presetIndex(String value) { return "male".equals(value) ? 1 : "female".equals(value) ? 2 : 0; }
 
-    private void savePrivacy(JSONObject v) {
-        Api.run(() -> {
-            JSONObject result = RpcClient.object("update_privacy_settings", Api.obj(
-                    "p_profile_audience", v.optString("profile"), "p_last_seen_audience", v.optString("last_seen"),
-                    "p_location_audience", v.optString("location")));
-            RpcClient.object("set_avatar_preset", Api.obj("p_preset", v.optString("preset")));
-            return result;
-        }, new Api.Callback<JSONObject>() {
-            @Override public void success(JSONObject result) { toast("Đã lưu quyền riêng tư."); }
-            @Override public void error(String error) { toast(error); }
-        });
-    }
+
+
+
 
     private void blockedUsers() {
-        Api.run(() -> (JSONArray) RpcClient.call("list_blocked_users", Api.obj()), new Api.Callback<JSONArray>() {
-            @Override public void success(JSONArray users) {
-                if (users.length() == 0) { toast("Danh sách chặn đang trống."); return; }
-                String[] items = new String[users.length()];
-                for (int i=0;i<users.length();i++) items[i] = users.optJSONObject(i).optString("user_id");
-                new AlertDialog.Builder(SettingsActivity.this).setTitle("Tài khoản đã chặn")
-                        .setItems(items, (d, i) -> new AlertDialog.Builder(SettingsActivity.this)
-                                .setMessage("Bỏ chặn tài khoản này? Quan hệ bạn bè/theo dõi đã gỡ sẽ không tự khôi phục.")
-                                .setNegativeButton("Hủy", null).setPositiveButton("Bỏ chặn", (dialog, which) ->
-                                        Api.run(() -> RpcClient.call("set_block", Api.obj("p_target", items[i], "p_blocked", false)), new Api.Callback<Object>() {
-                                            @Override public void success(Object result) { toast("Đã bỏ chặn."); blockedUsers(); }
-                                            @Override public void error(String error) { toast(error); }
-                                        })).show()).show();
-            }
-            @Override public void error(String error) { toast(error); }
+        Api.run(()->(JSONArray)RpcClient.call("list_blocked_users",Api.obj()),new Api.Callback<JSONArray>(){
+            public void success(JSONArray users){if(users.length()==0){toast("Danh sách chặn đang trống.");return;}ScrollView scroll=new ScrollView(SettingsActivity.this);LinearLayout list=new LinearLayout(SettingsActivity.this);list.setOrientation(1);scroll.addView(list);AlertDialog dialog=new AlertDialog.Builder(SettingsActivity.this).setTitle("Tài khoản đã chặn").setView(scroll).setPositiveButton("Đóng",null).create();
+                for(int i=0;i<users.length();i++){JSONObject p=users.optJSONObject(i);if(p==null)continue;LinearLayout row=new LinearLayout(SettingsActivity.this);row.setGravity(android.view.Gravity.CENTER_VERTICAL);android.widget.ImageView avatar=new android.widget.ImageView(SettingsActivity.this);int size=(int)(48*getResources().getDisplayMetrics().density);row.addView(avatar,new LinearLayout.LayoutParams(size,size));com.example.meetomxh.ui.AvatarViews.load(avatar,com.example.meetomxh.supabase.Dto.asset(com.example.meetomxh.supabase.Dto.nullable(p,"avatar_asset_id")),p.optString("avatar_preset","neutral"));android.widget.TextView name=new android.widget.TextView(SettingsActivity.this);name.setText(p.isNull("display_name")?"Người dùng không khả dụng":p.optString("display_name","Người dùng"));name.setTextColor(getColor(R.color.text_primary));row.addView(name,new LinearLayout.LayoutParams(0,-2,1));Button unblock=new Button(SettingsActivity.this);unblock.setText("Bỏ chặn");row.addView(unblock);list.addView(row,new LinearLayout.LayoutParams(-1,-2));unblock.setOnClickListener(v->new AlertDialog.Builder(SettingsActivity.this).setTitle("Bỏ chặn tài khoản?").setMessage("Quan hệ theo dõi đã gỡ sẽ không tự khôi phục.").setNegativeButton("Hủy",null).setPositiveButton("Bỏ chặn",(d,w)->{unblock.setEnabled(false);Api.run(()->RpcClient.call("set_block",Api.obj("p_target",p.optString("user_id"),"p_blocked",false)),new Api.Callback<Object>(){public void success(Object r){list.removeView(row);if(list.getChildCount()==0)dialog.dismiss();}public void error(String e){unblock.setEnabled(true);toast(e);}});}).show());}
+                dialog.show();}
+            public void error(String e){toast(e);}
         });
     }
 
@@ -187,8 +165,8 @@ public class SettingsActivity extends AppCompatActivity {
                 final JSONObject current = prefs;
                 LinearLayout options = new LinearLayout(SettingsActivity.this); options.setOrientation(LinearLayout.VERTICAL); options.setPadding(20,8,20,8);
                 CheckBox enabled = new CheckBox(SettingsActivity.this); enabled.setText("Thông báo trong ứng dụng"); enabled.setChecked(settings.optBoolean("enabled",true)); options.addView(enabled);
-                String[] keys={"reaction","comment","reply","friend_request","friend_accepted","follow","message","story","group","moderation","mention","tag"};
-                String[] labels={"Cảm xúc","Bình luận","Trả lời","Lời mời kết bạn","Chấp nhận kết bạn","Theo dõi","Tin nhắn","Tin trả lời story","Nhóm","Kiểm duyệt","Mention","Gắn thẻ"};
+                String[] keys={"reaction","comment","reply","follow_request","follow_accepted","message_request","group_invite","follow","message","story","moderation","mention","tag"};
+                String[] labels={"Cảm xúc","Bình luận","Trả lời","Yêu cầu theo dõi","Chấp nhận theo dõi","Tin nhắn chờ","Lời mời nhóm chat","Theo dõi","Tin nhắn","Tin trả lời story","Kiểm duyệt","Mention","Gắn thẻ"};
                 CheckBox[] boxes=new CheckBox[keys.length];
                 for(int i=0;i<keys.length;i++){boxes[i]=new CheckBox(SettingsActivity.this);boxes[i].setText(labels[i]);boxes[i].setChecked(current.optBoolean(keys[i],true));options.addView(boxes[i]);}
                 ScrollView scroll=new ScrollView(SettingsActivity.this);scroll.addView(options);

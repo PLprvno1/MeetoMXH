@@ -80,7 +80,7 @@
                     android:layout_height="38dp"
                     android:contentDescription="Ảnh đại diện tác giả"
                     android:scaleType="centerCrop"
-                    android:src="@drawable/avatar_neutral"
+                    android:src="@drawable/ic_person"
                     app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full"
                     app:strokeColor="#FFFFFF"
                     app:strokeWidth="1.5dp" />

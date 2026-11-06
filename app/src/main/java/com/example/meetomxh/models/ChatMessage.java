@@ -27,6 +27,17 @@ public class ChatMessage {
     private String replyPreview;
     private String sharedPostId;
     private String sharedPostVideoAssetId;
+    private String storyAuthor;public void setStoryAuthor(String value){storyAuthor=value;}public String getStoryAuthor(){return storyAuthor;}
+    private String sharedAuthor,sharedCaption,storyId,storyCaption,sharedPreview,sharedMime;
+    public void setSharedPreview(String asset,String mime){sharedPreview=asset;sharedMime=mime;}
+    public String getSharedPreview(){return sharedPreview;}
+    public String getSharedMime(){return sharedMime;}
+    private String sharedAvatar,sharedAvatarPreset;
+    public void setSharedAvatar(String asset,String preset){sharedAvatar=asset;sharedAvatarPreset=preset;}
+    public String getSharedAvatar(){return sharedAvatar;} public String getSharedAvatarPreset(){return sharedAvatarPreset;}
+    public void setSharedContext(String author,String caption){sharedAuthor=author;sharedCaption=caption!=null&&caption.length()>240?caption.substring(0,240)+"…":caption;}
+    public void setStoryContext(String id,String caption){storyId=id;storyCaption=caption;}
+    public String getStoryId(){return storyId;}
     private boolean sharedPostPresent;
     private boolean sharedPostAvailable;
     private boolean forwarded;
@@ -83,7 +94,8 @@ public class ChatMessage {
     }
 
     public String getDisplayText() {
-        if (sharedPostPresent) return sharedPostAvailable ? "Shared post · tap to view" : "Shared post · content unavailable";
+        if (sharedPostPresent) return sharedPostAvailable ? (sharedAuthor==null?"Bài viết được chia sẻ":sharedAuthor)+"\n"+(sharedCaption==null?"":sharedCaption)+"\nXem bài viết gốc" : "Bài viết không còn khả dụng";
+        if(storyId!=null)return "Trả lời tin: "+(storyCaption==null?"Tin đã hết hạn hoặc không còn khả dụng":storyCaption)+"\n"+(text==null?"":text);
         if (!isRecalled && "image".equals(type)) return "\u1ea2nh";
         if (!isRecalled && "video".equals(type)) return "Video";
         if (!isRecalled && "voice".equals(type)) return "Tin nhắn thoại";

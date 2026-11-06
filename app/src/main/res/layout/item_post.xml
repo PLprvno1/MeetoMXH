@@ -29,7 +29,7 @@
                 android:layout_height="36dp"
                 android:contentDescription="Avatar"
                 android:scaleType="centerCrop"
-                android:src="@drawable/avatar_neutral"
+                android:src="@drawable/ic_person"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
@@ -111,7 +111,7 @@
                         android:layout_height="28dp"
                         android:contentDescription="Tác giả gốc"
                         android:scaleType="centerCrop"
-                        android:src="@drawable/avatar_neutral"
+                        android:src="@drawable/ic_person"
                         app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full" />
 
                     <TextView
@@ -166,7 +166,7 @@
                 android:maxHeight="500dp"
                 android:scaleType="fitCenter"
                 android:visibility="visible"
-                tools:src="@drawable/avatar_neutral" />
+                tools:src="@drawable/ic_media_error" />
 
             <!-- Post Video Player -->
             <FrameLayout

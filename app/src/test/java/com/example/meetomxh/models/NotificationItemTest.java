@@ -11,7 +11,8 @@ public class NotificationItemTest {
 
     @Test public void otherImplementedNotificationKindsHaveSpecificText() {
         assertEquals("Test User đã chia sẻ bài viết của bạn.", NotificationItem.messageFor("share", "Test User"));
-        assertEquals("Test User đã có hoạt động mới trong nhóm.", NotificationItem.messageFor("group", "Test User"));
+        org.junit.Assert.assertTrue(NotificationItem.isRetired("group"));
+        org.junit.Assert.assertFalse(NotificationItem.isRetired("group_invite"));
         assertEquals("Bạn có cập nhật kiểm duyệt mới.", NotificationItem.messageFor("moderation", "Test User"));
     }
 }

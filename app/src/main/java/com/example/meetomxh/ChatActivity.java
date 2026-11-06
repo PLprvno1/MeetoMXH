@@ -64,6 +64,8 @@ import okhttp3.Call;
 public class ChatActivity extends AppCompatActivity {
     public static final String EXTRA_CHAT_ID = "chat_id";
     public static final String EXTRA_OTHER_UID = "other_uid";
+    public static final String EXTRA_JUMP_MESSAGE_ID = "jump_message_id";
+    public static final String EXTRA_JUMP_MESSAGE_SEQ = "jump_message_seq";
 
     private ActivityChatBinding binding;
     private ChatRepository chatRepository;
@@ -88,6 +90,7 @@ public class ChatActivity extends AppCompatActivity {
     private ChatMessage replyTarget;
     private ChatMessage editingTarget;
     private ActivityResultLauncher<PickVisualMediaRequest> imagePickerLauncher;
+    private final ActivityResultLauncher<Intent> detailsLauncher=registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),result->{if(result.getResultCode()==RESULT_OK)finish();});
     private Uri pendingImageUri;
     private SupabaseStorage.Transfer activeUploadCall;
     private String uploadedImageUrl;
@@ -228,7 +231,8 @@ public class ChatActivity extends AppCompatActivity {
             @Override public void afterTextChanged(Editable s) { }
         });
         binding.btnSendMessage.setOnClickListener(v -> sendCurrentMessage());
-        binding.btnVoiceRecord.setOnTouchListener((view, event) -> handleVoiceTouch(event));
+        binding.btnVoiceRecord.setVisibility(View.GONE);
+        binding.btnVoiceRecord.setEnabled(false);
         binding.btnVoiceStop.setOnClickListener(v -> stopVoiceRecording());
         binding.btnVoiceCancel.setOnClickListener(v -> discardVoiceRecording());
         binding.btnVoiceDiscard.setOnClickListener(v -> discardVoicePreview());
@@ -258,6 +262,8 @@ public class ChatActivity extends AppCompatActivity {
         });
 
         chatId = clean(getIntent().getStringExtra(EXTRA_CHAT_ID));
+        pendingReplyScrollId = getIntent().getStringExtra(EXTRA_JUMP_MESSAGE_ID);
+        pendingReplyScrollSeq = getIntent().getLongExtra(EXTRA_JUMP_MESSAGE_SEQ, 0);
         otherUid = clean(getIntent().getStringExtra(EXTRA_OTHER_UID));
         View.OnClickListener openDetails = v -> openConversationDetails();
         binding.ivChatAvatar.setOnClickListener(openDetails);
@@ -356,7 +362,7 @@ public class ChatActivity extends AppCompatActivity {
                         binding.rvMessages.post(() -> {
                             if (binding != null) {
                                 int position = adapter.indexOfMessage(targetId);
-                                if (position >= 0) binding.rvMessages.smoothScrollToPosition(position);
+                                if (position >= 0) {binding.rvMessages.smoothScrollToPosition(position);binding.rvMessages.postDelayed(()->highlightMessage(targetId),250);}
                             }
                         });
                     } else if (pendingReplyScrollSeq > 0 && !currentMessages.isEmpty()
@@ -429,8 +435,8 @@ public class ChatActivity extends AppCompatActivity {
                         if (binding == null || !started || !listeningChatId.equals(chatId)) return;
                         currentChatState = chat;
                         if ("group".equals(chat.getType())) {
-                            binding.tvChatTitle.setText(chat.title + ("archived".equals(chat.state) ? " · Đã lưu trữ" : ""));
-                            binding.tvChatTitle.setOnClickListener(v -> ChatControls.show(ChatActivity.this, chat));
+                            binding.tvChatTitle.setText(chat.title+" · "+(chat.getParticipants()==null?0:chat.getParticipants().size()));com.example.meetomxh.ui.AvatarViews.load(binding.ivChatAvatar,chat.avatar,"neutral");
+                            binding.tvChatTitle.setOnClickListener(v -> openConversationDetails());
                         }
                         updateComposerPermissions();
                         String other = otherUid;
@@ -445,7 +451,7 @@ public class ChatActivity extends AppCompatActivity {
 
                     @Override public void onError(String error) {
                         if (binding != null && started && !isFinishing() && !isDestroyed())
-                            android.util.Log.w("ChatActivity", "Unable to observe chat state: " + error);
+                            {currentChatState=null;updateComposerPermissions();binding.tvMessagesState.setText(error);binding.tvMessagesState.setVisibility(View.VISIBLE);}
                     }
                 });
     }
@@ -471,7 +477,7 @@ public class ChatActivity extends AppCompatActivity {
         binding.btnSendMessage.setEnabled(active && !sending);
         binding.etMessage.setEnabled(active && !sending);
         binding.btnAttachImage.setEnabled(active && !uploadingImage);
-        binding.btnVoiceRecord.setEnabled(active && !uploadingVoice);
+        binding.btnVoiceRecord.setEnabled(false);
         binding.btnVoiceSend.setEnabled(active && !uploadingVoice);
     }
 
@@ -532,7 +538,7 @@ public class ChatActivity extends AppCompatActivity {
         });
     }
 
-    private void findOtherParticipant(String id) {chatRepository.getChat(id,new ChatRepository.OnChatListener(){public void onSuccess(Chat chat){if(isFinishing()||binding==null)return;if("group".equals(chat.getType())){currentChatState=chat;binding.tvChatTitle.setText(chat.title);binding.tvChatTitle.setOnClickListener(v->openConversationDetails());}else for(String participant:chat.getParticipants())if(!participant.equals(currentUid)){otherUid=participant;loadOtherProfile(participant);break;}}public void onError(String e){failAndClose(e);}});}
+    private void findOtherParticipant(String id) {chatRepository.getChat(id,new ChatRepository.OnChatListener(){public void onSuccess(Chat chat){if(isFinishing()||binding==null)return;if("group".equals(chat.getType())){currentChatState=chat;binding.tvChatTitle.setText(chat.title+" · "+(chat.getParticipants()==null?0:chat.getParticipants().size()));com.example.meetomxh.ui.AvatarViews.load(binding.ivChatAvatar,chat.avatar,"neutral");binding.tvChatTitle.setOnClickListener(v->openConversationDetails());}else for(String participant:chat.getParticipants())if(!participant.equals(currentUid)){otherUid=participant;loadOtherProfile(participant);break;}}public void onError(String e){failAndClose(e);}});}
 
     private boolean handleVoiceTouch(android.view.MotionEvent event) {
         if (binding == null || uploadingVoice) return true;
@@ -1335,6 +1341,8 @@ public class ChatActivity extends AppCompatActivity {
 
     private void scrollToMessage(String messageId) { scrollToMessage(messageId, 0); }
 
+    private void highlightMessage(String messageId){if(binding==null||adapter==null)return;int position=adapter.indexOfMessage(messageId);if(position<0)return;androidx.recyclerview.widget.RecyclerView.ViewHolder holder=binding.rvMessages.findViewHolderForAdapterPosition(position);if(holder==null)return;View bubble=holder.itemView.findViewById(com.example.meetomxh.R.id.messageBubble);if(bubble==null)return;android.content.res.ColorStateList old=androidx.core.view.ViewCompat.getBackgroundTintList(bubble);androidx.core.view.ViewCompat.setBackgroundTintList(bubble,android.content.res.ColorStateList.valueOf(getColor(R.color.brand_blue)));bubble.postDelayed(()->{if(!isFinishing())androidx.core.view.ViewCompat.setBackgroundTintList(bubble,old);},1500);}
+
     private void updateSendingState(boolean isSending) {
         updateComposerPermissions();
         binding.btnSendMessage.setText(isSending ? "" : editingTarget != null ? "Lưu" : "Gửi");
@@ -1351,7 +1359,7 @@ public class ChatActivity extends AppCompatActivity {
                 || !binding.rvMessages.canScrollVertically(1);
     }
 
-    private void openConversationDetails(){if(chatId==null)return;startActivity(new Intent(this,ConversationDetailsActivity.class).putExtra(ConversationDetailsActivity.EXTRA_CHAT_ID,chatId));}
+    private void openConversationDetails(){if(chatId==null)return;detailsLauncher.launch(new Intent(this,ConversationDetailsActivity.class).putExtra(ConversationDetailsActivity.EXTRA_CHAT_ID,chatId));}
 
     private void openOtherProfile() {
         if (binding == null || otherUid == null || otherUid.trim().isEmpty()

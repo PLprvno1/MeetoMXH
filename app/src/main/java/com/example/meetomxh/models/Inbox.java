@@ -9,6 +9,7 @@ public class Inbox {
     private String avatarPreset = "neutral";
     private String timestamp;
     private boolean unread;
+    private boolean muted;
 
     public Inbox() {
     }
@@ -73,6 +74,8 @@ public class Inbox {
 
     public boolean isUnread() { return unread; }
     public void setUnread(boolean unread) { this.unread = unread; }
+    public boolean isMuted(){return muted;}
+    public void setMuted(boolean value){muted=value;}
 
     public void setServerTime(String timestamp) {
         this.timestamp = timestamp;

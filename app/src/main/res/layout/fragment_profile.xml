@@ -47,7 +47,7 @@
                         android:layout_height="match_parent"
                         android:contentDescription="Ảnh đại diện"
                         android:scaleType="centerCrop"
-                        android:src="@drawable/avatar_neutral"
+                        android:src="@drawable/ic_person"
                         app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full"
                         app:strokeColor="@color/surface_bg"
                         app:strokeWidth="2dp" />
@@ -100,46 +100,6 @@
             android:layout_height="0.5dp"
             android:background="@color/divider_color" />
 
-        <!-- Section 1: Dark Mode Toggle -->
-        <LinearLayout
-            android:id="@+id/cardDarkMode"
-            android:layout_width="match_parent"
-            android:layout_height="52dp"
-            android:background="@color/surface_bg"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingHorizontal="16dp">
-
-            <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:contentDescription="@null"
-                android:src="@drawable/ic_visibility"
-                app:tint="@color/text_primary" />
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="14dp"
-                android:layout_weight="1"
-                android:fontFamily="sans-serif-medium"
-                android:text="Chế độ tối (Dark Mode)"
-                android:textColor="@color/text_primary"
-                android:textSize="14sp" />
-
-            <androidx.appcompat.widget.SwitchCompat
-                android:id="@+id/switchDarkMode"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content" />
-
-        </LinearLayout>
-
-        <!-- Hairline Divider -->
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="0.5dp"
-            android:background="@color/divider_color" />
-
         <!-- Section 2: Shortcuts List (Friends, Saved, Settings, Groups, etc.) -->
         <LinearLayout
             android:layout_width="match_parent"
@@ -149,42 +109,7 @@
             android:orientation="vertical">
 
             <!-- Friends Shortcut -->
-            <LinearLayout
-                android:id="@+id/cardFriendsShortcut"
-                android:layout_width="match_parent"
-                android:layout_height="52dp"
-                android:background="?android:attr/selectableItemBackground"
-                android:clickable="true"
-                android:focusable="true"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingHorizontal="16dp">
 
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:contentDescription="@null"
-                    android:src="@drawable/ic_friends"
-                    app:tint="@color/text_primary" />
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="14dp"
-                    android:layout_weight="1"
-                    android:text="Bạn bè &amp; Gợi ý"
-                    android:textColor="@color/text_primary"
-                    android:textSize="14sp" />
-
-                <ImageView
-                    android:layout_width="16dp"
-                    android:layout_height="16dp"
-                    android:contentDescription="@null"
-                    android:rotation="180"
-                    android:src="@drawable/ic_back"
-                    app:tint="@color/text_secondary" />
-
-            </LinearLayout>
 
             <View
                 android:layout_width="match_parent"
@@ -237,42 +162,7 @@
                 android:background="@color/divider_color" />
 
             <!-- Groups Shortcut -->
-            <LinearLayout
-                android:id="@+id/cardGroupsShortcut"
-                android:layout_width="match_parent"
-                android:layout_height="52dp"
-                android:background="?android:attr/selectableItemBackground"
-                android:clickable="true"
-                android:focusable="true"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingHorizontal="16dp">
 
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:contentDescription="@null"
-                    android:src="@drawable/ic_groups"
-                    app:tint="@color/text_primary" />
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="14dp"
-                    android:layout_weight="1"
-                    android:text="Nhóm cộng đồng"
-                    android:textColor="@color/text_primary"
-                    android:textSize="14sp" />
-
-                <ImageView
-                    android:layout_width="16dp"
-                    android:layout_height="16dp"
-                    android:contentDescription="@null"
-                    android:rotation="180"
-                    android:src="@drawable/ic_back"
-                    app:tint="@color/text_secondary" />
-
-            </LinearLayout>
 
             <View
                 android:layout_width="match_parent"
@@ -281,42 +171,7 @@
                 android:background="@color/divider_color" />
 
             <!-- Memories Shortcut -->
-            <LinearLayout
-                android:id="@+id/cardMemoriesShortcut"
-                android:layout_width="match_parent"
-                android:layout_height="52dp"
-                android:background="?android:attr/selectableItemBackground"
-                android:clickable="true"
-                android:focusable="true"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingHorizontal="16dp">
 
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:contentDescription="@null"
-                    android:src="@drawable/ic_memories"
-                    app:tint="@color/text_primary" />
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="14dp"
-                    android:layout_weight="1"
-                    android:text="Kỷ niệm"
-                    android:textColor="@color/text_primary"
-                    android:textSize="14sp" />
-
-                <ImageView
-                    android:layout_width="16dp"
-                    android:layout_height="16dp"
-                    android:contentDescription="@null"
-                    android:rotation="180"
-                    android:src="@drawable/ic_back"
-                    app:tint="@color/text_secondary" />
-
-            </LinearLayout>
 
             <View
                 android:layout_width="match_parent"
@@ -325,42 +180,7 @@
                 android:background="@color/divider_color" />
 
             <!-- Marketplace Shortcut -->
-            <LinearLayout
-                android:id="@+id/cardMarketplaceShortcut"
-                android:layout_width="match_parent"
-                android:layout_height="52dp"
-                android:background="?android:attr/selectableItemBackground"
-                android:clickable="true"
-                android:focusable="true"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingHorizontal="16dp">
 
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:contentDescription="@null"
-                    android:src="@drawable/ic_marketplace"
-                    app:tint="@color/text_primary" />
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="14dp"
-                    android:layout_weight="1"
-                    android:text="Marketplace"
-                    android:textColor="@color/text_primary"
-                    android:textSize="14sp" />
-
-                <ImageView
-                    android:layout_width="16dp"
-                    android:layout_height="16dp"
-                    android:contentDescription="@null"
-                    android:rotation="180"
-                    android:src="@drawable/ic_back"
-                    app:tint="@color/text_secondary" />
-
-            </LinearLayout>
 
             <View
                 android:layout_width="match_parent"

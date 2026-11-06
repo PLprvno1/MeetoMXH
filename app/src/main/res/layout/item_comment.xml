@@ -13,7 +13,7 @@
         android:layout_height="38dp"
         android:contentDescription="Avatar"
         android:scaleType="centerCrop"
-        android:src="@drawable/avatar_neutral"
+        android:src="@drawable/ic_person"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full" />

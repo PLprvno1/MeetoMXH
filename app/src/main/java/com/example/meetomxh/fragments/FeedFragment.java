@@ -56,7 +56,7 @@ public class FeedFragment extends Fragment implements FeedAdapter.OnPostClickLis
         // Khởi tạo Adapter & RecyclerView
         adapter = new FeedAdapter(this);
         binding.rvFeed.setLayoutManager(new LinearLayoutManager(requireContext()));
-        binding.rvFeed.setAdapter(adapter);
+        binding.rvFeed.setAdapter(adapter);com.example.meetomxh.supabase.PostUpdates.counts.observe(getViewLifecycleOwner(),c->{if(adapter!=null&&c!=null)adapter.updateCommentCount(c.id,c.comments);});
         binding.swipeFeed.setOnRefreshListener(()->{
             pullRefreshing=true;
             LinearLayoutManager lm=(LinearLayoutManager)binding.rvFeed.getLayoutManager();int pos=lm==null?0:lm.findFirstVisibleItemPosition();

@@ -15,7 +15,6 @@ import androidx.fragment.app.Fragment;
 
 import com.example.meetomxh.databinding.ActivityMainBinding;
 import com.example.meetomxh.fragments.FeedFragment;
-import com.example.meetomxh.fragments.FriendsFragment;
 import com.example.meetomxh.fragments.InboxFragment;
 import com.example.meetomxh.fragments.ProfileFragment;
 import com.example.meetomxh.fragments.ReelsFragment;
@@ -45,6 +44,15 @@ public class MainActivity extends AppCompatActivity {
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+        // Material 3 defaults to an 80dp minimum. Keep all five compact tab hit areas
+        // inside the 54dp content area above the gesture-navigation inset.
+        int tabHeight=(int)(54*getResources().getDisplayMetrics().density+.5f);
+        binding.bottomNavigation.setMinimumHeight(tabHeight);
+        if(binding.bottomNavigation.getChildAt(0) instanceof android.view.ViewGroup){
+            android.view.ViewGroup menu=(android.view.ViewGroup)binding.bottomNavigation.getChildAt(0);
+            menu.setMinimumHeight(tabHeight);
+            for(int i=0;i<menu.getChildCount();i++)menu.getChildAt(i).setMinimumHeight(tabHeight);
+        }
 
         // Handle System WindowInsets for edge-to-edge:
         // - Top AppBar receives status bar inset so it flushes gracefully below the status bar
@@ -107,7 +115,9 @@ public class MainActivity extends AppCompatActivity {
                 loadFragment(new FeedFragment());
                 return true;
             } else if (itemId == R.id.nav_video) {
-                loadFragment(new ReelsFragment());
+                String target = getIntent().getStringExtra(com.example.meetomxh.supabase.PostDetails.EXTRA_REEL_ID);
+                loadFragment(target == null ? new ReelsFragment() : ReelsFragment.newInstance(target));
+                getIntent().removeExtra(com.example.meetomxh.supabase.PostDetails.EXTRA_REEL_ID);
                 return true;
             } else if (itemId == R.id.nav_messages) {
                 loadFragment(new InboxFragment());
@@ -117,9 +127,6 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             } else if (itemId == R.id.nav_profile) {
                 loadFragment(new ProfileFragment());
-                return true;
-            } else if (itemId == R.id.nav_friends) {
-                loadFragment(new FriendsFragment());
                 return true;
             } else if (itemId == R.id.nav_notifications) {
                 startActivity(new Intent(this, NotificationsActivity.class));
@@ -137,19 +144,18 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        String targetReel = getIntent().getStringExtra(com.example.meetomxh.supabase.PostDetails.EXTRA_REEL_ID);
+        if (targetReel != null && !targetReel.isEmpty()) {
+            binding.bottomNavigation.getMenu().findItem(R.id.nav_video).setChecked(true);
+            loadFragment(ReelsFragment.newInstance(targetReel));
+            getIntent().removeExtra(com.example.meetomxh.supabase.PostDetails.EXTRA_REEL_ID);
+        }
+
         // Drawer Navigation View listener
         binding.navView.setNavigationItemSelectedListener(item -> {
             int itemId = item.getItemId();
-            if (itemId == R.id.drawer_friends) {
-                loadFragment(new FriendsFragment());
-            } else if (itemId == R.id.drawer_groups) {
-                startActivity(new Intent(this, GroupsHomeActivity.class));
-            } else if (itemId == R.id.drawer_saved) {
+            if (itemId == R.id.drawer_saved) {
                 startActivity(new Intent(this, SavedPostsActivity.class));
-            } else if (itemId == R.id.drawer_memories) {
-                startActivity(new Intent(this, MemoriesActivity.class));
-            } else if (itemId == R.id.drawer_marketplace) {
-                startActivity(new Intent(this, MarketplaceActivity.class));
             } else if (itemId == R.id.drawer_settings) {
                 startActivity(new Intent(this, SettingsActivity.class));
             } else if (itemId == R.id.drawer_logout) {

@@ -9,7 +9,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.example.meetomxh.fragments.FeedFragment;
-import com.example.meetomxh.fragments.FriendsFragment;
+import com.example.meetomxh.fragments.SearchFragment;
 import com.example.meetomxh.fragments.InboxFragment;
 import com.example.meetomxh.fragments.ProfileFragment;
 import com.example.meetomxh.supabase.Api;
@@ -205,12 +205,12 @@ public class AuthCloudSmokeTest {
         waitForMain(ProfileFragment.class, R.id.nav_profile);
         assertTrue("Profile navigation retains identity", !SessionManager.getInstance().uid().isEmpty());
 
-        onView(withId(R.id.nav_friends)).perform(click());
-        waitForMain(FriendsFragment.class, R.id.nav_friends);
-        assertTrue("Friends navigation retains identity", !SessionManager.getInstance().uid().isEmpty());
+        onView(withId(R.id.nav_search)).perform(click());
+        waitForMain(SearchFragment.class, R.id.nav_search);
+        assertTrue("Search navigation retains identity", !SessionManager.getInstance().uid().isEmpty());
 
         onView(withId(R.id.btnMessenger)).perform(click());
-        waitForMain(InboxFragment.class, R.id.nav_friends);
+        waitForMain(InboxFragment.class, R.id.nav_messages);
         assertTrue("Messenger navigation retains identity", !SessionManager.getInstance().uid().isEmpty());
 
         onView(withId(R.id.nav_profile)).perform(click());

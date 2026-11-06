@@ -14,7 +14,6 @@ import com.example.meetomxh.supabase.ErrorMapper;
 import com.example.meetomxh.supabase.ProfileClient;
 import com.example.meetomxh.supabase.RpcClient;
 import com.example.meetomxh.supabase.SessionManager;
-import com.example.meetomxh.fragments.FriendsFragment;
 import com.example.meetomxh.ChatActivity;
 
 import org.hamcrest.Description;
@@ -226,33 +225,7 @@ public class Task11CUiAuditTest {
         });
     }
 
-    @Test public void friendsAcceptedRelationAndTabsRenderFromCurrentAccount() throws Exception {
-        JSONArray friends = (JSONArray) RpcClient.call("get_friends", Api.obj());
-        Assert.assertTrue("A/B friendship fixture retained from Task 11", friends.length() > 0);
-        helper.launch(MainActivity.class);
-        Activity main = helper.activity();
-        InstrumentationRegistry.getInstrumentation().runOnMainSync(() ->
-                ((androidx.fragment.app.FragmentActivity) main).getSupportFragmentManager()
-                        .beginTransaction().replace(R.id.fragment_container, new FriendsFragment()).commit());
-        onView(withId(R.id.btnTabAllFriends)).perform(click());
-        helper.waitFor("accepted friend card and actions rendered", () -> {
-            Activity current = helper.activity();
-            if (current == null) return false;
-            final boolean[] rendered = {false};
-            InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> {
-                androidx.recyclerview.widget.RecyclerView list = current.findViewById(R.id.rvFriends);
-                if (list == null || list.getAdapter() == null || list.getAdapter().getItemCount() == 0
-                        || list.getChildCount() == 0) return;
-                View row = list.getChildAt(0);
-                TextView relationship = row.findViewById(R.id.tvFriendSubtext);
-                android.widget.Button action = row.findViewById(R.id.btnPrimaryAction);
-                rendered[0] = relationship != null && action != null && action.isShown()
-                        && "B\u1ea1n b\u00e8".contentEquals(relationship.getText())
-                        && "H\u1ee7y k\u1ebft b\u1ea1n".contentEquals(action.getText());
-            });
-            return rendered[0];
-        });
-    }
+
 
     @Test public void editPrivacyLabelAndCancelPreserveTheServerDesiredState() throws Exception {
         String body = "Task11C private editor " + UUID.randomUUID();

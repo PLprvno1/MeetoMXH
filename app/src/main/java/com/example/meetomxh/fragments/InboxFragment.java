@@ -49,6 +49,7 @@ public class InboxFragment extends Fragment {
     private List<Chat> allChats = new ArrayList<>();
     private String currentUid;
     private boolean chatsLoaded;
+    private boolean showArchived;
     private long chatsListenerGeneration;
     private final Handler searchHandler = new Handler(Looper.getMainLooper());
     private Runnable pendingConversationSearch;
@@ -67,7 +68,13 @@ public class InboxFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         chatRepository = ChatRepository.getInstance();
-        binding.btnCreateChatGroup.setOnClickListener(v -> ChatControls.create(requireActivity()));
+        binding.btnClearConversations.setOnClickListener(v->binding.etSearchConversations.setText(""));
+        binding.btnCreateChatGroup.setOnClickListener(v -> new android.app.AlertDialog.Builder(requireContext()).setItems(new String[]{"Tin nhắn mới","Tạo nhóm chat","Tin nhắn chờ","Lời mời nhóm chat",showArchived?"Hộp thư đến":"Đã lưu trữ"},(d,i)->{
+            if(i==0)PeoplePicker.show(requireActivity(),java.util.Collections.emptySet(),1,false,ids->SocialActions.contact(requireActivity(),ids.get(0)));
+            if(i==1)ChatControls.create(requireActivity());
+            if(i==2||i==3)startActivity(new Intent(requireContext(),com.example.meetomxh.RequestCenterActivity.class).putExtra("mode",i==2?"message":"group"));
+            if(i==4){showArchived=!showArchived;scheduleConversationSearch(binding.etSearchConversations.getText().toString());renderChats();}
+        }).show());
         currentUid = SessionManager.getInstance().getCurrentUser() == null
                 ? null : SessionManager.getInstance().getCurrentUser().getUid();
         binding.rvInbox.setLayoutManager(new LinearLayoutManager(requireContext()));
@@ -100,7 +107,7 @@ public class InboxFragment extends Fragment {
                 sortChatsNewestFirst();
                 for (Chat chat : allChats) {
                     String otherUid = getOtherUid(chat);
-                    if (otherUid != null) loadProfileOnce(otherUid);
+                    if (otherUid != null && !"group".equals(chat.getType())) loadProfileOnce(otherUid);
                 }
                 renderChats();
             }
@@ -168,9 +175,10 @@ public class InboxFragment extends Fragment {
 
         List<Inbox> rows = new ArrayList<>();
         for (Chat chat : chats) {
+            if(chat.archived!=showArchived)continue;
             String otherUid = getOtherUid(chat);
             if (otherUid == null) continue;
-            UserProfile profile = "group".equals(chat.getType()) ? new UserProfile(chat.title + ("archived".equals(chat.state)?" (lưu trữ)":""),null) : profiles.get(otherUid);
+            UserProfile profile = "group".equals(chat.getType()) ? new UserProfile(chat.title,chat.avatar) : profiles.get(otherUid);
             String preview = chat.getLastMessage();
             if (chat.getLastMessageHiddenFor() != null && currentUid != null
                     && chat.getLastMessageHiddenFor().contains(currentUid)) preview = "Tin nhắn đã xóa";
@@ -182,13 +190,14 @@ public class InboxFragment extends Fragment {
                     profile == null ? null : profile.avatarUrl,
                     formatServerTime(chat.getLastMessageAt()));
             row.setUnread(chat.isUnreadFor(currentUid));
+            row.setMuted(chat.muted);
             rows.add(row);
         }
         adapter.submitList(rows);
         binding.progressInbox.setVisibility(View.GONE);
         binding.tvInboxState.setVisibility(View.GONE);
         binding.rvInbox.setVisibility(rows.isEmpty() ? View.GONE : View.VISIBLE);
-        if (rows.isEmpty()) showState("Không thể hiển thị các cuộc trò chuyện.");
+        if (rows.isEmpty()) showState(showArchived?"Chưa có hội thoại đã lưu trữ.":"Chưa có cuộc trò chuyện trong hộp thư.");
     }
 
     private void scheduleConversationSearch(String value) {
@@ -206,14 +215,14 @@ public class InboxFragment extends Fragment {
             showState("Tối đa 80 ký tự."); return;
         }
         searchingConversations = true;
-        pendingConversationSearch = () -> chatRepository.searchConversations(query, new ChatRepository.OnChatsListener() {
+        pendingConversationSearch = () -> chatRepository.searchConversations(query, showArchived, new ChatRepository.OnChatsListener() {
             @Override public void onChats(List<Chat> result) {
                 if (binding == null || generation != searchGeneration) return;
                 chats = result == null ? new ArrayList<>() : new ArrayList<>(result);
                 sortChatsNewestFirst();
                 for (Chat chat : chats) {
                     String other = getOtherUid(chat);
-                    if (other != null) loadProfileOnce(other);
+                    if (other != null && !"group".equals(chat.getType())) loadProfileOnce(other);
                 }
                 renderChats();
                 if (chats.isEmpty()) showState("Không tìm thấy cuộc trò chuyện.");

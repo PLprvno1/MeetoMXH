@@ -83,6 +83,8 @@
                 android:textColorHint="@color/text_secondary"
                 android:textSize="13sp" />
 
+            <ImageButton android:id="@+id/btnClearConversations" android:layout_width="32dp" android:layout_height="32dp" android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="Xóa tìm kiếm" android:padding="7dp" android:src="@drawable/ic_clear" app:tint="@color/text_secondary" />
+
         </LinearLayout>
 
     </LinearLayout>

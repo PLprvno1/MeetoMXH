@@ -110,7 +110,15 @@ public final class RoleResolutionActivity extends AppCompatActivity {
                     return;
                 }
                 if (!profile.optBoolean("onboarding_completed")) {
-                    route(RegisterActivity.class, false);
+                    Api.run(OnboardingFlow::completeProfileFromPending, new Api.Callback<JSONObject>() {
+                        @Override public void success(JSONObject completed) { routeOnboardingPhotos(); }
+                        @Override public void error(String error) { showRetry(error); }
+                    });
+                    return;
+                }
+                String userId = SessionManager.getInstance().uid();
+                if (!OnboardingFlow.socialSetupDone(RoleResolutionActivity.this, userId)) {
+                    routeOnboardingPhotos();
                     return;
                 }
                 resolveRole();
@@ -150,6 +158,14 @@ public final class RoleResolutionActivity extends AppCompatActivity {
         Intent intent = new Intent(this, destination)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         if (verified) intent.putExtra(EXTRA_ROLE_VERIFIED, true);
+        startActivity(intent);
+        finish();
+    }
+
+    private void routeOnboardingPhotos() {
+        Intent intent = new Intent(this, ProfileEditActivity.class)
+                .putExtra(ProfileEditActivity.EXTRA_ONBOARDING_ASSETS_ONLY, true)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();
     }

@@ -32,7 +32,7 @@ public class Post {
     private Post originalPost;
     private long createdAt;
     private long updatedAt;
-    private String visibility; // "public", "friends", "private"
+    private String visibility; // "public", "followers", "private" (legacy friends is owner-only)
     private JSONArray mentions = new JSONArray();
     private JSONArray tags = new JSONArray();
     private boolean reel;
@@ -40,6 +40,7 @@ public class Post {
     private int reelDurationMs;
     private int reelCoverPositionMs;
     private String reelCoverAssetId;
+    private int reelViewsCount;
 
     public Post() {
         this.imageUrls = new ArrayList<>();
@@ -263,4 +264,6 @@ public class Post {
     public void setReelCoverPositionMs(int value){reelCoverPositionMs=value;}
     public String getReelCoverAssetId(){return reelCoverAssetId;}
     public void setReelCoverAssetId(String value){reelCoverAssetId=value;}
+    public int getReelViewsCount(){return reelViewsCount;}
+    public void setReelViewsCount(int value){reelViewsCount=Math.max(0,value);}
 }

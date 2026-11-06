@@ -62,23 +62,6 @@ public class Task13CloudReadTest {
         InstrumentationRegistry.getInstrumentation().startActivitySync(profileIntent);
         waitForCount(postPage.length());
 
-        JSONArray suggestions=allPages("get_suggestions");
-        JSONArray friends=allPages("get_friends");
-        Set<String> currentFriends=new HashSet<>();
-        for(int i=0;i<friends.length();i++)currentFriends.add(friends.getJSONObject(i).optString("id"));
-        for(int i=0;i<suggestions.length();i++){
-            String id=suggestions.getJSONObject(i).optString("id");
-            Assert.assertNotEquals("no self suggestion",uid,id);
-            Assert.assertFalse("existing friend excluded",currentFriends.contains(id));
-        }
-        InstrumentationRegistry.getInstrumentation().startActivitySync(new Intent(
-                InstrumentationRegistry.getInstrumentation().getTargetContext(),MainActivity.class)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TOP));
-        onView(withId(R.id.nav_friends)).perform(click());
-        onView(withId(R.id.layoutTabs)).perform(androidx.test.espresso.action.ViewActions.swipeLeft());
-        onView(withId(R.id.btnTabSuggestions)).perform(click());
-        waitForCount(suggestions.length());
-
         String firstBody="Task13 profile test "+java.util.UUID.randomUUID();
         String editedBody=firstBody+" edited";
         String createdPostId=null;

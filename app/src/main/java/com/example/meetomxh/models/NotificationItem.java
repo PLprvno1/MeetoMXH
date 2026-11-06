@@ -17,6 +17,9 @@ public final class NotificationItem {
         actorAvatarPreset=row.optString("actor_avatar_preset","neutral");
         unread=row.isNull("read_at"); targetAvailable=row.optBoolean("target_available",false);
     }
+    public static boolean isRetired(String kind) {
+        return "friend_request".equals(kind)||"friend_accepted".equals(kind)||"group".equals(kind)||"memories".equals(kind)||"marketplace".equals(kind);
+    }
     public String message() {
         return messageFor(kind, actorName);
     }
@@ -25,15 +28,15 @@ public final class NotificationItem {
             case "reaction": return actorName+" đã bày tỏ cảm xúc về bài viết của bạn.";
             case "comment": return actorName+" đã bình luận về bài viết của bạn.";
             case "reply": return actorName+" đã trả lời bình luận của bạn.";
-            case "friend_request": return actorName+" đã gửi lời mời kết bạn.";
-            case "friend_accepted": return actorName+" đã chấp nhận lời mời kết bạn.";
+            case "follow_request": return actorName+" muốn theo dõi bạn.";
+            case "follow_accepted": return actorName+" đã chấp nhận yêu cầu theo dõi.";
+            case "message_request": return actorName+" đã gửi tin nhắn chờ.";
+            case "group_invite": return actorName+" đã mời bạn vào nhóm chat.";
             case "follow": return actorName+" đã bắt đầu theo dõi bạn.";
             case "message": return actorName+" đã gửi tin nhắn cho bạn.";
             case "share": return actorName+" đã chia sẻ bài viết của bạn.";
-            case "group": return actorName+" đã có hoạt động mới trong nhóm.";
             case "moderation": return "Bạn có cập nhật kiểm duyệt mới.";
             case "story": return actorName+" đã trả lời tin của bạn.";
-            case "memories": return "Bạn có kỷ niệm từ những năm trước.";
             case "mention": return actorName+" đã nhắc đến bạn.";
             case "tag": return actorName+" đã gắn thẻ bạn trong bài viết.";
             default: return "Bạn có một thông báo mới.";

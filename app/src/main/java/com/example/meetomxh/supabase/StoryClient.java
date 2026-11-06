@@ -18,7 +18,7 @@ public final class StoryClient {
             s.setUserName(o.optString("author_name","Meeto")); s.setAvatarUrl(Dto.asset(Dto.nullable(o,"avatar_asset_id")));
             s.setAvatarPreset(o.optString("avatar_preset","neutral")); s.setImageUrl(Dto.asset(Dto.nullable(o,"media_asset_id")));
             s.setMediaType(o.optString("mime_type","image/*")); s.setCaption(o.optString("caption",""));
-            s.setAudience(o.optString("audience","friends")); s.setCreatedAt(o.optString("created_at"));
+            s.setAudience(o.optString("audience","private")); s.setCreatedAt(o.optString("created_at"));
             s.setExpiresAt(o.optString("expires_at")); s.setViewed(o.optBoolean("viewed")); s.setOwn(o.optBoolean("own"));
             result.add(s);
         }

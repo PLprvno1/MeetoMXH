@@ -16,7 +16,7 @@ import com.example.meetomxh.supabase.SessionManager;
 import com.example.meetomxh.supabase.StoryClient;
 
 public class StoryCreateActivity extends AppCompatActivity {
-    private ActivityStoryCreateBinding binding; private Uri selected; private String audience="friends",uploadedAsset;
+    private ActivityStoryCreateBinding binding; private Uri selected; private String audience="followers",uploadedAsset;
     private SupabaseStorage.Transfer transfer;
     private final ActivityResultLauncher<String[]> picker=registerForActivityResult(new ActivityResultContracts.OpenDocument(),uri->{
         if(uri==null)return; selected=uri; String mime=getContentResolver().getType(uri);
@@ -29,8 +29,7 @@ public class StoryCreateActivity extends AppCompatActivity {
     @Override protected void onCreate(Bundle b){super.onCreate(b);binding=ActivityStoryCreateBinding.inflate(getLayoutInflater());setContentView(binding.getRoot());
         binding.btnCloseStory.setOnClickListener(v->finish()); binding.btnPickStoryMedia.setText("Chọn ảnh hoặc video");
         binding.btnPickStoryMedia.setOnClickListener(v->picker.launch(new String[]{"image/*","video/mp4"}));
-        binding.btnStoryPrivacy.setText("Bạn bè"); binding.btnStoryPrivacy.setOnClickListener(v->new AlertDialog.Builder(this).setTitle("Ai xem được tin này?")
-                .setItems(new String[]{"Công khai","Bạn bè","Chỉ mình tôi"},(d,n)->{audience=n==0?"public":n==1?"friends":"private";binding.btnStoryPrivacy.setText(n==0?"Công khai":n==1?"Bạn bè":"Chỉ mình tôi");}).show());
+        binding.btnStoryPrivacy.setText("Người theo dõi"); binding.btnStoryPrivacy.setOnClickListener(v->com.example.meetomxh.supabase.AudienceChoices.choose(this,(value,label)->{audience=value;binding.btnStoryPrivacy.setText(label);}));
         binding.btnShareStory.setOnClickListener(v->publish());
     }
     private void publish(){ if(uploadedAsset!=null){createStory();return;} if(selected==null){showError("Chọn ảnh hoặc video trước");return;} if(transfer!=null)return;

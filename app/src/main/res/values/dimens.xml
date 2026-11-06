@@ -20,6 +20,7 @@
     <dimen name="corner_radius_medium">10dp</dimen>
     <dimen name="corner_radius_card">12dp</dimen>
     <dimen name="corner_radius_large">16dp</dimen>
+    <dimen name="corner_radius_dialog">22dp</dimen>
     <dimen name="corner_radius_pill">24dp</dimen>
     <dimen name="corner_radius_circle">999dp</dimen>
 

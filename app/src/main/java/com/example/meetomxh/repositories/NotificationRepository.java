@@ -8,8 +8,11 @@ import org.json.JSONObject;
 public final class NotificationRepository {
     private NotificationRepository() {}
     public static JSONArray page(boolean unreadOnly,String afterTime,String afterId,int limit) throws Exception {
-        return (JSONArray) RpcClient.call("get_notifications",Api.obj("p_unread_only",unreadOnly,
+        JSONArray data=(JSONArray) RpcClient.call("get_notifications",Api.obj("p_unread_only",unreadOnly,
                 "p_after_time",afterTime,"p_after_id",afterId,"p_limit",limit));
+        JSONArray visible=new JSONArray();
+        for(int i=0;i<data.length();i++){JSONObject row=data.optJSONObject(i);if(row!=null && !com.example.meetomxh.models.NotificationItem.isRetired(row.optString("kind")))visible.put(row);}
+        return visible;
     }
     public static long unreadCount() throws Exception { return ((Number)RpcClient.call("get_notification_unread_count",Api.obj())).longValue(); }
     public static void markRead(String id) throws Exception { RpcClient.call("mark_notification_read",Api.obj("p_notification_id",id)); }

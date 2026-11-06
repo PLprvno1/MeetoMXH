@@ -1,8 +1,60 @@
 package com.example.meetomxh.supabase;
-import android.app.*;
+
+import android.app.Activity;
 import android.content.Intent;
-import android.widget.*;
-import org.json.*;
+import android.widget.Toast;
+
+import com.example.meetomxh.MainActivity;
+import com.example.meetomxh.PostDetailsActivity;
+
+import org.json.JSONObject;
+
+import java.util.HashSet;
+import java.util.Set;
+
+/** Central authorized resolver for post and shared-post entry points. */
 public final class PostDetails {
- public static void show(Activity a,String id){Api.run(()->RpcClient.object("get_post",Api.obj("p_post_id",id)),new Api.Callback<JSONObject>(){public void success(JSONObject p){if(a.isFinishing())return;LinearLayout rows=new LinearLayout(a);rows.setOrientation(LinearLayout.VERTICAL);TextView body=new TextView(a);com.example.meetomxh.ui.MentionText.bind(body,p.optString("body"),p.optJSONArray("mentions"));body.setPadding(24,24,24,24);rows.addView(body);JSONArray tags=p.optJSONArray("tags");if(tags!=null){java.util.ArrayList<String> names=new java.util.ArrayList<>();for(int i=0;i<tags.length();i++){JSONObject tag=tags.optJSONObject(i);if(tag!=null&&"accepted".equals(tag.optString("state","accepted")))names.add(tag.optString("display_name","Meeto user"));}if(!names.isEmpty())Forms.button(rows,"Cùng với "+android.text.TextUtils.join(", ",names),()->{java.util.ArrayList<String> labels=new java.util.ArrayList<>(),ids=new java.util.ArrayList<>();for(int i=0;i<tags.length();i++){JSONObject tag=tags.optJSONObject(i);if(tag!=null&&"accepted".equals(tag.optString("state","accepted"))){labels.add(tag.optString("display_name","Meeto user"));ids.add(tag.optString("user_id",null));}}new AlertDialog.Builder(a).setTitle("Người được gắn thẻ").setItems(labels.toArray(new String[0]),(d,index)->{String uid=ids.get(index);if(uid!=null&&!uid.equals("null"))a.startActivity(new Intent(a,com.example.meetomxh.ProfileActivity.class).putExtra("target_uid",uid));}).setNegativeButton("Đóng",null).show();});}boolean saved=p.optBoolean("is_saved",false);Forms.button(rows,saved?"Bỏ lưu bài viết":"Lưu bài viết",()->Api.run(()->{RpcClient.call("set_saved_post",Api.obj("p_post_id",id,"p_saved",!saved));return !saved;},new Api.Callback<Boolean>(){public void success(Boolean value){Toast.makeText(a,value?"Đã lưu bài viết":"Đã bỏ lưu",Toast.LENGTH_SHORT).show();}public void error(String e){Toast.makeText(a,e,Toast.LENGTH_LONG).show();}}));JSONArray media=p.optJSONArray("media");if(media!=null)for(int i=0;i<media.length();i++){String asset=media.optJSONObject(i).optString("asset_id");Forms.button(rows,"Ảnh/video "+(i+1),()->a.startActivity(new Intent(a,com.example.meetomxh.ChatImageViewerActivity.class).putExtra("image_url",Dto.asset(asset))));}if("share".equals(p.optString("kind"))){if(p.optBoolean("original_available")&&!p.isNull("original_post_id"))Forms.button(rows,"Xem bài viết gốc",()->show(a,p.optString("original_post_id")));else{TextView unavailable=new TextView(a);unavailable.setText("Bài viết gốc không còn khả dụng với bạn.");rows.addView(unavailable);}}new AlertDialog.Builder(a).setTitle("Bài viết").setView(rows).setPositiveButton("Đóng",null).show();}public void error(String e){Toast.makeText(a,e,Toast.LENGTH_LONG).show();}});}
+    public static final String EXTRA_POST_ID = "post_detail_id";
+    public static final String EXTRA_REEL_ID = "target_reel_id";
+    private PostDetails() { }
+
+    public static void show(Activity activity, String selectedId) {
+        if (activity == null || selectedId == null || selectedId.trim().isEmpty()) return;
+        Api.run(() -> resolve(selectedId), new Api.Callback<JSONObject>() {
+            @Override public void success(JSONObject post) {
+                if (activity.isFinishing() || activity.isDestroyed()) return;
+                String id = post.optString("id", "");
+                Intent intent;
+                if (post.optBoolean("is_reel", false)) {
+                    intent = new Intent(activity, MainActivity.class)
+                            .putExtra(com.example.meetomxh.RoleResolutionActivity.EXTRA_ROLE_VERIFIED, true)
+                            .putExtra(EXTRA_REEL_ID, id);
+                } else {
+                    intent = new Intent(activity, PostDetailsActivity.class).putExtra(EXTRA_POST_ID, id);
+                }
+                activity.startActivity(intent);
+            }
+            @Override public void error(String error) { unavailable(activity); }
+        });
+    }
+
+    /** Always resolves share chains through get_post, which enforces current visibility and block rules. */
+    public static JSONObject resolve(String selectedId) throws Exception {
+        String id = selectedId;
+        Set<String> seen = new HashSet<>();
+        for (int depth = 0; depth < 8; depth++) {
+            if (id == null || id.trim().isEmpty() || !seen.add(id)) throw new IllegalStateException("unavailable");
+            JSONObject post = RpcClient.object("get_post", Api.obj("p_post_id", id));
+            if (post == null || post.length() == 0 || post.isNull("id")) throw new IllegalStateException("unavailable");
+            if (!"share".equals(post.optString("kind"))) return post;
+            if (!post.optBoolean("original_available", false) || post.isNull("original_post_id")) throw new IllegalStateException("unavailable");
+            id = post.optString("original_post_id", null);
+        }
+        throw new IllegalStateException("unavailable");
+    }
+
+    public static void unavailable(Activity activity) {
+        if (activity != null && !activity.isFinishing())
+            Toast.makeText(activity, "Nội dung không còn khả dụng", Toast.LENGTH_LONG).show();
+    }
 }

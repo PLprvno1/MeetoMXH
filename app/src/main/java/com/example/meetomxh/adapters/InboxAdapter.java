@@ -43,7 +43,8 @@ public class InboxAdapter extends RecyclerView.Adapter<InboxAdapter.InboxViewHol
                         && equals(oldItem.getLastMessage(), newItem.getLastMessage())
                         && equals(oldItem.getAvatarUrl(), newItem.getAvatarUrl())
                         && equals(oldItem.getServerTime(), newItem.getServerTime())
-                        && oldItem.isUnread() == newItem.isUnread();
+                        && oldItem.isUnread() == newItem.isUnread()
+                        && oldItem.isMuted() == newItem.isMuted();
             }
             private boolean equals(String first, String second) {
                 return first == null ? second == null : first.equals(second);
@@ -84,7 +85,7 @@ public class InboxAdapter extends RecyclerView.Adapter<InboxAdapter.InboxViewHol
         }
 
         public void bind(Inbox inbox) {
-            binding.tvChatName.setText(inbox.getChatName());
+            binding.tvChatName.setText((inbox.isMuted()?"🔕 ":"")+inbox.getChatName());
             binding.tvLastMessage.setText(inbox.getLastMessage());
             binding.tvTimestamp.setText(inbox.getServerTime());
             binding.viewUnread.setVisibility(inbox.isUnread() ? android.view.View.VISIBLE : android.view.View.GONE);
