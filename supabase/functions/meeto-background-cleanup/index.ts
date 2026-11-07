@@ -3,6 +3,7 @@
 import { InvalidAudio, verifyAacLcM4a } from "./audio_verifier.ts";
 const encoder = new TextEncoder();
 const AUDIO_MAX_BYTES = 2 * 1024 * 1024;
+const UUID_PATTERN = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -18,6 +19,69 @@ async function fetchWithTimeout(url: string, init: RequestInit, ms = 15_000): Pr
     return await fetch(url, { ...init, signal: controller.signal });
   } finally {
     clearTimeout(timer);
+  }
+}
+
+function cleanupExtension(mime: unknown): string | null {
+  switch (mime) {
+    case "image/png": return "png";
+    case "image/jpeg": return "jpg";
+    case "image/webp": return "webp";
+    case "video/mp4": return "mp4";
+    case "audio/mp4": return "m4a";
+    default: return null;
+  }
+}
+
+function validCleanupClaim(item: Record<string, unknown>): boolean {
+  const eventId = item.event_id, assetId = item.asset_id, ownerId = item.owner_id;
+  const bucket = item.bucket_id, purpose = item.purpose, mime = item.mime_type;
+  const objectPath = item.object_path, attempt = item.attempt;
+  if (typeof eventId !== "string" || !UUID_PATTERN.test(eventId)
+      || typeof assetId !== "string" || !UUID_PATTERN.test(assetId)
+      || typeof ownerId !== "string" || !UUID_PATTERN.test(ownerId)
+      || !Number.isInteger(attempt) || (attempt as number) < 1 || (attempt as number) > 5
+      || typeof objectPath !== "string" || objectPath.length > 512) return false;
+
+  const allowed = bucket === "profile-media"
+    ? (purpose === "avatar" || purpose === "cover")
+      && ["image/png", "image/jpeg", "image/webp"].includes(String(mime))
+    : bucket === "social-media"
+      ? (purpose === "post" || purpose === "story")
+        && ["image/png", "image/jpeg", "image/webp", "video/mp4"].includes(String(mime))
+      : bucket === "chat-media"
+        ? purpose === "message"
+          && ["image/png", "image/jpeg", "image/webp", "video/mp4", "audio/mp4"].includes(String(mime))
+        : false;
+  const extension = cleanupExtension(mime);
+  return allowed && extension !== null
+    && objectPath === ownerId + "/" + assetId + "/original." + extension;
+}
+
+type StorageObservation = "absent" | "present" | "unknown";
+
+async function observeStorageObject(
+  supabaseUrl: string, secretKey: string, bucket: string, objectPath: string,
+): Promise<StorageObservation> {
+  const encodedPath = objectPath.split("/").map(encodeURIComponent).join("/");
+  try {
+    const bucketCheck = await fetchWithTimeout(supabaseUrl + "/storage/v1/bucket/" + bucket, {
+      method: "GET", headers: { apikey: secretKey, authorization: "Bearer " + secretKey },
+    });
+    if (!bucketCheck.ok) {
+      try { await bucketCheck.body?.cancel(); } catch { /* no response body is needed */ }
+      return "unknown";
+    }
+    try { await bucketCheck.body?.cancel(); } catch { /* no response body is needed */ }
+    const objectCheck = await fetchWithTimeout(
+      supabaseUrl + "/storage/v1/object/authenticated/" + bucket + "/" + encodedPath,
+      { method: "HEAD", headers: { apikey: secretKey, authorization: "Bearer " + secretKey } },
+    );
+    if (objectCheck.status === 404) return "absent";
+    if (objectCheck.ok) return "present";
+    return "unknown";
+  } catch {
+    return "unknown";
   }
 }
 
@@ -187,79 +251,91 @@ Deno.serve(async (request: Request): Promise<Response> => {
 
     let deleted = 0;
     let failed = 0;
+    let absentConfirmed = 0;
+    let present = 0;
+    let unknown = 0;
     for (const item of claimed) {
-      const eventId = item?.event_id;
-      const attempt = item?.attempt;
-      const bucket = item?.bucket_id;
-      const objectPath = item?.object_path;
-      if (typeof eventId !== "string" || !Number.isInteger(attempt) ||
-          !["profile-media", "social-media", "chat-media"].includes(bucket) ||
-          typeof objectPath !== "string" || objectPath.length > 512 || objectPath.startsWith("/") ||
-          objectPath.split("/").length !== 3) {
+      if (!item || typeof item !== "object") {
+        failed++;
+        continue;
+      }
+      const cleanupItem = item as Record<string, unknown>;
+      const eventId = cleanupItem.event_id;
+      const attempt = cleanupItem.attempt;
+      const bucket = cleanupItem.bucket_id;
+      const objectPath = cleanupItem.object_path;
+      if (typeof eventId !== "string" || !UUID_PATTERN.test(eventId)
+          || !Number.isInteger(attempt) || (attempt as number) < 1 || (attempt as number) > 5) {
         failed++;
         continue;
       }
 
-      let success = false;
-      let errorCode = "storage_error";
-      try {
-        const encodedPath = objectPath.split("/").map(encodeURIComponent).join("/");
-        const response = await fetchWithTimeout(`${supabaseUrl}/storage/v1/object/${bucket}`, {
-          method: "DELETE",
-          headers: {
-            "content-type": "application/json",
-            apikey: secretKey,
-            authorization: `Bearer ${secretKey}`,
-          },
-          body: JSON.stringify({ prefixes: [objectPath] }),
-        });
-        success = response.ok;
-        if (response.status === 404) {
-          // Treat a missing object as idempotent only after confirming that
-          // the bucket exists and the exact object is absent.
-          const bucketCheck = await fetchWithTimeout(`${supabaseUrl}/storage/v1/bucket/${bucket}`, {
-            method: "GET",
-            headers: { apikey: secretKey, authorization: `Bearer ${secretKey}` },
+      const contractValid = validCleanupClaim(cleanupItem);
+      let deleteStatus: number | null = null;
+      let storageOutcome: StorageObservation = "unknown";
+      let errorCode = contractValid ? "storage_unknown" : "invalid_cleanup_contract";
+      if (contractValid) {
+        try {
+          const response = await fetchWithTimeout(`${supabaseUrl}/storage/v1/object/${String(bucket)}`, {
+            method: "DELETE",
+            headers: {
+              "content-type": "application/json",
+              apikey: secretKey,
+              authorization: `Bearer ${secretKey}`,
+            },
+            body: JSON.stringify({ prefixes: [objectPath] }),
           });
-          if (bucketCheck.ok) {
-            const objectCheck = await fetchWithTimeout(
-              `${supabaseUrl}/storage/v1/object/authenticated/${bucket}/${encodedPath}`,
-              { method: "HEAD", headers: { apikey: secretKey, authorization: `Bearer ${secretKey}` } },
-            );
-            success = objectCheck.status === 404;
+          deleteStatus = response.status;
+          // We only need the status. Do not leave an unread Storage response body open.
+          try { await response.body?.cancel(); } catch { /* response metadata was already captured */ }
+          if (!response.ok) {
+            errorCode = response.status === 401 || response.status === 403 ? "storage_denied" : "storage_error";
           }
-          if (!success) errorCode = "storage_unavailable";
-        } else if (!response.ok) {
-          errorCode = response.status === 401 || response.status === 403 ? "storage_denied" : "storage_unavailable";
+          // A 2xx response alone does not prove the exact object is absent.
+          storageOutcome = await observeStorageObject(supabaseUrl, secretKey, String(bucket), objectPath as string);
+        } catch {
+          // DELETE may have reached Storage before timing out; probe the exact object.
+          storageOutcome = await observeStorageObject(supabaseUrl, secretKey, String(bucket), objectPath as string);
+          errorCode = "storage_unavailable";
         }
-      } catch {
-        errorCode = "storage_unavailable";
       }
 
+      if (storageOutcome === "absent") { absentConfirmed++; errorCode = "storage_error"; }
+      else if (storageOutcome === "present") { present++; errorCode = "storage_present"; }
+      else { unknown++; if (contractValid) errorCode = "storage_unknown"; }
+
       try {
+        const observation = await rpc("meeto_worker_record_cleanup_observation", {
+          p_event_id: eventId,
+          p_attempt: attempt,
+          p_outcome: storageOutcome,
+          p_delete_http_status: deleteStatus,
+        });
+        const observationRecorded = observation.ok && (await observation.json()) === true;
         const ack = await rpc("meeto_worker_finish_cleanup", {
           p_event_id: eventId,
           p_attempt: attempt,
-          p_success: success,
-          p_error_code: success ? null : errorCode,
+          p_success: observationRecorded && storageOutcome === "absent",
+          p_error_code: observationRecorded && storageOutcome === "absent" ? null : errorCode,
         });
         if (!ack.ok || (await ack.json()) !== true) {
           failed++;
           continue;
         }
-        if (success) deleted++;
+        if (observationRecorded && storageOutcome === "absent") deleted++;
         else failed++;
       } catch {
-        // The DB lease/attempt fence makes a later run safe to retry.
+        // The persisted observation and attempt fence support later review.
         failed++;
       }
     }
 
     const finished = await rpc("meeto_worker_finish_run", {
       p_run_id: runId,
-      p_summary: { audio: audioSummary, claimed: claimed.length, deleted, failed },
+      p_summary: { audio: audioSummary, claimed: claimed.length, deleted, failed,
+        storage: { absent_confirmed: absentConfirmed, present, unknown } },
     });
-    if (!finished.ok) return json({ error: "worker_ack_failed" }, 503);
+    if (!finished.ok || (await finished.json()) !== true) return json({ error: "worker_ack_failed" }, 503);
     return json({ audio: audioSummary, claimed: claimed.length, deleted, failed });
   } catch {
     if (runId) {

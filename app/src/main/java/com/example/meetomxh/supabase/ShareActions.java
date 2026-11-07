@@ -1,7 +1,6 @@
 package com.example.meetomxh.supabase;
 
 import android.app.Activity;
-import android.app.ProgressDialog;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
@@ -67,36 +66,31 @@ public final class ShareActions {
     }
 
     private static void messenger(Activity a,Post p) {
-        ProgressDialog progress=new ProgressDialog(a);progress.setMessage("Đang tải cuộc trò chuyện…");progress.show();
+        MessengerRecipientSheet.show(a,ids->sendToChats(a,p,ids,0));
+    }
+    private static void sendToChats(Activity a,Post p,List<String> ids,int at) {
+        sendToChats(a,p,ids,at,SessionManager.getInstance().generation());
+    }
+    private static void sendToChats(Activity a,Post p,List<String> ids,int at,long epoch) {
+        if(a.isFinishing()||a.isDestroyed()||SessionManager.getInstance().generation()!=epoch)return;
+        if(at>=ids.size()){Toast.makeText(a,"Đã gửi bài viết qua Messenger",Toast.LENGTH_SHORT).show();return;}
+        String chat=ids.get(at),source=root(p),fingerprint=chat+"|"+source;
+        String request=RequestIds.get("shared_post_message",fingerprint);
         Api.run(()->{
-            JSONArray rows=(JSONArray)RpcClient.call("get_inbox",Api.obj("p_limit",20,"p_include_archived",false));
-            ArrayList<String> ids=new ArrayList<>(),labels=new ArrayList<>();
-            String self=SessionManager.getInstance().uid();
-            for(int i=0;i<rows.length();i++){
-                JSONObject x=rows.optJSONObject(i);if(x==null)continue;
-                String id=x.optString("id");
-                String title=x.isNull("title")?"":x.optString("title","");
-                String memberName="";
-                if(normalizedLabel(title).isEmpty()){
-                    JSONArray members=(JSONArray)RpcClient.call("get_conversation_members",Api.obj("p_conversation_id",id));
-                    for(int j=0;j<members.length();j++){
-                        JSONObject member=members.optJSONObject(j);
-                        if(member!=null&&!self.equals(member.optString("user_id"))){
-                            memberName=member.isNull("display_name")?"":member.optString("display_name","");
-                            if(!normalizedLabel(memberName).isEmpty())break;
-                        }
-                    }
-                }
-                ids.add(id);labels.add(conversationLabel(title,memberName,i));
+            Object result=RpcClient.call("send_shared_post",Api.obj("p_conversation_id",chat,"p_original",source,"p_client_request_id",request));
+            RequestIds.complete("shared_post_message",fingerprint);return result;
+        },new Api.Callback<Object>(){
+            public void success(Object result){sendToChats(a,p,ids,at+1,epoch);}
+            public void error(String error){
+                if(a.isFinishing()||a.isDestroyed()||SessionManager.getInstance().generation()!=epoch)return;
+                androidx.appcompat.app.AlertDialog retry=new com.google.android.material.dialog.MaterialAlertDialogBuilder(a)
+                        .setTitle("Chưa gửi được bài viết")
+                        .setMessage("Đã gửi "+at+"/"+ids.size()+" cuộc trò chuyện. "+error)
+                        .setNegativeButton("Đóng",null).setPositiveButton("Thử lại",(d,w)->sendToChats(a,p,ids,at,epoch)).create();
+                ChatCustomizationUi.own(a,retry,()->{});retry.show();
             }
-            return new Object[]{ids,labels};
-        },new Api.Callback<Object[]>(){
-            @SuppressWarnings("unchecked") public void success(Object[] result){if(a.isFinishing())return;progress.dismiss();ArrayList<String> ids=(ArrayList<String>)result[0],labels=(ArrayList<String>)result[1];if(ids.isEmpty()){Toast.makeText(a,"Chưa có cuộc trò chuyện để gửi",Toast.LENGTH_SHORT).show();return;}chooseChats(a,p,ids,labels);}
-            public void error(String e){if(!a.isFinishing()){progress.dismiss();Toast.makeText(a,e,Toast.LENGTH_LONG).show();}}
         });
     }
-    private static void chooseChats(Activity a,Post p,ArrayList<String> ids,ArrayList<String> labels){LinearLayout root=column(a);EditText search=new EditText(a);search.setSingleLine(true);search.setHint("Tìm người nhận");root.addView(search);LinearLayout choices=new LinearLayout(a);choices.setOrientation(LinearLayout.VERTICAL);ArrayList<CheckBox> boxes=new ArrayList<>();for(String label:labels){CheckBox box=new CheckBox(a);box.setText(label);box.setMinHeight(dp(a,48));boxes.add(box);choices.addView(box);}ScrollView scroll=new ScrollView(a);scroll.addView(choices);root.addView(scroll,new LinearLayout.LayoutParams(-1,dp(a,340)));for(int i=0;i<boxes.size();i++){String name=labels.get(i).toLowerCase(Locale.ROOT);boxes.get(i).setTag(name);}search.addTextChangedListener(new android.text.TextWatcher(){public void beforeTextChanged(CharSequence s,int st,int c,int after){}public void onTextChanged(CharSequence s,int st,int before,int count){String q=s.toString().toLowerCase(Locale.ROOT);for(CheckBox b:boxes)b.setVisibility(((String)b.getTag()).contains(q)?View.VISIBLE:View.GONE);}public void afterTextChanged(android.text.Editable e){}});android.app.AlertDialog dialog=new android.app.AlertDialog.Builder(a).setTitle("Gửi qua Messenger").setView(root).setNegativeButton("Hủy",null).setPositiveButton("Gửi",null).create();dialog.setOnShowListener(x->dialog.getButton(-1).setOnClickListener(v->{ArrayList<String> selected=new ArrayList<>();for(int i=0;i<boxes.size();i++)if(boxes.get(i).isChecked())selected.add(ids.get(i));if(selected.isEmpty()){Toast.makeText(a,"Chọn ít nhất một cuộc trò chuyện",Toast.LENGTH_SHORT).show();return;}dialog.dismiss();sendToChats(a,p,selected,0);}));dialog.show();}
-    private static void sendToChats(Activity a,Post p,List<String> ids,int at){if(at>=ids.size()){Toast.makeText(a,"Đã gửi bài viết qua Messenger",Toast.LENGTH_SHORT).show();return;}String chat=ids.get(at),source=root(p),fingerprint=chat+"|"+source,request=RequestIds.get("shared_post_message",fingerprint);Api.run(()->{Object result=RpcClient.call("send_shared_post",Api.obj("p_conversation_id",chat,"p_original",source,"p_client_request_id",request));RequestIds.complete("shared_post_message",fingerprint);return result;},new Api.Callback<Object>(){public void success(Object v){sendToChats(a,p,ids,at+1);}public void error(String e){new android.app.AlertDialog.Builder(a).setMessage("Không gửi được. Thử lại?").setNegativeButton("Đóng",null).setPositiveButton("Thử lại",(d,w)->sendToChats(a,p,ids,at)).show();}});}
 
 
 }

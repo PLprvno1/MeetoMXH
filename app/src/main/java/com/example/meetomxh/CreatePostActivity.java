@@ -25,6 +25,7 @@ import com.example.meetomxh.supabase.RpcClient;
 import com.example.meetomxh.supabase.SessionManager;
 import com.example.meetomxh.ui.MentionComposer;
 import com.example.meetomxh.ui.PostTagPicker;
+import com.example.meetomxh.music.MusicPublishingClient;
 import com.google.android.material.chip.Chip;
 
 import org.json.JSONArray;
@@ -51,7 +52,10 @@ public class CreatePostActivity extends AppCompatActivity {
     private long reelDuration, reelBytes;
     private int eligibilityGeneration;
     private boolean reelEligible, checkingVideo, unifiedLocked, reelNeedsEncoding;
-    private String videoChecked, editorOutput, frozenUnified;
+    private String videoChecked, editorOutput, frozenUnified, editorMusicMetadata;
+    private boolean musicCapabilityValidated;
+    private long musicSessionEpoch;
+    private final Runnable musicIdentityChanged=()->{if(musicSessionEpoch==SessionManager.getInstance().generation())return;if(editorMusicMetadata!=null||frozenUnified!=null&&frozenUnified.contains("p_music_metadata")){editorMusicMetadata=null;musicCapabilityValidated=false;if(transfer!=null)transfer.cancel();finish();}};
     private String publishDraftId=UUID.randomUUID().toString();
     private final ActivityResultLauncher<Intent> reelEditor = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(), result -> {
@@ -60,17 +64,21 @@ public class CreatePostActivity extends AppCompatActivity {
             File file = new File(editorOutput);
             if (file.isFile()) {
                 selected.clear();selected.add(Uri.fromFile(file));assets.clear();videoChecked = null;
+                editorMusicMetadata=result.getData().getStringExtra(CreateReelActivity.EXTRA_MUSIC_METADATA);
+                musicCapabilityValidated=false;
                 preview();toast("Đã dùng đoạn đã chọn cho cả bài viết và Reel.");return;
             }
         }
         if (editorOutput != null) new File(editorOutput).delete();
         editorOutput = null;
+        editorMusicMetadata=null;musicCapabilityValidated=false;
         // Cancellation retains the original video.
         // The original selected URI is retained on cancellation.
     });
     private final ActivityResultLauncher<Intent> picker = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(), result -> {
         if (result.getResultCode() != RESULT_OK || result.getData() == null || busy || unifiedLocked) return;
+        editorMusicMetadata=null;musicCapabilityValidated=false;
         Intent data = result.getData();
         if (data.getClipData() != null) {
             for (int i = 0; i < data.getClipData().getItemCount() && selected.size() + assets.size() < 10; i++) {
@@ -88,6 +96,7 @@ public class CreatePostActivity extends AppCompatActivity {
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
+        musicSessionEpoch=SessionManager.getInstance().generation();SessionManager.getInstance().identityListeners.add(musicIdentityChanged);
         binding = ActivityCreatePostBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
         mentionComposer=new MentionComposer(binding.etPostContent);
@@ -102,6 +111,7 @@ public class CreatePostActivity extends AppCompatActivity {
             mentionComposer.restore(state.getString("mentions_json")==null?null:parseArray(state.getString("mentions_json")));
             taggedUsers=parseArray(state.getString("tagged_users_json"));taggedPeople=parseArray(state.getString("tagged_people_json"));renderTags();
             editorOutput=state.getString("reel_editor_output");frozenUnified=state.getString("unified_snapshot");
+            editorMusicMetadata=state.getString("reel_music_metadata");
             ArrayList<String> owned=state.getStringArrayList("owned_reel_drafts");if(owned!=null)ownedReelDrafts.addAll(owned);
             unifiedLocked=frozenUnified!=null;
             restoreUnifiedReceipt();
@@ -248,6 +258,12 @@ public class CreatePostActivity extends AppCompatActivity {
         busy = true;
         binding.btnPostSubmit.setEnabled(false);
         if(unifiedLocked){
+            if(editorMusicMetadata!=null&&!musicCapabilityValidated){
+                Api.run(()->{MusicPublishingClient.requireEnabled();return true;},new Api.Callback<Boolean>(){
+                    public void success(Boolean enabled){if(!alive())return;musicCapabilityValidated=true;busy=false;submit();}
+                    public void error(String error){if(!alive())return;busy=false;binding.btnPostSubmit.setEnabled(true);toast(error+" Bản nháp đã được giữ.");}
+                });return;
+            }
             Api.run(()->RpcClient.object("get_reel_upload_policy",Api.obj()),new Api.Callback<JSONObject>(){
                 public void success(JSONObject p){if(!alive())return;
                     long limit=com.example.meetomxh.ui.VideoPublishLimits.effective(p.optLong("max_bytes",0));
@@ -382,8 +398,21 @@ public class CreatePostActivity extends AppCompatActivity {
     }
     private void checkPolicyAndStart(){
         final String body=binding.etPostContent.getText().toString();
-        final String snapshot=Api.obj("p_caption",body,"p_audience",audience,"p_duration_ms",reelDuration,
-                "p_mentions",mentionComposer.getMentions(),"p_tagged_users",taggedUsers).toString();
+        JSONObject snapshotObject=Api.obj("p_caption",body,"p_audience",audience,"p_duration_ms",reelDuration,
+                "p_mentions",mentionComposer.getMentions(),"p_tagged_users",taggedUsers);
+        try{if(editorMusicMetadata!=null){JSONObject metadata=new JSONObject(editorMusicMetadata);if(!com.example.meetomxh.music.OpenverseMusicClient.validPublishedMetadata(metadata,reelDuration))throw new IllegalArgumentException("invalid");snapshotObject.put("p_music_metadata",metadata);}}
+        catch(Exception error){toast("Metadata nguồn nhạc không hợp lệ. Hãy mở editor và xuất lại video.");return;}
+        final String snapshot=snapshotObject.toString();
+        if(editorMusicMetadata!=null&&!musicCapabilityValidated){
+            busy=true;lockUnifiedComposer();binding.btnPostSubmit.setText("Đang kiểm tra máy chủ lưu nguồn nhạc…");
+            Api.run(()->{MusicPublishingClient.requireEnabled();return true;},new Api.Callback<Boolean>(){
+                public void success(Boolean enabled){if(!alive())return;musicCapabilityValidated=true;checkVideoPolicy(body,snapshot);}
+                public void error(String error){if(!alive())return;restoreBeforeUpload();toast(error+" Có thể bỏ nhạc để dùng luồng đăng hiện tại.");}
+            });return;
+        }
+        checkVideoPolicy(body,snapshot);
+    }
+    private void checkVideoPolicy(String body,String snapshot){
         busy=true;lockUnifiedComposer();binding.btnPostSubmit.setText("Đang kiểm tra giới hạn video…");
         Api.run(()->RpcClient.object("get_reel_upload_policy",Api.obj()),new Api.Callback<JSONObject>(){
             public void success(JSONObject policy){if(!alive())return;
@@ -409,7 +438,9 @@ public class CreatePostActivity extends AppCompatActivity {
         // The request key belongs to the draft, not a potentially re-uploaded asset.
         String fingerprint=publishDraftId;binding.btnPostSubmit.setText("Đang đăng Feed và Reels…");
         Api.run(()->{input.put("p_client_request_id",RequestIds.get("unified_video",fingerprint));
-            JSONObject result=RpcClient.object("create_post_reel_with_mentions",input);
+            JSONObject result=input.has("p_music_metadata")
+                    ?RpcClient.object("create_post_reel_with_music",input)
+                    :RpcClient.object("create_post_reel_with_mentions",input);
             if(!result.optBoolean("is_reel")||result.optString("id").isEmpty())throw new IOException("Máy chủ chưa xác nhận nội dung Feed/Reels.");
             return result;
         },new Api.Callback<JSONObject>(){
@@ -437,6 +468,7 @@ public class CreatePostActivity extends AppCompatActivity {
         try{
             JSONObject receipt=new JSONObject(saved);String snapshot=receipt.getString("snapshot");
             JSONObject payload=new JSONObject(snapshot);frozenUnified=snapshot;unifiedLocked=true;audience=payload.getString("p_audience");
+            JSONObject savedMusic=payload.optJSONObject("p_music_metadata");editorMusicMetadata=savedMusic==null?null:savedMusic.toString();musicCapabilityValidated=false;
             binding.etPostContent.setText(payload.getString("p_caption"));
             JSONArray references=receipt.optJSONArray("assets"),pending=receipt.optJSONArray("pending");
             if(references!=null){assets.clear();for(int i=0;i<references.length();i++)assets.add(references.getString(i));}
@@ -457,6 +489,7 @@ public class CreatePostActivity extends AppCompatActivity {
         out.putString("audience", audience);
         out.putString("unified_draft_id",publishDraftId);
         out.putString("reel_editor_output",editorOutput);out.putString("unified_snapshot",frozenUnified);
+        out.putString("reel_music_metadata",editorMusicMetadata);
         out.putStringArrayList("owned_reel_drafts",ownedReelDrafts);
         out.putString("mentions_json",mentionComposer==null?"[]":mentionComposer.getMentions().toString());
         out.putString("tagged_users_json",taggedUsers.toString());out.putString("tagged_people_json",taggedPeople.toString());
@@ -471,6 +504,7 @@ public class CreatePostActivity extends AppCompatActivity {
     }
 
     @Override protected void onDestroy() {
+        SessionManager.getInstance().identityListeners.remove(musicIdentityChanged);
         eligibilityGeneration++;
         if (transfer != null) transfer.cancel();
         if (isFinishing()) for(String path:ownedReelDrafts) {

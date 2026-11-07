@@ -4,6 +4,7 @@ public class Story {
     private String id, userName, avatarUrl, imageUrl, mediaType = "image/*";
     private String avatarPreset = "neutral", audience = "private", caption = "";
     private String authorId, createdAt, expiresAt;
+    private String musicTitle="",musicCreator="";
     private boolean isAddStory, viewed, own, liked;
     private int viewsCount;
     public boolean isLiked(){return liked;}
@@ -48,4 +49,7 @@ public class Story {
     public void setViewed(boolean value) { viewed = value; }
     public boolean isOwn() { return own; }
     public void setOwn(boolean value) { own = value; }
+    public String getMusicTitle(){return musicTitle;}
+    public String getMusicCreator(){return musicCreator;}
+    public void setMusic(String title,String creator){musicTitle=title==null?"":title;musicCreator=creator==null?"":creator;}
 }

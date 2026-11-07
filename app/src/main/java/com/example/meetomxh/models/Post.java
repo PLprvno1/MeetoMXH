@@ -3,6 +3,7 @@ package com.example.meetomxh.models;
 import java.util.ArrayList;
 import java.util.List;
 import org.json.JSONArray;
+import org.json.JSONObject;
 
 public class Post {
     public long version=1;
@@ -41,6 +42,7 @@ public class Post {
     private int reelCoverPositionMs;
     private String reelCoverAssetId;
     private int reelViewsCount;
+    private JSONObject musicMetadata;
 
     public Post() {
         this.imageUrls = new ArrayList<>();
@@ -266,4 +268,7 @@ public class Post {
     public void setReelCoverAssetId(String value){reelCoverAssetId=value;}
     public int getReelViewsCount(){return reelViewsCount;}
     public void setReelViewsCount(int value){reelViewsCount=Math.max(0,value);}
+    public JSONObject getMusicMetadata(){return musicMetadata;}
+    public void setMusicMetadata(JSONObject value){musicMetadata=value;}
+    public String getMusicLabel(){if(musicMetadata==null)return "";String title=musicMetadata.optString("title","").trim(),creator=musicMetadata.optString("creator","").trim();return title.isEmpty()?"":"♫ "+title+(creator.isEmpty()?"":" · "+creator);}
 }

@@ -362,6 +362,7 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             binding.tvTimeAgo.setText(timestamp + " \u00b7 " + audience + groupStatus);
             MentionText.bind(binding.tvContent,post.getContent(),post.getMentions());
             binding.tvContent.setOnClickListener(v -> PostDetails.show((android.app.Activity) v.getContext(), post.getPostId()));
+            com.example.meetomxh.music.MusicAttribution.bind(binding.getRoot().getContext(),binding.tvMusicMetadata,post.getMusicMetadata());
             JSONArray tags=new JSONArray();JSONArray rawTags=post.getTags();if(rawTags!=null)for(int i=0;i<rawTags.length();i++){JSONObject t=rawTags.optJSONObject(i);if(t!=null&&"accepted".equals(t.optString("state","accepted")))tags.put(t);}
             if(tags.length()>0){
                 java.util.ArrayList<String> names=new java.util.ArrayList<>();

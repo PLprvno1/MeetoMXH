@@ -25,12 +25,25 @@ import androidx.media3.exoplayer.SeekParameters;
 import androidx.media3.exoplayer.DefaultRenderersFactory;
 import androidx.media3.exoplayer.ExoPlayer;
 import androidx.media3.ui.PlayerView;
+import androidx.media3.transformer.Composition;
+import androidx.media3.transformer.CompositionPlayer;
+import androidx.media3.transformer.EditedMediaItem;
+import androidx.media3.transformer.EditedMediaItemSequence;
+import androidx.media3.transformer.Effects;
+import androidx.media3.effect.Presentation;
 import com.bumptech.glide.Glide;
 import com.example.meetomxh.storage.SupabaseStorage;
 import com.example.meetomxh.supabase.*;
 import com.example.meetomxh.ui.ReelClipExporter;
 import com.example.meetomxh.ui.ReelPlaybackMonitor;
 import com.example.meetomxh.ui.ReelTrimTimelineView;
+import com.example.meetomxh.music.MusicComposition;
+import com.example.meetomxh.music.OpenverseMusicCache;
+import com.example.meetomxh.music.OpenverseMusicEditor;
+import com.example.meetomxh.music.OpenverseMusicPickerActivity;
+import com.example.meetomxh.music.OpenverseMusicClient;
+import com.example.meetomxh.music.OpenverseTrack;
+import com.example.meetomxh.music.MusicPublishingClient;
 import org.json.JSONObject;
 import java.io.*;
 import java.util.Locale;
@@ -45,6 +58,7 @@ public final class CreateReelActivity extends AppCompatActivity {
     public static final String EXTRA_EDIT_ONLY = "reel_edit_only";
     public static final String EXTRA_OUTPUT_PATH = "reel_output_path";
     public static final String EXTRA_DURATION = "reel_output_duration";
+    public static final String EXTRA_MUSIC_METADATA = "reel_music_metadata";
     private static final long MAX_BYTES = com.example.meetomxh.ui.VideoPublishLimits.MAX_BYTES, MAX_DURATION = 60_000;
     private final Handler main = new Handler(Looper.getMainLooper());
     private final ExecutorService work = Executors.newSingleThreadExecutor();
@@ -52,11 +66,13 @@ public final class CreateReelActivity extends AppCompatActivity {
     private ActivityResultLauncher<PickVisualMediaRequest> picker;
     private PlayerView preview;
     private ExoPlayer player;
+    private CompositionPlayer compositionPlayer;
     private ReelPlaybackMonitor monitor;
     private ReelTrimTimelineView timeline;
     private ImageView poster, cover;
     private ProgressBar buffering, uploadProgress;
     private TextView status, range, header, fileInfo, previewError;
+    private TextView musicInfo;
     private Button next, publish;
     private EditText caption;
     private Spinner audience;
@@ -68,18 +84,31 @@ public final class CreateReelActivity extends AppCompatActivity {
     private int width, height, generation, coverGeneration;
     private boolean busy, publishing, resumed, disposed, restorePublishing, policyValidated;
     private String uploadedAsset, uploadedCoverAsset, frozenCaption, frozenAudience;
-    private Uri pendingUri;
+    private OpenverseTrack music;
+    private boolean musicUnavailable;
+    private JSONObject musicMetadata;
+    private boolean musicCapabilityValidated;
+    private ActivityResultLauncher<Intent> musicPicker;
+    private long epoch;
     private SupabaseStorage.Transfer transfer;
     private Subscription createRequest;
+    private final Runnable identityChanged = () -> {
+        if (disposed || epoch == SessionManager.getInstance().generation()) return;
+        OpenverseMusicClient.clearSearchCache(); music=null; musicMetadata=null; musicCapabilityValidated=false;
+        if(transfer!=null)transfer.cancel();if(createRequest!=null)createRequest.remove();releasePlayer();finish();
+    };
+    private Uri pendingUri;
     private final Runnable coverUpdate = this::extractCover;
     private final Runnable ticker = new Runnable() {
         @Override public void run() {
-            if (disposed || player == null || !resumed) return;
+            Player active = activePlayer();
+            if (disposed || active == null || !resumed) return;
             if (!publishing && !timeline.isInteracting()) {
-                if (player.getPlayWhenReady() && player.getCurrentPosition() >= endMs) {
-                    player.pause();player.seekTo(startMs);
+                long sourcePosition = player == null ? startMs + active.getCurrentPosition() : active.getCurrentPosition();
+                if (active.getPlayWhenReady() && sourcePosition >= endMs) {
+                    active.pause(); if(compositionPlayer!=null)active.seekTo(0);else active.seekTo(startMs);
                 }
-                timeline.setPlayhead(player.getCurrentPosition());
+                timeline.setPlayhead(sourcePosition);
             }
             main.postDelayed(this, 50);
         }
@@ -96,6 +125,8 @@ public final class CreateReelActivity extends AppCompatActivity {
 
     @Override protected void onCreate(@Nullable Bundle saved) {
         super.onCreate(saved);
+        epoch=SessionManager.getInstance().generation();SessionManager.getInstance().identityListeners.add(identityChanged);
+        OpenverseMusicEditor.restoreState(this,saved);
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         setContentView(R.layout.activity_reel_create);
         View root = findViewById(R.id.reel_create_root);
@@ -115,6 +146,15 @@ public final class CreateReelActivity extends AppCompatActivity {
         next = findViewById(R.id.reel_next);header = findViewById(R.id.reel_header);
         fileInfo = findViewById(R.id.reel_file_info);editorPanel = findViewById(R.id.reel_editor_panel);
         publishingPanel = findViewById(R.id.reel_publishing_panel);
+        musicInfo=findViewById(R.id.reel_music_info);
+        musicPicker=registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),result->{
+            if(epoch!=SessionManager.getInstance().generation())return;
+            if(result.getResultCode()!=RESULT_OK||result.getData()==null)return;
+            try{OpenverseTrack selected=OpenverseTrack.fromDraft(new JSONObject(result.getData().getStringExtra(OpenverseMusicPickerActivity.EXTRA_TRACK_JSON)));
+                if(selected==null||!OpenverseMusicCache.isManaged(this,selected.id,selected.localPath))throw new IOException("Bản nhạc đã hết hạn khỏi bộ nhớ tạm. Hãy chọn lại.");
+                selected.sourceVolume=100;selected.musicVolume=35;musicUnavailable=false;editMusic(selected);
+            }catch(Exception error){status.setText(error.getMessage()==null?"Không đọc được bài nhạc đã chọn.":error.getMessage());}
+        });
         audience.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item,
                 new String[]{"Công khai", "Người theo dõi", "Chỉ mình tôi"}));
         AudienceChoices.spinner(this, audience, saved == null ? null : saved.getString("audience_value"));
@@ -137,6 +177,8 @@ public final class CreateReelActivity extends AppCompatActivity {
                     .setMediaType(ActivityResultContracts.PickVisualMedia.VideoOnly.INSTANCE).build());
         });
         findViewById(R.id.reel_back).setOnClickListener(v -> back());
+        findViewById(R.id.reel_music_button).setOnClickListener(v->chooseMusic());
+        musicInfo.setOnClickListener(v->{if(busy||uploadedAsset!=null)return;if(music!=null)editMusic(music.copy());else if(musicUnavailable)showUnavailableMusicActions();});
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override public void handleOnBackPressed() { back(); }
         });
@@ -148,7 +190,8 @@ public final class CreateReelActivity extends AppCompatActivity {
         publish.setOnClickListener(v -> submit());
         previewError.setOnClickListener(v -> { if (!busy && sourceFile != null) preparePreview(); });
         mute.setOnCheckedChangeListener((button, checked) -> {
-            if (player != null) player.setVolume(checked ? 0 : 1);
+            if(music!=null){if(!busy&&!publishing)preparePreview();}
+            else if (player != null) player.setVolume(checked ? 0 : 1);
             if (!busy && !publishing) invalidateOutput();
         });
         timeline.setListener(new ReelTrimTimelineView.Listener() {
@@ -170,6 +213,7 @@ public final class CreateReelActivity extends AppCompatActivity {
         if (saved != null) {
             startMs = saved.getLong("start");endMs = saved.getLong("end");coverMs = saved.getLong("cover");
             playbackMs = saved.getLong("playback");mute.setChecked(saved.getBoolean("mute"));
+            musicMetadata=parseJson(saved.getString("music_metadata"));music=restoreTrack(saved.getString("music_draft"));
             uploadedAsset = saved.getString("asset");uploadedCoverAsset = saved.getString("cover_asset");
             frozenCaption = saved.getString("frozen_caption");frozenAudience = saved.getString("frozen_audience");
             String path = saved.getString("source");
@@ -185,6 +229,7 @@ public final class CreateReelActivity extends AppCompatActivity {
                 acceptSource(false);return;
             }
         }
+        updateMusicInfo();
         Uri incoming = saved != null && saved.getString("pending_uri") != null
                 ? Uri.parse(saved.getString("pending_uri")) : getIntent().getData();
         if (incoming == null && getIntent().getStringExtra(ReelsCaptureSession.EXTRA_URI) != null)
@@ -272,12 +317,38 @@ public final class CreateReelActivity extends AppCompatActivity {
         coverBar.setMax((int) Math.max(1, endMs - startMs - 1));coverBar.setProgress((int) coverMs);
     }
     private void scrub(long time) {
-        if (player != null) { player.pause();player.seekTo(Math.max(0, Math.min(sourceDuration - 1, time))); }
+        Player active=activePlayer();if(active!=null){active.pause();if(compositionPlayer!=null)active.seekTo(Math.max(0,Math.min(endMs-startMs-1,time-startMs)));else active.seekTo(Math.max(0,Math.min(sourceDuration-1,time)));}
     }
     private void preparePreview() {
+        if (OpenverseMusicEditor.isShowing(this)) return;
         if (sourceFile == null || !resumed || publishing) return;
+        if (!busy) {OpenverseTrack pending=OpenverseMusicEditor.pending(this,sourceFile.getAbsolutePath());if(pending!=null){editMusic(pending);return;}}
         releasePlayer();previewError.setVisibility(View.GONE);poster.setVisibility(View.VISIBLE);
         buffering.setVisibility(View.VISIBLE);
+        if(music!=null){
+            if(musicUnavailable){buffering.setVisibility(View.GONE);previewError.setText("Bản nhạc đã hết khỏi cache. Hãy chọn lại bài hoặc mở thông tin nhạc để bỏ nhạc.");previewError.setVisibility(View.VISIBLE);return;}
+            try{
+                float scale=Math.min(1f,Math.min(1280f/Math.max(1,Math.max(width,height)),720f/Math.max(1,Math.min(width,height))));
+                int targetWidth=Math.max(2,Math.round(width*scale/2)*2),targetHeight=Math.max(2,Math.round(height*scale/2)*2);
+                java.util.List<androidx.media3.common.Effect> effects=java.util.Arrays.asList(
+                        Presentation.createForWidthAndHeight(targetWidth,targetHeight,Presentation.LAYOUT_SCALE_TO_FIT),
+                        androidx.media3.effect.FrameDropEffect.createDefaultFrameDropEffect(30));
+                Composition composition=MusicComposition.video(sourceFile,startMs,endMs,mute.isChecked(),music.sourceVolume,music,music.musicVolume,effects,
+                        Composition.HDR_MODE_TONE_MAP_HDR_TO_SDR_USING_OPEN_GL);
+                compositionPlayer=new CompositionPlayer.Builder(this).build();CompositionPlayer observed=compositionPlayer;
+                preview.setPlayer(compositionPlayer);
+                compositionPlayer.addListener(new Player.Listener(){
+                    @Override public void onPlaybackStateChanged(int state){if(compositionPlayer!=observed)return;
+                        buffering.setVisibility(state==Player.STATE_BUFFERING?View.VISIBLE:View.GONE);
+                        if(state==Player.STATE_READY){poster.setVisibility(View.GONE);buffering.setVisibility(View.GONE);}
+                        if(state==Player.STATE_ENDED){observed.pause();observed.seekTo(0);}
+                    }
+                    @Override public void onPlayerError(androidx.media3.common.PlaybackException error){if(compositionPlayer==observed){buffering.setVisibility(View.GONE);previewError.setText("Không xem trước được bản phối này. Chạm để thử lại.");previewError.setVisibility(View.VISIBLE);}}
+                });
+                compositionPlayer.setComposition(composition);compositionPlayer.prepare();compositionPlayer.seekTo(Math.max(0,Math.min(endMs-startMs-1,playbackMs-startMs)));compositionPlayer.play();
+                main.removeCallbacks(ticker);main.post(ticker);Glide.with(this).load(sourceFile).frame(startMs*1000).fitCenter().into(poster);return;
+            }catch(Exception error){releasePlayer();buffering.setVisibility(View.GONE);previewError.setText(error.getMessage()==null?"Không chuẩn bị được bản xem trước có nhạc.":error.getMessage());previewError.setVisibility(View.VISIBLE);return;}
+        }
         player = new ExoPlayer.Builder(this, new DefaultRenderersFactory(this).setEnableDecoderFallback(true)).build();
         ExoPlayer observedPlayer = player;
         player.setSeekParameters(SeekParameters.EXACT);
@@ -306,6 +377,7 @@ public final class CreateReelActivity extends AppCompatActivity {
     }
     private void releasePlayer() {
         main.removeCallbacks(ticker);
+        if(compositionPlayer!=null){playbackMs=startMs+compositionPlayer.getCurrentPosition();preview.setPlayer(null);compositionPlayer.release();compositionPlayer=null;}
         if (player != null) {
             playbackMs = player.getCurrentPosition();
             if (monitor != null) { monitor.release();monitor = null; }
@@ -316,18 +388,20 @@ public final class CreateReelActivity extends AppCompatActivity {
         policyValidated=false;
         if (uploadedAsset != null) return;
         if (editedFile != null) editedFile.delete();
-        editedFile = null;outputDuration = 0;
+        editedFile = null;outputDuration = 0;musicMetadata=null;
     }
     private void exportForPublishing() {
         if (busy || sourceFile == null) return;
         if (endMs - startMs < 1000 || endMs - startMs > MAX_DURATION) { status.setText("Chọn đoạn từ 1 đến 60 giây.");return; }
+        if(musicUnavailable&&musicMetadata==null){status.setText("Bản nhạc không còn trong cache và thiếu metadata đã xác minh. Hãy chọn lại hoặc bỏ nhạc trước khi đăng.");return;}
         if (editedFile != null && editedFile.isFile()) { outputReady();return; }
+        if(musicUnavailable){status.setText("Bản nhạc đã hết khỏi cache. Hãy chọn lại bài hoặc bỏ nhạc trước khi xuất.");return;}
         releasePlayer();setBusy(true);status.setText("Đang xuất đúng đoạn đã chọn…");
         uploadProgress.setVisibility(View.VISIBLE);uploadProgress.setIndeterminate(true);
         File result = new File(draftDir, "edited-" + UUID.randomUUID() + ".mp4");
         final int token = generation;
         // A full, already compliant MP4 needs a byte copy, not another encode.
-        if (startMs == 0 && endMs == sourceDuration && !mute.isChecked() && sourceFile.length() <= com.example.meetomxh.ui.VideoPublishLimits.EXPORT_BYTES) {
+        if (music==null && startMs == 0 && endMs == sourceDuration && !mute.isChecked() && sourceFile.length() <= com.example.meetomxh.ui.VideoPublishLimits.EXPORT_BYTES) {
             work.execute(() -> {
                 try {
                     MediaMetadataRetriever meta = new MediaMetadataRetriever();String mime;
@@ -345,7 +419,7 @@ public final class CreateReelActivity extends AppCompatActivity {
         startExport(result, token);
     }
     private void startExport(File result, int token) {
-        exporter.start(this, sourceFile, result, startMs, endMs, mute.isChecked(), width, height, new ReelClipExporter.Callback() {
+        exporter.start(this, sourceFile, result, startMs, endMs, mute.isChecked(), music==null?100:music.sourceVolume, width, height, music, music==null?0:music.musicVolume, new ReelClipExporter.Callback() {
             public void completed(File file) {
                 if (disposed || token != generation) { file.delete();return; }
                 work.execute(() -> {
@@ -372,6 +446,9 @@ public final class CreateReelActivity extends AppCompatActivity {
         }
     }
     private void outputReady() {
+        if(music!=null)try{musicMetadata=music.metadata(MusicComposition.usableDurationMs(music,outputDuration));
+            if(!com.example.meetomxh.music.OpenverseMusicClient.validPublishedMetadata(musicMetadata,outputDuration))throw new IllegalStateException("invalid music metadata");
+        }catch(Exception error){musicMetadata=null;status.setText("Không lưu được nguồn nhạc của bản xuất. Hãy xuất lại.");return;}
         if (!editOnly()) {
             showStep(true);status.setText("Video đã sẵn sàng. Thêm nội dung và chọn quyền riêng tư.");queueCover();return;
         }
@@ -389,8 +466,10 @@ public final class CreateReelActivity extends AppCompatActivity {
                 target = candidate;
                 copyVideo(editedFile, target);
                 File ready = target;
+                final String metadata=musicMetadata==null?null:musicMetadata.toString();
                 main.post(() -> { if (disposed || token != generation) { ready.delete();return; }
-                    setResult(RESULT_OK, new Intent().putExtra(EXTRA_OUTPUT_PATH, ready.getAbsolutePath()).putExtra(EXTRA_DURATION, outputDuration));finish(); });
+                    Intent data=new Intent().putExtra(EXTRA_OUTPUT_PATH,ready.getAbsolutePath()).putExtra(EXTRA_DURATION,outputDuration);
+                    if(metadata!=null)data.putExtra(EXTRA_MUSIC_METADATA,metadata);setResult(RESULT_OK,data);finish(); });
             } catch (Exception e) {
                 if (target != null) target.delete();
                 main.post(() -> { if (!disposed && token == generation) exportFailed(e.getMessage()); });
@@ -407,10 +486,53 @@ public final class CreateReelActivity extends AppCompatActivity {
             if (duration <= 0 || duration > MAX_DURATION || Math.abs(duration - expectedDuration) > 250
                     || !"yes".equals(meta.extractMetadata(MediaMetadataRetriever.METADATA_KEY_HAS_VIDEO)))
                 throw new IOException("Video xuất không đúng đoạn đã chọn. Hãy chỉnh đoạn và xuất lại.");
+            if(music!=null&&!MusicComposition.hasAudio(file))throw new IOException("Bản xuất thiếu track âm thanh. Hãy xuất lại trước khi đăng.");
             android.util.Log.i("MeetoPublish","stage=export_validated duration_ms="+duration+" bytes="+file.length());
             return duration;
         } finally { meta.release(); }
     }
+    private Player activePlayer(){return compositionPlayer!=null?compositionPlayer:player;}
+    private void chooseMusic(){
+        if(busy||sourceFile==null||uploadedAsset!=null)return;
+        releasePlayer();
+        status.setText("Đang kiểm tra khả năng lưu nguồn nhạc…");
+        Api.run(()->{MusicPublishingClient.requireEnabled();return true;},new Api.Callback<Boolean>(){
+            public void success(Boolean enabled){if(!disposed&&epoch==SessionManager.getInstance().generation()&&Boolean.TRUE.equals(enabled))musicPicker.launch(new Intent(CreateReelActivity.this,OpenverseMusicPickerActivity.class));}
+            public void error(String error){if(!disposed)status.setText(error+" Có thể đăng theo luồng cũ bằng cách bỏ nhạc.");}
+        });
+    }
+    private void editMusic(OpenverseTrack track){
+        releasePlayer();
+        boolean sourceAudio=false;try{sourceAudio=MusicComposition.hasAudio(sourceFile);}catch(Exception ignored){}
+        OpenverseMusicEditor.show(this,track,endMs-startMs,sourceAudio,false,sourceFile.getAbsolutePath(),draft->{
+            Composition composition=MusicComposition.video(sourceFile,startMs,endMs,mute.isChecked(),draft.sourceVolume,
+                    draft,draft.musicVolume,java.util.Collections.emptyList(),Composition.HDR_MODE_TONE_MAP_HDR_TO_SDR_USING_OPEN_GL);
+            CompositionPlayer mixed=new CompositionPlayer.Builder(this).build();
+            try{mixed.setComposition(composition);mixed.prepare();return mixed;}catch(RuntimeException error){mixed.release();throw error;}
+        },new OpenverseMusicEditor.Callback(){
+            public void saved(OpenverseTrack selected){music=selected;musicUnavailable=!OpenverseMusicCache.isManaged(CreateReelActivity.this,selected.id,selected.localPath);musicMetadata=null;invalidateOutput();updateMusicInfo();preparePreview();}
+            public void removed(){music=null;musicUnavailable=false;musicMetadata=null;invalidateOutput();updateMusicInfo();preparePreview();}
+            public void change(){chooseMusic();}
+            public void closed(){preparePreview();}
+        });
+    }
+    private void updateMusicInfo(){
+        if(musicInfo==null)return;
+        if(music==null&&!musicUnavailable){musicInfo.setVisibility(View.GONE);return;}
+        String title=music==null?(musicMetadata==null?"Bài nhạc":musicMetadata.optString("title","Bài nhạc")):music.title;
+        String creator=music==null?(musicMetadata==null?"":musicMetadata.optString("creator","")):music.creator;
+        musicInfo.setText("♫ "+title+(creator.isEmpty()?"":" · "+creator)+" · "+(musicUnavailable?"Nguồn tạm đã hết hạn · chạm để chọn lại hoặc bỏ nhạc":"CC0 · Chạm để chỉnh sửa"));
+        musicInfo.setVisibility(View.VISIBLE);
+    }
+    private void showUnavailableMusicActions(){new androidx.appcompat.app.AlertDialog.Builder(this).setTitle("Không còn tệp nhạc tạm")
+            .setMessage("Bản xuất đã lưu vẫn giữ nguyên. Khi cần xuất lại, hãy chọn bài khác hoặc bỏ nhạc.")
+            .setNegativeButton("Để sau",null).setNeutralButton("Bỏ nhạc",(d,w)->{musicUnavailable=false;musicMetadata=null;invalidateOutput();updateMusicInfo();preparePreview();})
+            .setPositiveButton("Chọn bài khác",(d,w)->chooseMusic()).show();}
+    private OpenverseTrack restoreTrack(String value){
+        try{OpenverseTrack restored=OpenverseTrack.fromDraft(new JSONObject(value));musicUnavailable=restored==null&&(musicMetadata!=null||value!=null)||restored!=null&&!OpenverseMusicCache.isManaged(this,restored.id,restored.localPath);return restored;}
+        catch(Exception ignored){musicUnavailable=musicMetadata!=null||value!=null;return null;}
+    }
+    private JSONObject parseJson(String value){try{return value==null?null:new JSONObject(value);}catch(Exception ignored){return null;}}
     private void exportFailed(String message) {
         if (disposed) return;
         main.removeCallbacks(exportTicker);setBusy(false);uploadProgress.setVisibility(View.GONE);
@@ -435,6 +557,8 @@ public final class CreateReelActivity extends AppCompatActivity {
         timeline.setEnabled(editing);mute.setEnabled(editing);findViewById(R.id.reel_pick_video).setEnabled(editing);
         coverBar.setEnabled(editing);caption.setEnabled(!value && frozenCaption == null);audience.setEnabled(!value && frozenCaption == null && audience.getTag() instanceof String[]);
         next.setEnabled(editing && sourceFile != null);publish.setEnabled(!value && editedFile != null);
+        findViewById(R.id.reel_music_button).setEnabled(editing&&sourceFile!=null);
+        musicInfo.setEnabled(editing&&(music!=null||musicUnavailable));
         if (!value) { main.removeCallbacks(exportTicker);uploadProgress.setVisibility(View.GONE); }
     }
     private void queueCover() { main.removeCallbacks(coverUpdate);main.postDelayed(coverUpdate, 160); }
@@ -471,6 +595,16 @@ public final class CreateReelActivity extends AppCompatActivity {
         if (busy || editedFile == null || !editedFile.isFile()) return;
         if (editedFile.length() > MAX_BYTES || outputDuration <= 0 || outputDuration > MAX_DURATION) {
             status.setText("Video thành phẩm phải dưới 49 MB và không quá 60 giây.");return;
+        }
+        if(musicMetadata!=null&&!com.example.meetomxh.music.OpenverseMusicClient.validPublishedMetadata(musicMetadata,outputDuration)){
+            status.setText("Metadata nhạc không khớp thời lượng hoặc đoạn nguồn. Hãy xuất lại video.");return;
+        }
+        if(musicMetadata!=null&&!musicCapabilityValidated){
+            setBusy(true);status.setText("Đang xác minh máy chủ lưu thông tin nguồn nhạc…");
+            createRequest=Api.run(()->{MusicPublishingClient.requireEnabled();return true;},new Api.Callback<Boolean>(){
+                public void success(Boolean enabled){if(disposed)return;musicCapabilityValidated=true;setBusy(false);submit();}
+                public void error(String error){failPublish(error+" Có thể bỏ nhạc trong trình chỉnh sửa để dùng luồng đăng hiện tại.");}
+            });return;
         }
         if(!policyValidated){
             setBusy(true);status.setText("Đang kiểm tra cấu hình đăng Reel và giới hạn bucket…");
@@ -532,12 +666,14 @@ public final class CreateReelActivity extends AppCompatActivity {
         status.setText("Đang xác nhận đăng Reel…");
         int duration = (int) outputDuration, coverPosition = (int) Math.min(coverMs, outputDuration - 1);
         // Preserve the existing operation/fingerprint; receipts retain its assets across recreation.
-        String fingerprint = uploadedAsset + "|" + frozenCaption + "|" + frozenAudience + "|" + duration + "|" + coverPosition;
+        String fingerprint = uploadedAsset + "|" + frozenCaption + "|" + frozenAudience + "|" + duration + "|" + coverPosition + "|"+(musicMetadata==null?"":musicMetadata.toString());
         String requestId = RequestIds.get("create_reel", fingerprint);
         createRequest = Api.run(() -> {
-            return RpcClient.object("create_reel", Api.obj("p_video_asset_id", Dto.assetId(uploadedAsset),
+            JSONObject parameters=Api.obj("p_video_asset_id", Dto.assetId(uploadedAsset),
                     "p_cover_asset_id", Dto.assetId(uploadedCoverAsset), "p_caption", frozenCaption, "p_audience", frozenAudience,
-                    "p_duration_ms", duration, "p_cover_position_ms", coverPosition, "p_client_request_id", requestId));
+                    "p_duration_ms", duration, "p_cover_position_ms", coverPosition, "p_client_request_id", requestId);
+            if(musicMetadata!=null){parameters.put("p_music_metadata",musicMetadata);return RpcClient.object("create_reel_with_music",parameters);}
+            return RpcClient.object("create_reel",parameters);
         }, new Api.Callback<JSONObject>() {
             public void success(JSONObject result) {
                 if (disposed) return;
@@ -560,7 +696,8 @@ public final class CreateReelActivity extends AppCompatActivity {
     private boolean persistPublishReceipt(){
         if(draftDir==null||editedFile==null)return false;
         boolean saved=publishReceipts().edit().putString(receiptKey(),Api.obj("asset",uploadedAsset,"cover_asset",uploadedCoverAsset,
-                "caption",frozenCaption,"audience",frozenAudience,"cover_ms",coverMs,"output",editedFile.getAbsolutePath(),"duration",outputDuration).toString()).commit();
+                "caption",frozenCaption,"audience",frozenAudience,"cover_ms",coverMs,"output",editedFile.getAbsolutePath(),"duration",outputDuration,
+                "music_metadata",musicMetadata).toString()).commit();
         if(!saved)failPublish("Không lưu được trạng thái đăng Reel. Giữ bản nháp, giải phóng bộ nhớ rồi nhấn Thử lại; chưa gửi yêu cầu tạo Reel.");
         return saved;
     }
@@ -572,6 +709,7 @@ public final class CreateReelActivity extends AppCompatActivity {
             editedFile=output;outputDuration=receipt.getLong("duration");restorePublishing=true;
             uploadedAsset=Dto.nullable(receipt,"asset");uploadedCoverAsset=Dto.nullable(receipt,"cover_asset");
             frozenCaption=Dto.nullable(receipt,"caption");frozenAudience=Dto.nullable(receipt,"audience");coverMs=receipt.optLong("cover_ms");
+            musicMetadata=receipt.optJSONObject("music_metadata");
             if(frozenCaption!=null)caption.setText(frozenCaption);
         }catch(Exception ignored){/* Saved Bundle remains the fallback; never allocate a new publish ID here. */}
     }
@@ -608,20 +746,24 @@ public final class CreateReelActivity extends AppCompatActivity {
         if (files != null) for (File file : files) if (file.isFile() && isDraftFile(file)) file.delete();
         folder.delete();
     }
-    @Override protected void onResume() { super.onResume();resumed = true;if (sourceFile != null && !busy && !publishing) preparePreview(); }
+    @Override protected void onResume() { super.onResume();resumed = true;if (sourceFile != null && !busy && !publishing) {OpenverseTrack pending=OpenverseMusicEditor.pending(this,sourceFile.getAbsolutePath());if(pending!=null)editMusic(pending);else preparePreview();} }
     @Override protected void onStop() { resumed = false;releasePlayer();super.onStop(); }
     @Override protected void onRestoreInstanceState(Bundle state){
         super.onRestoreInstanceState(state);
         if(frozenCaption!=null)caption.setText(frozenCaption);
     }
     @Override protected void onSaveInstanceState(Bundle state) {
+        OpenverseMusicEditor.saveState(this,state);
         state.putString("source", sourceFile == null ? null : sourceFile.getAbsolutePath());
         state.putString("output", editedFile == null ? null : editedFile.getAbsolutePath());
         state.putLong("duration", sourceDuration);state.putLong("start", startMs);state.putLong("end", endMs);
-        state.putLong("cover", coverMs);state.putLong("playback", player == null ? playbackMs : player.getCurrentPosition());
+        Player active=activePlayer();long sourcePosition=active==null?playbackMs:(compositionPlayer==null?active.getCurrentPosition():startMs+active.getCurrentPosition());
+        state.putLong("cover", coverMs);state.putLong("playback", sourcePosition);
         state.putInt("width", width);state.putInt("height", height);state.putBoolean("mute", mute.isChecked());
         state.putBoolean("publishing", publishing);state.putLong("output_duration", outputDuration);
         state.putString("asset", uploadedAsset);state.putString("cover_asset", uploadedCoverAsset);
+        try{state.putString("music_draft",music==null?null:music.draftJson().toString());}catch(Exception ignored){state.putString("music_draft",null);}
+        state.putString("music_metadata",musicMetadata==null?null:musicMetadata.toString());
         state.putString("frozen_caption", frozenCaption);state.putString("frozen_audience", frozenAudience);
         state.putString("audience_value", AudienceChoices.value(audience));
         state.putString("pending_uri", pendingUri == null ? null : pendingUri.toString());
@@ -630,6 +772,7 @@ public final class CreateReelActivity extends AppCompatActivity {
     }
     @Override protected void onDestroy() {
         disposed = true;generation++;coverGeneration++;main.removeCallbacksAndMessages(null);
+        SessionManager.getInstance().identityListeners.remove(identityChanged);
         exporter.cancel();if (transfer != null) transfer.cancel();if (createRequest != null) createRequest.remove();
         releasePlayer();timeline.release();work.shutdownNow();
         if (isFinishing()) {if(draftDir!=null)publishReceipts().edit().remove(receiptKey()).apply();deleteDraft(draftDir);}

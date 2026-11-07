@@ -444,7 +444,8 @@ public class ProfileActivity extends AppCompatActivity {
 
                 binding.layoutGenderRow.setVisibility(hasGender ? View.VISIBLE : View.GONE);
                 binding.layoutDobRow.setVisibility(hasDob ? View.VISIBLE : View.GONE);
-                binding.cardPersonalDetails.setVisibility(hasGender || hasDob ? View.VISIBLE : View.GONE);
+                // Loading profile data must respect the selected tab.
+                binding.cardPersonalDetails.setVisibility("about".equals(profileTab) ? View.VISIBLE : View.GONE);
 
                 AvatarViews.load(binding.imgAvatar, user.getAvatarUrl(), user.getAvatarPreset());
                 com.example.meetomxh.ui.StoryRings.bind((View)binding.imgAvatar.getParent(),binding.imgAvatar,targetUid,null);

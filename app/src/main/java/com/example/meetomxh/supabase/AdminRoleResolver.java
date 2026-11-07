@@ -1,7 +1,7 @@
 package com.example.meetomxh.supabase;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
+
+
 
 /** Resolves the app entry surface from a server-authorized admin RPC. */
 public final class AdminRoleResolver {
@@ -22,11 +22,8 @@ public final class AdminRoleResolver {
         if (SessionManager.getInstance().getCurrentUser() == null)
             return new Result(Destination.LOGIN, "Phiên đăng nhập không còn hoạt động.");
         try {
-            JSONObject dashboard = RpcClient.object("admin_dashboard", Api.obj());
-            boolean valid=dashboard != null && dashboard.has("users_total") && dashboard.has("posts_total")
-                    && dashboard.opt("recent_reports") instanceof JSONArray
-                    && dashboard.opt("recent_actions") instanceof JSONArray;
-            return interpret(valid, null);
+            AdminModels.Capabilities capabilities=new AdminModels.Capabilities(RpcClient.object("admin_get_capabilities",Api.obj()));
+            return new Result(capabilities.systemAdmin?Destination.ADMIN:Destination.SOCIAL,null);
         } catch (ErrorMapper.HttpError error) {
             return interpret(false, error);
         } catch (Exception error) {
@@ -38,12 +35,9 @@ public final class AdminRoleResolver {
         if (failure instanceof ErrorMapper.HttpError) {
             ErrorMapper.HttpError error=(ErrorMapper.HttpError)failure;
             if (error.status == 401) return new Result(Destination.LOGIN, "Phiên đăng nhập đã hết hạn.");
-            if (error.status == 403 && ("system_admin_required".equals(error.serverMessage)
-                    || "system_admin_required".equals(error.code)))
-                return new Result(Destination.SOCIAL, null);
-            return new Result(Destination.RETRY, ErrorMapper.message(error));
+            return new Result(Destination.RETRY, new AdminRepository.AdminError(error).message);
         }
-        if (failure != null) return new Result(Destination.RETRY, ErrorMapper.message(failure));
+        if (failure != null) return new Result(Destination.RETRY, new AdminRepository.AdminError(failure).message);
         if (!validDashboard)
             return new Result(Destination.RETRY, "Phản hồi xác minh quyền không hợp lệ.");
         return new Result(Destination.ADMIN, null);

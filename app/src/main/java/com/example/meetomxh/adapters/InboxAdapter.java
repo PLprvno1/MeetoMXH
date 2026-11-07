@@ -20,12 +20,18 @@ public class InboxAdapter extends RecyclerView.Adapter<InboxAdapter.InboxViewHol
     public interface OnInboxClickListener {
         void onInboxClick(Inbox inbox);
     }
+    public interface OnInboxLongClickListener { void onInboxLongClick(Inbox inbox); }
 
     private final List<Inbox> inboxList = new ArrayList<>();
     private final OnInboxClickListener clickListener;
+    private final OnInboxLongClickListener longClickListener;
 
     public InboxAdapter(OnInboxClickListener clickListener) {
+        this(clickListener, null);
+    }
+    public InboxAdapter(OnInboxClickListener clickListener, OnInboxLongClickListener longClickListener) {
         this.clickListener = clickListener;
+        this.longClickListener = longClickListener;
     }
 
     public void submitList(List<Inbox> items) {
@@ -42,6 +48,7 @@ public class InboxAdapter extends RecyclerView.Adapter<InboxAdapter.InboxViewHol
                 return equals(oldItem.getChatName(), newItem.getChatName())
                         && equals(oldItem.getLastMessage(), newItem.getLastMessage())
                         && equals(oldItem.getAvatarUrl(), newItem.getAvatarUrl())
+                        && equals(oldItem.getAvatarPreset(), newItem.getAvatarPreset())
                         && equals(oldItem.getServerTime(), newItem.getServerTime())
                         && oldItem.isUnread() == newItem.isUnread()
                         && oldItem.isMuted() == newItem.isMuted();
@@ -60,7 +67,7 @@ public class InboxAdapter extends RecyclerView.Adapter<InboxAdapter.InboxViewHol
     public InboxViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         ItemInboxBinding binding = ItemInboxBinding.inflate(
                 LayoutInflater.from(parent.getContext()), parent, false);
-        return new InboxViewHolder(binding, clickListener);
+        return new InboxViewHolder(binding, clickListener, longClickListener);
     }
 
     @Override
@@ -77,15 +84,18 @@ public class InboxAdapter extends RecyclerView.Adapter<InboxAdapter.InboxViewHol
     public static class InboxViewHolder extends RecyclerView.ViewHolder {
         private final ItemInboxBinding binding;
         private final OnInboxClickListener clickListener;
+        private final OnInboxLongClickListener longClickListener;
 
-        public InboxViewHolder(@NonNull ItemInboxBinding binding, OnInboxClickListener clickListener) {
+        public InboxViewHolder(@NonNull ItemInboxBinding binding, OnInboxClickListener clickListener, OnInboxLongClickListener longClickListener) {
             super(binding.getRoot());
             this.binding = binding;
             this.clickListener = clickListener;
+            this.longClickListener = longClickListener;
         }
 
         public void bind(Inbox inbox) {
-            binding.tvChatName.setText((inbox.isMuted()?"🔕 ":"")+inbox.getChatName());
+            binding.tvChatName.setText(inbox.getChatName());
+            binding.ivInboxMuted.setVisibility(inbox.isMuted() ? android.view.View.VISIBLE : android.view.View.GONE);
             binding.tvLastMessage.setText(inbox.getLastMessage());
             binding.tvTimestamp.setText(inbox.getServerTime());
             binding.viewUnread.setVisibility(inbox.isUnread() ? android.view.View.VISIBLE : android.view.View.GONE);
@@ -93,6 +103,11 @@ public class InboxAdapter extends RecyclerView.Adapter<InboxAdapter.InboxViewHol
             AvatarViews.load(binding.ivAvatar, inbox.getAvatarUrl(), inbox.getAvatarPreset());
             binding.getRoot().setOnClickListener(v -> {
                 if (clickListener != null) clickListener.onInboxClick(inbox);
+            });
+            binding.getRoot().setOnLongClickListener(v -> {
+                if (longClickListener == null) return false;
+                v.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS);
+                longClickListener.onInboxLongClick(inbox); return true;
             });
         }
     }

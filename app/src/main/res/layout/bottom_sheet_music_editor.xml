@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="wrap_content"
+    android:background="@color/surface_bg" android:clipToPadding="false">
+<LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+    android:orientation="vertical" android:paddingHorizontal="20dp" android:paddingTop="20dp" android:paddingBottom="24dp">
+    <TextView android:id="@+id/music_edit_title" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:textColor="@color/text_primary" android:textSize="18sp" android:textStyle="bold" />
+    <TextView android:id="@+id/music_edit_creator" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:paddingTop="4dp" android:textColor="@color/text_secondary" android:textSize="13sp" />
+    <TextView android:id="@+id/music_edit_preview_note" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:paddingTop="12dp" android:text="Chọn đoạn nhạc để nghe thử. Bản xem trước trong trình chỉnh sửa sẽ phát đúng video và nhạc đã ghép."
+        android:textColor="@color/text_secondary" android:textSize="12sp" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="start|center_vertical">
+        <Button android:id="@+id/music_edit_preview" android:layout_width="wrap_content" android:layout_height="48dp"
+            android:text="Nghe thử đoạn" android:textAllCaps="false" />
+        <Button android:id="@+id/music_edit_change" android:layout_width="wrap_content" android:layout_height="48dp"
+            android:text="Đổi bài" android:textAllCaps="false" />
+    </LinearLayout>
+    <TextView android:id="@+id/music_edit_start_label" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:paddingTop="16dp" android:textColor="@color/text_primary" />
+    <SeekBar android:id="@+id/music_edit_start" android:layout_width="match_parent" android:layout_height="wrap_content" />
+    <TextView android:id="@+id/music_edit_volume_label" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:paddingTop="8dp" android:textColor="@color/text_primary" />
+    <SeekBar android:id="@+id/music_edit_volume" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="100" />
+    <TextView android:id="@+id/music_edit_source_label" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:paddingTop="8dp" android:textColor="@color/text_primary" />
+    <SeekBar android:id="@+id/music_edit_source" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="100" />
+    <TextView android:id="@+id/music_edit_duration_label" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:paddingTop="8dp" android:textColor="@color/text_primary" />
+    <SeekBar android:id="@+id/music_edit_duration" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="55" />
+    <com.example.meetomxh.music.MusicMiniPlayer android:id="@+id/music_edit_mini"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:layout_marginVertical="12dp" android:visibility="gone" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="end|center_vertical">
+        <Button android:id="@+id/music_edit_remove" android:layout_width="wrap_content" android:layout_height="48dp"
+            android:text="Bỏ nhạc" android:textAllCaps="false" />
+        <Button android:id="@+id/music_edit_save" android:layout_width="wrap_content" android:layout_height="48dp"
+            android:text="Lưu" android:textAllCaps="false" />
+    </LinearLayout>
+</LinearLayout>
+</androidx.core.widget.NestedScrollView>

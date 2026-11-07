@@ -3,7 +3,6 @@ package com.example.meetomxh;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 import com.example.meetomxh.supabase.Api;
 import com.example.meetomxh.supabase.Forms;
@@ -22,9 +21,17 @@ public final class EmailConfirmationActivity extends androidx.appcompat.app.AppC
         super.onCreate(state);
         email = getIntent().getStringExtra(EXTRA_EMAIL);
         if (email == null) email = "";
-        LinearLayout form = Forms.start(this, "Xác nhận email");
-        ImageView back = findViewById(com.example.meetomxh.R.id.btnFormBack);
-        if (back != null) back.setVisibility(View.GONE);
+        setContentView(R.layout.activity_email_confirmation);
+        androidx.core.view.WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+        View root = findViewById(R.id.email_confirmation_root);
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(root, (view, insets) -> {
+            androidx.core.graphics.Insets bars = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars()
+                    | androidx.core.view.WindowInsetsCompat.Type.displayCutout() | androidx.core.view.WindowInsetsCompat.Type.ime());
+            view.setPadding(bars.left, bars.top, bars.right, bars.bottom);
+            return insets;
+        });
+        LinearLayout form = findViewById(R.id.formFields);
+        findViewById(R.id.email_back_to_login).setOnClickListener(v -> returnToLogin());
         Forms.status(this, "Hãy xác nhận qua Gmail của bạn. Mở email từ Meeto và nhấn vào liên kết xác minh, sau đó quay lại đây.");
         resendButton = Forms.button(form, "Gửi lại email", this::resend);
         confirmButton = Forms.button(form, "Xác nhận thành công", this::confirm);
@@ -58,15 +65,20 @@ public final class EmailConfirmationActivity extends androidx.appcompat.app.AppC
             return user;
         }, new Api.Callback<JSONObject>() {
             @Override public void success(JSONObject user) {
-                SessionManager.getInstance().clear();
-                startActivity(new Intent(EmailConfirmationActivity.this, LoginActivity.class)
-                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
-                finish();
+                returnToLogin();
             }
             @Override public void error(String message) {
                 confirmButton.setEnabled(true);
                 Forms.status(EmailConfirmationActivity.this, message);
             }
         });
+    }
+
+    private void returnToLogin() {
+        if (isFinishing() || isDestroyed()) return;
+        SessionManager.getInstance().clear();
+        startActivity(new Intent(this, LoginActivity.class)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
+        finish();
     }
 }

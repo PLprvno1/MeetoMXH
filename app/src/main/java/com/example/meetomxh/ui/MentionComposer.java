@@ -33,6 +33,7 @@ public final class MentionComposer implements TextWatcher {
     private LinearLayout rows;
     private int tokenStart, cursorAt, requestGeneration;
     private boolean disposed;
+    private boolean suppressSearchOnce;
 
     public MentionComposer(EditText input) {
         this.input = input;
@@ -45,7 +46,22 @@ public final class MentionComposer implements TextWatcher {
         MentionSpan[] spans=e.getSpans(0,e.length(),MentionSpan.class);
         for(MentionSpan span:spans){int a=e.getSpanStart(span),b=e.getSpanEnd(span);
             if(a<0||b<=a||b>e.length()||!e.subSequence(a,b).toString().equals(span.label))e.removeSpan(span);}
+        if(suppressSearchOnce){suppressSearchOnce=false;dismiss();return;}
         schedule();
+    }
+
+    /** Inserts a real, server-valid mention span before a reply draft. */
+    public void prependMention(String userId,String displayName){
+        if(disposed||userId==null||userId.isEmpty()||displayName==null||displayName.trim().isEmpty())return;
+        Editable e=input.getText();String label="@"+displayName.trim();
+        for(MentionSpan existing:e.getSpans(0,e.length(),MentionSpan.class)){
+            if(userId.equals(existing.userId)&&e.getSpanStart(existing)==0){
+                int end=e.getSpanEnd(existing);input.setSelection(Math.min(e.length(),end+1));input.requestFocus();return;
+            }
+        }
+        suppressSearchOnce=true;e.insert(0,label+" ");
+        e.setSpan(new MentionSpan(userId,label),0,label.length(),android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        input.setSelection(label.length()+1);input.requestFocus();
     }
 
     private void schedule() {

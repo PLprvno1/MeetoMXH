@@ -19,6 +19,8 @@ import androidx.media3.transformer.ExportResult;
 import androidx.media3.transformer.ProgressHolder;
 import androidx.media3.transformer.Transformer;
 import androidx.media3.transformer.VideoEncoderSettings;
+import com.example.meetomxh.music.MusicComposition;
+import com.example.meetomxh.music.OpenverseTrack;
 import java.io.File;
 import java.util.Collections;
 
@@ -31,6 +33,12 @@ public final class ReelClipExporter {
 
     public void start(Context context, File source, File destination, long start, long end,
                       boolean mute, int width, int height, Callback callback) {
+        start(context,source,destination,start,end,mute,100,width,height,null,0,callback);
+    }
+
+    public void start(Context context, File source, File destination, long start, long end,
+                      boolean mute, int sourceVolume, int width, int height, OpenverseTrack music,
+                      int musicVolume, Callback callback) {
         cancel();
         output = destination;
         DefaultEncoderFactory delegate = new DefaultEncoderFactory.Builder(context)
@@ -58,6 +66,20 @@ public final class ReelClipExporter {
                         Presentation.createForWidthAndHeight(targetWidth, targetHeight, Presentation.LAYOUT_SCALE_TO_FIT),
                         androidx.media3.effect.FrameDropEffect.createDefaultFrameDropEffect(30))))
                 .build();
+        Composition composition;
+        if(music!=null){
+            try{composition=MusicComposition.video(source,start,end,mute,sourceVolume,music,musicVolume,
+                    java.util.Arrays.asList(Presentation.createForWidthAndHeight(targetWidth,targetHeight,Presentation.LAYOUT_SCALE_TO_FIT),
+                            androidx.media3.effect.FrameDropEffect.createDefaultFrameDropEffect(30)),
+                    Composition.HDR_MODE_TONE_MAP_HDR_TO_SDR_USING_OPEN_GL);}
+            catch(Exception error){destination.delete();callback.failed("Không thể chuẩn bị đoạn nhạc đã chọn. Bản chỉnh sửa vẫn được giữ.");return;}
+        }else{
+            EditedMediaItemSequence sequence=mute
+                    ?EditedMediaItemSequence.withVideoFrom(Collections.singletonList(edited))
+                    :EditedMediaItemSequence.withAudioAndVideoFrom(Collections.singletonList(edited));
+            composition=new Composition.Builder(sequence)
+                    .setHdrMode(Composition.HDR_MODE_TONE_MAP_HDR_TO_SDR_USING_OPEN_GL).build();
+        }
         transformer = new Transformer.Builder(context).setVideoMimeType(MimeTypes.VIDEO_H264)
                 .setAudioMimeType(MimeTypes.AUDIO_AAC).setEncoderFactory(encoder)
                 .addListener(new Transformer.Listener() {
@@ -73,11 +95,6 @@ public final class ReelClipExporter {
                         callback.failed("Không thể xuất đoạn video trên thiết bị này. Hãy chọn đoạn khác hoặc thử video khác.");
                     }
                 }).build();
-        EditedMediaItemSequence sequence = mute
-                ? EditedMediaItemSequence.withVideoFrom(Collections.singletonList(edited))
-                : EditedMediaItemSequence.withAudioAndVideoFrom(Collections.singletonList(edited));
-        Composition composition = new Composition.Builder(sequence)
-                .setHdrMode(Composition.HDR_MODE_TONE_MAP_HDR_TO_SDR_USING_OPEN_GL).build();
         try { transformer.start(composition, destination.getAbsolutePath()); }
         catch (RuntimeException error) { cancel();callback.failed("Không thể bắt đầu xuất video. Chỉnh sửa của bạn vẫn được giữ."); }
     }

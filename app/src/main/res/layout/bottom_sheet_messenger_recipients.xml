@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:orientation="vertical" android:padding="20dp">
+    <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:text="Gửi qua Messenger" android:textColor="@color/text_primary"
+        android:textSize="20sp" android:textStyle="bold" />
+    <TextView android:id="@+id/share_recipients_count" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:layout_marginTop="4dp"
+        android:text="Chọn cuộc trò chuyện để gửi bài viết" android:textColor="@color/text_secondary" android:textSize="13sp" />
+    <com.google.android.material.textfield.TextInputLayout
+        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+        android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="16dp"
+        android:hint="Tìm người nhận" app:startIconDrawable="@drawable/ic_search"
+        app:boxCornerRadiusTopStart="16dp" app:boxCornerRadiusTopEnd="16dp"
+        app:boxCornerRadiusBottomStart="16dp" app:boxCornerRadiusBottomEnd="16dp">
+        <com.google.android.material.textfield.TextInputEditText android:id="@+id/share_recipients_search"
+            android:layout_width="match_parent" android:layout_height="wrap_content" android:singleLine="true"
+            android:inputType="text" android:imeOptions="actionDone" android:textSize="15sp"
+            android:textColor="@color/text_primary" />
+    </com.google.android.material.textfield.TextInputLayout>
+    <ProgressBar android:id="@+id/share_recipients_loading" style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent" android:layout_height="4dp" android:indeterminate="true"
+        android:layout_marginTop="12dp" android:visibility="invisible" />
+    <TextView android:id="@+id/share_recipients_status" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:paddingVertical="8dp" android:textSize="13sp"
+        android:textColor="@color/text_secondary" android:accessibilityLiveRegion="polite" />
+    <androidx.recyclerview.widget.RecyclerView android:id="@+id/share_recipients_list"
+        android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1"
+        android:clipToPadding="false" android:paddingBottom="8dp" />
+    <com.google.android.material.button.MaterialButton android:id="@+id/share_recipients_more"
+        style="@style/Widget.Material3.Button.TextButton" android:layout_width="match_parent"
+        android:layout_height="48dp" android:text="Tải thêm cuộc trò chuyện" android:textAllCaps="false" android:visibility="gone" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:gravity="center_vertical" android:layout_marginTop="8dp">
+        <com.google.android.material.button.MaterialButton android:id="@+id/share_recipients_cancel"
+            style="@style/Widget.Meeto.Button.Soft" android:layout_width="0dp" android:layout_height="48dp"
+            android:layout_weight="1" android:layout_marginEnd="12dp" android:text="Hủy" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/share_recipients_send"
+            android:layout_width="0dp" android:layout_height="48dp" android:layout_weight="1"
+            android:text="Gửi" android:enabled="false" />
+    </LinearLayout>
+</LinearLayout>

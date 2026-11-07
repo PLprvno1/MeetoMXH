@@ -1,16 +1,45 @@
 package com.example.meetomxh.supabase;
+
 import com.example.meetomxh.models.Comment;
-import org.json.*;
-import java.util.*;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/** Read-only client for the ACL-filtered, cursor-paged comment tree RPC. */
 public final class CommentClient {
- public static List<Comment> thread(String post,String parent)throws Exception{
-  List<Comment> rows=new ArrayList<>();Map<String,JSONObject> authors=new HashMap<>();JSONObject args=Api.obj("p_post_id",post,"p_parent_id",parent,"p_limit",50);
-  while(true){JSONArray page=(JSONArray)RpcClient.call("list_comments",args);for(int i=0;i<page.length();i++){Comment comment=Dto.comment(page.getJSONObject(i));String author=comment.getAuthorUid();if(!authors.containsKey(author)){JSONObject profile=null;try{profile=RpcClient.object("get_profile",Api.obj("p_target",author));}catch(ErrorMapper.HttpError e){if(e.status!=403&&e.status!=404)throw e;}authors.put(author,profile);}JSONObject profile=authors.get(author);if(profile!=null){comment.setAuthorName(profile.optString("display_name","Thành viên"));comment.setAuthorAvatar(Dto.asset(Dto.nullable(profile,"avatar_asset_id")));comment.setAuthorAvatarPreset(profile.optString("avatar_preset","neutral"));}rows.add(comment);}if(page.length()<50)break;JSONObject last=page.getJSONObject(page.length()-1);args.put("p_after_time",last.getString("created_at")).put("p_after_id",last.getString("id"));}
-  return rows;
- } public static List<Comment> page(String post,String parent,String afterTime,String afterId,int limit)throws Exception{
-  JSONObject args=Api.obj("p_post_id",post,"p_parent_id",parent,"p_after_time",afterTime,"p_after_id",afterId,"p_limit",limit);
-  JSONArray page=(JSONArray)RpcClient.call("list_comments",args);List<Comment> out=new ArrayList<>();Map<String,JSONObject> authors=new HashMap<>();
-  for(int i=0;i<page.length();i++){Comment c=Dto.comment(page.getJSONObject(i));String author=c.getAuthorUid();if(author!=null&&!authors.containsKey(author)){JSONObject profile=null;try{profile=RpcClient.object("get_profile",Api.obj("p_target",author));}catch(ErrorMapper.HttpError e){if(e.status!=403&&e.status!=404)throw e;}authors.put(author,profile);}JSONObject profile=authors.get(author);if(profile!=null){c.setAuthorName(profile.optString("display_name","Thành viên"));c.setAuthorAvatar(Dto.asset(Dto.nullable(profile,"avatar_asset_id")));c.setAuthorAvatarPreset(profile.optString("avatar_preset","neutral"));}out.add(c);}
-  return out;
- }
+    private CommentClient() { }
+
+    public static final class TreePage {
+        public final List<Comment> items;
+        public final boolean hasMore;
+
+        private TreePage(List<Comment> items, boolean hasMore) {
+            this.items = items;
+            this.hasMore = hasMore;
+        }
+    }
+
+    public static TreePage treePage(String postId, String parentId, int displayDepth,
+                                    String afterTime, String afterId, int limit) throws Exception {
+        JSONObject args = Api.obj(
+                "p_post_id", postId,
+                "p_parent_id", parentId,
+                "p_display_depth", displayDepth,
+                "p_after_time", afterTime,
+                "p_after_id", afterId,
+                "p_limit", limit);
+        JSONObject response = RpcClient.object("list_comment_tree", args);
+        JSONArray rows = response.optJSONArray("items");
+        List<Comment> comments = new ArrayList<>();
+        if (rows != null) {
+            for (int i = 0; i < rows.length(); i++) {
+                Comment comment = Dto.comment(rows.optJSONObject(i));
+                if (comment != null) comments.add(comment);
+            }
+        }
+        return new TreePage(comments, response.optBoolean("has_more", false));
+    }
 }

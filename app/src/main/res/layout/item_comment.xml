@@ -4,30 +4,37 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:paddingHorizontal="14dp"
-    android:paddingVertical="6dp">
+    android:paddingHorizontal="12dp"
+    android:paddingVertical="4dp">
+
+    <com.example.meetomxh.ui.CommentTreeGuideView
+        android:id="@+id/commentTreeGuide"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <com.google.android.material.imageview.ShapeableImageView
         android:id="@+id/ivCommentAvatar"
-        android:layout_width="38dp"
-        android:layout_height="38dp"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
         android:contentDescription="Avatar"
         android:scaleType="centerCrop"
         android:src="@drawable/ic_person"
-        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintStart_toEndOf="@id/commentTreeGuide"
         app:layout_constraintTop_toTopOf="parent"
         app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full" />
 
-    <!-- Comment Bubble -->
     <LinearLayout
         android:id="@+id/layoutCommentBubble"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="10dp"
+        android:layout_marginStart="8dp"
         android:background="@drawable/bg_pill_search"
         android:orientation="vertical"
-        android:paddingHorizontal="14dp"
-        android:paddingVertical="9dp"
+        android:paddingHorizontal="12dp"
+        android:paddingVertical="8dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@id/ivCommentAvatar"
         app:layout_constraintTop_toTopOf="parent">
@@ -36,67 +43,87 @@
             android:id="@+id/tvCommentAuthor"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:fontFamily="sans-serif-bold"
+            android:fontFamily="sans-serif-medium"
             android:textColor="@color/text_primary"
             android:textSize="13sp"
-            android:textStyle="bold"
             tools:text="Hồ Long" />
 
         <TextView
             android:id="@+id/tvCommentContent"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="2dp"
             android:lineSpacingExtra="2dp"
             android:textColor="@color/text_primary"
             android:textSize="14sp"
             tools:text="Bài viết rất hay và ý nghĩa!" />
-
     </LinearLayout>
 
     <TextView
         android:id="@+id/tvCommentTime"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="14dp"
-        android:layout_marginTop="4dp"
+        android:layout_marginStart="12dp"
+        android:layout_marginTop="3dp"
         android:textColor="@color/text_secondary"
         android:textSize="11sp"
         app:layout_constraintStart_toStartOf="@id/layoutCommentBubble"
         app:layout_constraintTop_toBottomOf="@id/layoutCommentBubble"
-        tools:text="10 phút trước" />
+        tools:text="5 phút" />
 
-    <TextView
-        android:id="@+id/btnDeleteComment"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:padding="2dp"
-        android:text="Xóa"
-        android:textColor="@color/status_error"
-        android:textSize="11sp"
-        android:textStyle="bold"
-        android:visibility="gone"
-        app:layout_constraintBaseline_toBaselineOf="@id/tvCommentTime"
-        app:layout_constraintStart_toEndOf="@id/tvCommentTime" />
-
-    <TextView
-        android:id="@+id/btnCommentReaction"
+    <LinearLayout
+        android:id="@+id/layoutCommentActions"
         android:layout_width="wrap_content"
         android:layout_height="36dp"
-        android:layout_marginStart="8dp"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:clickable="true"
-        android:contentDescription="Thả cảm xúc cho bình luận; nhấn giữ để chọn cảm xúc"
-        android:focusable="true"
+        android:layout_marginStart="4dp"
         android:gravity="center_vertical"
-        android:minWidth="64dp"
-        android:paddingHorizontal="8dp"
-        android:text="Thích"
-        android:textColor="@color/text_secondary"
-        android:textSize="12sp"
-        android:textStyle="bold"
+        android:orientation="horizontal"
         app:layout_constraintStart_toStartOf="@id/layoutCommentBubble"
-        app:layout_constraintTop_toBottomOf="@id/tvCommentTime" />
+        app:layout_constraintTop_toBottomOf="@id/tvCommentTime"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <TextView
+            android:id="@+id/btnCommentReaction"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:contentDescription="Thả cảm xúc cho bình luận; nhấn giữ để chọn cảm xúc"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:minWidth="54dp"
+            android:paddingHorizontal="8dp"
+            android:text="Thích"
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/btnCommentReply"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:paddingHorizontal="8dp"
+            android:text="Trả lời"
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/btnCommentMore"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:contentDescription="Thao tác bình luận"
+            android:focusable="true"
+            android:gravity="center"
+            android:text="⋯"
+            android:textColor="@color/text_secondary"
+            android:textSize="20sp" />
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

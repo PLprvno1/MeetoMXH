@@ -370,7 +370,9 @@ public final class ReelsFragment extends Fragment {
         if(reelSheet!=null)return;
         LinearLayout content=sheetContent(post.getUserName()==null?"Nội dung Reel":post.getUserName());
         ScrollView scroll=new ScrollView(requireContext());
-        TextView caption=sheetText(post.getContent(),16);caption.setTextIsSelectable(true);
+        String captionText=post.getContent();if(!post.getMusicLabel().isEmpty())captionText=captionText.isEmpty()?post.getMusicLabel():captionText+"\n"+post.getMusicLabel();
+        TextView caption=sheetText(captionText,16);caption.setTextIsSelectable(true);
+        if(post.getMusicMetadata()!=null)caption.setOnClickListener(v->com.example.meetomxh.music.MusicAttribution.showLinks(v.getContext(),post.getMusicMetadata()));
         scroll.addView(caption);content.addView(scroll,new LinearLayout.LayoutParams(-1,Math.min(dp(360),getResources().getDisplayMetrics().heightPixels/2)));
         openSheet(content);
     }
@@ -523,7 +525,9 @@ public final class ReelsFragment extends Fragment {
                 h.cover.setVisibility(View.VISIBLE);imageRequests.load(p.getReelCoverAssetId()==null?null:Dto.asset(p.getReelCoverAssetId())).placeholder(R.drawable.ic_reel_video).error(R.drawable.ic_reel_video).fitCenter().into(h.cover);
             }else h.cover.setVisibility(View.GONE);
             h.name.setText(p.getUserName()==null?"Meeto":p.getUserName());AvatarViews.load(h.avatar,p.getUserAvatar(),p.getUserAvatarPreset());
-            h.caption.setText(p.getContent());h.caption.setVisibility(android.text.TextUtils.isEmpty(p.getContent())?View.GONE:View.VISIBLE);
+            String musicLabel=p.getMusicLabel();String captionText=p.getContent();if(!musicLabel.isEmpty())captionText=captionText.isEmpty()?musicLabel:captionText+"\n"+musicLabel;
+            h.caption.setText(captionText);h.caption.setVisibility(android.text.TextUtils.isEmpty(captionText)?View.GONE:View.VISIBLE);
+            h.caption.setOnClickListener(v->{if(p.getMusicMetadata()!=null)com.example.meetomxh.music.MusicAttribution.showLinks(v.getContext(),p.getMusicMetadata());});
             bindCaption(h,p);
             h.captionExpand.setOnClickListener(v->showCaption(p));
             h.like.setImageResource(p.isLiked() ? R.drawable.ic_like_filled : R.drawable.ic_like_outline);

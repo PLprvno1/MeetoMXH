@@ -36,10 +36,16 @@
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:paddingHorizontal="12dp">
             <CheckBox android:id="@+id/reel_mute_audio" android:layout_width="0dp" android:layout_height="48dp" android:layout_weight="1"
                 android:text="Tắt âm thanh" android:textColor="#FFFFFF" android:buttonTint="#FF7B9E" />
+            <Button android:id="@+id/reel_music_button" style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content" android:layout_height="48dp" android:text="Âm nhạc"
+                android:textAllCaps="false" android:textColor="#FF7B9E" />
             <Button android:id="@+id/reel_pick_video" style="@style/Widget.Material3.Button.TextButton"
                 android:layout_width="wrap_content" android:layout_height="48dp" android:text="Đổi video"
                 android:textAllCaps="false" android:textColor="#FFFFFF" />
         </LinearLayout>
+        <TextView android:id="@+id/reel_music_info" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:paddingHorizontal="16dp" android:paddingBottom="6dp" android:textColor="#FFB3CD"
+            android:textSize="12sp" android:maxLines="1" android:ellipsize="end" android:visibility="gone" />
     </LinearLayout>
 
     <ScrollView android:id="@+id/reel_publishing_panel" android:layout_width="match_parent" android:layout_height="0dp"

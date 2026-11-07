@@ -79,6 +79,7 @@
         <activity android:name=".VideoPlayerActivity" android:exported="false" />
         <activity android:name=".ReelsCameraActivity" android:exported="false" android:screenOrientation="portrait" android:configChanges="orientation|screenSize|keyboardHidden" />
         <activity android:name=".CreateReelActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".music.OpenverseMusicPickerActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".ProfileAlbumsActivity" android:exported="false" />
         <activity android:name=".ProfilePhotoViewerActivity" android:exported="false" />
 

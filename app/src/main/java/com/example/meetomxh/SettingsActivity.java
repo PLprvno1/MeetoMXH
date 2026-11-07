@@ -44,10 +44,9 @@ public class SettingsActivity extends AppCompatActivity {
         binding.rowBlocked.setOnClickListener(v -> blockedUsers());
         binding.rowNotificationsSetting.setOnClickListener(v -> notificationSettings());
         binding.rowPlatformModeration.setVisibility(View.GONE);
-        Api.run(() -> RpcClient.call("list_platform_reports", Api.obj("p_state","open","p_after_time",JSONObject.NULL,
-                "p_after_id",JSONObject.NULL,"p_limit",1)), new Api.Callback<Object>() {
-            @Override public void success(Object value) { if(!isFinishing()) binding.rowPlatformModeration.setVisibility(View.VISIBLE); }
-            @Override public void error(String error) { if(!isFinishing()) binding.rowPlatformModeration.setVisibility(View.GONE); }
+        Api.run(() -> RpcClient.call("admin_get_capabilities", Api.obj()), new Api.Callback<Object>() {
+            @Override public void success(Object value) { if(!isFinishing() && !isDestroyed() && value instanceof JSONObject && ((JSONObject)value).optInt("contract_version")==2) binding.rowPlatformModeration.setVisibility(((JSONObject)value).optBoolean("can_review_reports")?View.VISIBLE:View.GONE); }
+            @Override public void error(String error) { if(!isFinishing() && !isDestroyed()) binding.rowPlatformModeration.setVisibility(View.GONE); }
         });
         binding.rowPlatformModeration.setOnClickListener(v -> startActivity(new Intent(this, ModerationDashboardActivity.class)));
         binding.rowDeleteAccount.setOnClickListener(v -> requestDeletion());

@@ -88,7 +88,7 @@ public final class StoryClient {
     private static Story parse(JSONObject o){
         Story s=new Story();s.setId(requireId(Dto.nullable(o,"id"),"Mã Story"));s.setAuthorId(requireId(Dto.nullable(o,"author_id"),"Người đăng"));s.setUserName(o.optString("author_name","Meeto"));
         s.setAvatarUrl(Dto.asset(Dto.nullable(o,"avatar_asset_id")));s.setAvatarPreset(o.optString("avatar_preset","neutral"));
-        s.setImageUrl(Dto.asset(requireId(Dto.nullable(o,"media_asset_id"),"Media Story")));s.setMediaType(o.optString("mime_type"));s.setCaption(o.optString("caption",""));
+        s.setImageUrl(Dto.asset(requireId(Dto.nullable(o,"media_asset_id"),"Media Story")));s.setMediaType(o.optString("mime_type"));s.setCaption(o.optString("caption",""));JSONObject music=o.optJSONObject("music_metadata");if(music!=null)s.setMusic(music.optString("title",""),music.optString("creator",""));
         s.setAudience(o.optString("audience","private"));s.setViewed(o.optBoolean("viewed"));
         s.setCreatedAt(o.optString("created_at"));s.setExpiresAt(o.optString("expires_at"));s.setOwn(o.optBoolean("own"));s.setLiked(o.optBoolean("liked"));s.setViewsCount(o.optInt("views_count"));return s;
     }

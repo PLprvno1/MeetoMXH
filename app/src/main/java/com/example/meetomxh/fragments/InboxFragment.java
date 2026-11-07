@@ -55,6 +55,8 @@ public class InboxFragment extends Fragment {
     private Runnable pendingConversationSearch;
     private long searchGeneration;
     private boolean searchingConversations;
+    private final Map<String, Boolean> muteOverrides = new HashMap<>(), archiveOverrides = new HashMap<>();
+    private final Set<String> blockedConversations = new HashSet<>();
 
     @Nullable
     @Override
@@ -78,7 +80,7 @@ public class InboxFragment extends Fragment {
         currentUid = SessionManager.getInstance().getCurrentUser() == null
                 ? null : SessionManager.getInstance().getCurrentUser().getUid();
         binding.rvInbox.setLayoutManager(new LinearLayoutManager(requireContext()));
-        adapter = new InboxAdapter(this::openChat);
+        adapter = new InboxAdapter(this::openChat, this::showConversationActions);
         binding.rvInbox.setAdapter(adapter);
         binding.etSearchConversations.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
@@ -103,6 +105,9 @@ public class InboxFragment extends Fragment {
                 if (!isCurrentChatsListener(listenerGeneration)) return;
                 chatsLoaded = true;
                 allChats = items == null ? new ArrayList<>() : new ArrayList<>(items);
+                Set<String> incomingIds = new HashSet<>(); for (Chat chat : allChats) incomingIds.add(chat.getChatId());
+                blockedConversations.removeIf(id -> !incomingIds.contains(id));
+                for (Chat chat : allChats) applyActionState(chat);
                 if (!searchingConversations) chats = new ArrayList<>(allChats);
                 sortChatsNewestFirst();
                 for (Chat chat : allChats) {
@@ -138,6 +143,7 @@ public class InboxFragment extends Fragment {
         profilesLoading.clear();
         chats.clear();
         allChats.clear();
+        muteOverrides.clear(); archiveOverrides.clear(); blockedConversations.clear();
         searchGeneration++;
         if (pendingConversationSearch != null) searchHandler.removeCallbacks(pendingConversationSearch);
         chatsLoaded = false;
@@ -175,6 +181,7 @@ public class InboxFragment extends Fragment {
 
         List<Inbox> rows = new ArrayList<>();
         for (Chat chat : chats) {
+            if (ConversationVisibility.isHidden(currentUid, chat) || blockedConversations.contains(chat.getChatId())) continue;
             if(chat.archived!=showArchived)continue;
             String otherUid = getOtherUid(chat);
             if (otherUid == null) continue;
@@ -219,6 +226,7 @@ public class InboxFragment extends Fragment {
             @Override public void onChats(List<Chat> result) {
                 if (binding == null || generation != searchGeneration) return;
                 chats = result == null ? new ArrayList<>() : new ArrayList<>(result);
+                for (Chat chat : chats) applyActionState(chat);
                 sortChatsNewestFirst();
                 for (Chat chat : chats) {
                     String other = getOtherUid(chat);
@@ -270,6 +278,30 @@ public class InboxFragment extends Fragment {
         intent.putExtra(ChatActivity.EXTRA_CHAT_ID, inbox.getId());
         if(!inbox.getId().equals(inbox.getOtherUid()))intent.putExtra(ChatActivity.EXTRA_OTHER_UID, inbox.getOtherUid());
         startActivity(intent);
+    }
+
+    private void applyActionState(Chat chat) {
+        Boolean muted = muteOverrides.get(chat.getChatId());
+        if (muted != null) { if (chat.muted == muted) muteOverrides.remove(chat.getChatId()); else chat.muted = muted; }
+        Boolean archived = archiveOverrides.get(chat.getChatId());
+        if (archived != null) { if (chat.archived == archived) archiveOverrides.remove(chat.getChatId()); else chat.archived = archived; }
+    }
+
+    private void showConversationActions(Inbox inbox) {
+        if (binding == null || !isAdded() || !java.util.Objects.equals(currentUid, SessionManager.getInstance().uid())) return;
+        Chat target = null;
+        for (Chat chat : chats) if (chat.getChatId().equals(inbox.getId())) { target = chat; break; }
+        if (target == null) return;
+        ConversationListActions.show(requireActivity(), target, inbox, (updated, action) -> {
+            if (binding == null || !isAdded()) return;
+            String id = updated.getChatId();
+            if (action == ConversationListActions.Change.MUTED) muteOverrides.put(id, updated.muted);
+            if (action == ConversationListActions.Change.ARCHIVED) archiveOverrides.put(id, updated.archived);
+            if (action == ConversationListActions.Change.BLOCKED) blockedConversations.add(id);
+            for (Chat chat : allChats) if (id.equals(chat.getChatId())) { chat.muted = updated.muted; chat.archived = updated.archived; }
+            for (Chat chat : chats) if (id.equals(chat.getChatId())) { chat.muted = updated.muted; chat.archived = updated.archived; }
+            renderChats();
+        });
     }
 
     private void showLoading() {

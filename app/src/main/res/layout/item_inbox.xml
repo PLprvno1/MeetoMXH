@@ -34,7 +34,7 @@
         android:textColor="@color/text_primary"
         android:textSize="15sp"
         android:textStyle="bold"
-        app:layout_constraintEnd_toStartOf="@id/tvTimestamp"
+        app:layout_constraintEnd_toStartOf="@id/ivInboxMuted"
         app:layout_constraintStart_toEndOf="@id/ivAvatar"
         app:layout_constraintTop_toTopOf="@id/ivAvatar"
         tools:text="meeto_friend" />
@@ -57,6 +57,11 @@
         tools:text="Đã gửi một tin nhắn · 2 giờ" />
 
     <!-- Timestamp -->
+    <ImageView android:id="@+id/ivInboxMuted" android:layout_width="16dp" android:layout_height="16dp"
+        android:layout_marginEnd="6dp" android:visibility="gone" android:src="@drawable/ic_volume_off"
+        android:contentDescription="Đã tắt thông báo" app:tint="@color/text_secondary"
+        app:layout_constraintEnd_toStartOf="@id/tvTimestamp" app:layout_constraintTop_toTopOf="@id/tvChatName"
+        app:layout_constraintBottom_toBottomOf="@id/tvChatName" />
     <TextView
         android:id="@+id/tvTimestamp"
         android:layout_width="wrap_content"
