@@ -10,7 +10,6 @@ import com.bumptech.glide.Glide;
 import com.example.meetomxh.R;
 import com.example.meetomxh.ReportContentActivity;
 import com.example.meetomxh.StoryCreateActivity;
-import com.example.meetomxh.StoryViewActivity;
 import com.example.meetomxh.databinding.ItemStoryBinding;
 import com.example.meetomxh.models.Story;
 import com.example.meetomxh.ui.AvatarViews;
@@ -25,32 +24,33 @@ public class StoryAdapter extends RecyclerView.Adapter<StoryAdapter.Holder> {
     public int getItemCount(){return stories.size();}
     static final class Holder extends RecyclerView.ViewHolder {
         final ItemStoryBinding b; Holder(ItemStoryBinding binding){super(binding.getRoot());b=binding;}
-        void bind(Story s){b.tvStoryUserName.setText(s.getUserName());
+        void bind(Story s){
+            b.tvStoryUserName.setText(s.getUserName());
             AvatarViews.load(b.ivStoryAvatar,s.getAvatarUrl(),s.getAvatarPreset());
-            if (s.isAddStory()) {
-                b.layoutAvatarRing.setVisibility(View.GONE);
-                b.ivAddStoryIcon.setVisibility(View.VISIBLE);
-                b.ivStoryBg.setImageResource(R.drawable.ic_person);
-            } else {
-                b.layoutAvatarRing.setVisibility(View.VISIBLE);
-                b.ivAddStoryIcon.setVisibility(View.GONE);
-                b.layoutAvatarRing.setBackgroundResource(s.isViewed() ? R.drawable.shape_story_ring_seen : R.drawable.shape_story_ring);
-                b.layoutAvatarRing.setAlpha(s.isViewed() ? 0.7f : 1f);
-                Glide.with(b.ivStoryBg).load(s.getImageUrl()).placeholder(R.drawable.ic_media_error).error(R.drawable.ic_media_error).into(b.ivStoryBg);
+            String owner=s.getAuthorId();
+            if(s.isAddStory()&&!com.example.meetomxh.supabase.StoryClient.validId(owner)){
+                owner=com.example.meetomxh.supabase.SessionManager.getInstance().uid();s.setAuthorId(owner);
             }
-            b.getRoot().setOnClickListener(v -> {
-                b.getRoot().animate().scaleX(0.92f).scaleY(0.92f).setDuration(70)
-                        .withEndAction(() -> {
-                            b.getRoot().animate().scaleX(1.0f).scaleY(1.0f).setDuration(70).start();
-                            if (s.isAddStory()) v.getContext().startActivity(new Intent(v.getContext(), StoryCreateActivity.class));
-                            else v.getContext().startActivity(new Intent(v.getContext(), StoryViewActivity.class).putExtra(StoryViewActivity.EXTRA_AUTHOR_ID, s.getAuthorId()).putExtra(StoryViewActivity.EXTRA_STORY_ID, s.getId()));
-                        }).start();
-            });
-            b.getRoot().setOnLongClickListener(v->{if(s.isAddStory())return false;
+            String id=com.example.meetomxh.supabase.StoryClient.validId(s.getId())?s.getId():null;
+            View.OnClickListener open=com.example.meetomxh.ui.StoryNavigation.listener(owner,id);
+            b.getRoot().setOnClickListener(open);
+            b.tvStoryUserName.setOnClickListener(open);
+            b.layoutAvatarRing.setVisibility(View.VISIBLE);b.layoutAvatarRing.setAlpha(1f);
+            b.layoutAvatarRing.setOnClickListener(open);
+            com.example.meetomxh.ui.StoryRings.bindTray(b.layoutAvatarRing,b.ivStoryAvatar,s,open);
+            b.ivAddStoryIcon.setVisibility(s.isAddStory()?View.VISIBLE:View.GONE);
+            b.ivAddStoryIcon.setOnClickListener(s.isAddStory()?v->v.getContext().startActivity(new Intent(v.getContext(),StoryCreateActivity.class)):null);
+            b.ivAddStoryIcon.setClickable(s.isAddStory());
+            Glide.with(b.ivStoryBg).clear(b.ivStoryBg);
+            View.OnLongClickListener report=v->{if(s.isAddStory()||id==null)return false;
                 new android.app.AlertDialog.Builder(v.getContext()).setItems(new String[]{"Báo cáo tin"},(d,w)->
-                        v.getContext().startActivity(new Intent(v.getContext(),ReportContentActivity.class)
-                                .putExtra(ReportContentActivity.EXTRA_TARGET_TYPE,"story")
-                                .putExtra(ReportContentActivity.EXTRA_TARGET_ID,s.getId()))).show();return true;});
+                    v.getContext().startActivity(new Intent(v.getContext(),ReportContentActivity.class)
+                        .putExtra(ReportContentActivity.EXTRA_TARGET_TYPE,"story").putExtra(ReportContentActivity.EXTRA_TARGET_ID,id))).show();return true;
+            };
+            b.getRoot().setOnLongClickListener(report);b.ivStoryAvatar.setOnLongClickListener(report);
         }
+    }
+    @Override public void onViewRecycled(@NonNull Holder holder){
+        com.example.meetomxh.ui.StoryRings.unbind(holder.b.ivStoryAvatar);super.onViewRecycled(holder);
     }
 }

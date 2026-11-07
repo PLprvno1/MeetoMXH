@@ -165,6 +165,22 @@
             android:visibility="gone"
             app:singleLine="false" />
 
+        <TextView
+            android:id="@+id/tvReelEligibility"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@color/text_secondary"
+            android:textSize="13sp"
+            android:visibility="gone" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnEditReelVideo"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Cắt / chỉnh sửa video"
+            android:visibility="gone" />
+
         <!-- Image Preview Container -->
         <FrameLayout
             android:id="@+id/layoutImagePreview"

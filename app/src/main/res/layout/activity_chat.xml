@@ -9,6 +9,7 @@
 
     <!-- Top Messenger Header Bar -->
     <LinearLayout
+        android:id="@+id/layoutChatHeader"
         android:layout_width="match_parent"
         android:layout_height="60dp"
         android:background="@color/surface_bg"
@@ -193,6 +194,30 @@
         android:paddingVertical="6dp"
         android:visibility="gone">
 
+        <FrameLayout
+            android:layout_width="72dp"
+            android:layout_height="72dp"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/bg_chat_media"
+            android:clipToOutline="true">
+            <ImageView
+                android:id="@+id/ivComposerMediaPreview"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:contentDescription="Xem trước tệp đính kèm đã chọn" />
+            <TextView
+                android:id="@+id/tvComposerVideoBadge"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:layout_gravity="center"
+                android:background="@drawable/bg_icon_circle"
+                android:gravity="center"
+                android:text="▶"
+                android:textColor="@color/white"
+                android:visibility="gone" />
+        </FrameLayout>
+
         <ProgressBar
             android:id="@+id/progressImageUpload"
             style="?android:attr/progressBarStyleSmall"
@@ -300,7 +325,7 @@
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Stop recording"
+            android:contentDescription="Dừng ghi âm"
             android:src="@drawable/ic_stop"
             app:tint="@color/text_primary" />
         <ImageButton
@@ -308,7 +333,7 @@
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Cancel voice recording"
+            android:contentDescription="Hủy ghi âm"
             android:src="@drawable/ic_clear"
             app:tint="@color/status_error" />
     </LinearLayout>
@@ -328,7 +353,7 @@
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Preview voice message"
+            android:contentDescription="Nghe thử tin nhắn thoại"
             android:src="@drawable/ic_play"
             app:tint="@color/brand_blue" />
         <SeekBar
@@ -351,7 +376,7 @@
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Delete voice recording"
+            android:contentDescription="Xóa bản ghi âm"
             android:src="@drawable/ic_clear"
             app:tint="@color/status_error" />
         <ImageButton
@@ -359,13 +384,14 @@
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Send voice message"
+            android:contentDescription="Gửi tin nhắn thoại"
             android:src="@drawable/ic_send"
             app:tint="@color/brand_blue" />
     </LinearLayout>
 
     <!-- Bottom Input Composer Bar -->
     <LinearLayout
+        android:id="@+id/layoutChatComposer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/surface_bg"
@@ -390,7 +416,7 @@
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Hold to record a voice message"
+            android:contentDescription="Nhấn giữ để ghi âm tin nhắn thoại"
             android:padding="8dp"
             android:src="@drawable/ic_mic"
             app:tint="@color/brand_blue" />

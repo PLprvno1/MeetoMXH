@@ -24,6 +24,7 @@ public class SavedPostsActivity extends AppCompatActivity {
     private String afterTime, afterId;
     private boolean loading, hasMore;
     private boolean loadFailed;
+    private final java.util.Map<String,Long> viewerVersions=new java.util.HashMap<>();
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
@@ -46,6 +47,12 @@ public class SavedPostsActivity extends AppCompatActivity {
         }, false);
         binding.rvSavedPosts.setLayoutManager(new LinearLayoutManager(this)); binding.rvSavedPosts.setAdapter(adapter);com.example.meetomxh.supabase.PostUpdates.counts.observe(this,c->{if(c!=null)adapter.updateCommentCount(c.id,c.comments);});
         binding.btnBack.setOnClickListener(v -> finish());
+        com.example.meetomxh.supabase.PostViewerUpdates.changes.observe(this,ignored->{
+            for(com.example.meetomxh.supabase.PostViewerUpdates.Event e:com.example.meetomxh.supabase.PostViewerUpdates.events()){
+                if(viewerVersions.getOrDefault(e.id,0L)>=e.revision)continue;viewerVersions.put(e.id,e.revision);
+                if(e.deleted||!e.saved)adapter.removePost(e.id);
+            }updateEmpty();
+        });
         binding.btnRefresh.setOnClickListener(v -> load(false));
         binding.btnRetry.setOnClickListener(v -> load(false));
         binding.btnLoadMore.setOnClickListener(v -> load(true));
@@ -57,7 +64,7 @@ public class SavedPostsActivity extends AppCompatActivity {
         load(false);
     }
 
-    @Override protected void onResume(){super.onResume();if(binding!=null&&!loading)load(false);}
+    @Override protected void onResume(){super.onResume();if(!com.example.meetomxh.supabase.PostViewerUpdates.returning(this)&&binding!=null&&!loading)load(false);}
     private void load(boolean append) {
         if (loading) return;
         if (!append) { afterTime=null; afterId=null; hasMore=false; }

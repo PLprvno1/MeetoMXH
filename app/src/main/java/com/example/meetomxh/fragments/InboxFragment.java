@@ -185,7 +185,7 @@ public class InboxFragment extends Fragment {
             else if ("image".equals(chat.getLastMessageType())) preview = "Ảnh";
             if (preview == null || preview.trim().isEmpty()) preview = "Chưa có tin nhắn";
             Inbox row = new Inbox(chat.getChatId(), otherUid,
-                    profile == null ? "Người dùng" : profile.name,
+                    "private".equals(chat.getType())&&chat.peerName!=null?chat.peerName:profile == null ? "Người dùng" : profile.name,
                     preview,
                     profile == null ? null : profile.avatarUrl,
                     formatServerTime(chat.getLastMessageAt()));

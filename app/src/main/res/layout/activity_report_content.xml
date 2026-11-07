@@ -198,7 +198,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="10dp"
                     android:layout_weight="1"
-                    android:text="Báo cáo được ghi nhận trực quan trên thiết bị và sẵn sàng đồng bộ hàng đợi kiểm duyệt (Moderation Queue) khi kích hoạt backend."
+                    android:text="Báo cáo được ghi nhận trên thiết bị và sẵn sàng đồng bộ với hàng đợi kiểm duyệt khi máy chủ được kích hoạt."
                     android:textColor="@color/text_secondary"
                     android:textSize="12sp" />
 

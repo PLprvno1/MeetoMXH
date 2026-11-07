@@ -1,22 +1,75 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:fillViewport="true">
- <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp">
-  <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Tạo Reel" android:textSize="24sp" android:textStyle="bold" android:textColor="@color/text_primary" />
-  <VideoView android:id="@+id/reel_preview" android:layout_width="match_parent" android:layout_height="320dp" android:layout_marginTop="12dp" android:background="#000000" />
-  <Button android:id="@+id/reel_pick_video" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Chọn video MP4" />
-  <TextView android:id="@+id/reel_trim_label" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Cắt video (tối đa 60 giây)" android:textStyle="bold" android:textColor="@color/text_primary" />
-  <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Điểm bắt đầu" android:textColor="@color/text_secondary" />
-  <SeekBar android:id="@+id/reel_trim_start" android:layout_width="match_parent" android:layout_height="wrap_content" />
-  <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Điểm kết thúc" android:textColor="@color/text_secondary" />
-  <SeekBar android:id="@+id/reel_trim_end" android:layout_width="match_parent" android:layout_height="wrap_content" />
-  <CheckBox android:id="@+id/reel_mute_audio" android:layout_width="match_parent" android:layout_height="48dp" android:text="Tắt âm thanh trong Reel" />
-  <ImageView android:id="@+id/reel_cover_preview" android:layout_width="120dp" android:layout_height="160dp" android:layout_gravity="center_horizontal" android:contentDescription="Khung ảnh bìa Reel" android:scaleType="centerCrop" android:background="#222222" />
-  <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:text="Chọn ảnh bìa" android:textColor="@color/text_secondary" />
-  <SeekBar android:id="@+id/reel_cover_position" android:layout_width="match_parent" android:layout_height="wrap_content" />
-  <EditText android:id="@+id/reel_caption" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="top" android:hint="Viết caption…" android:inputType="textCapSentences|textMultiLine" android:maxLength="2000" android:minLines="2" />
-  <Spinner android:id="@+id/reel_audience" android:layout_width="match_parent" android:layout_height="48dp" />
-  <ProgressBar android:id="@+id/reel_upload_progress" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="100" android:visibility="gone" style="@android:style/Widget.ProgressBar.Horizontal" />
-  <TextView android:id="@+id/reel_status" android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="6dp" android:textColor="@color/text_secondary" />
-  <Button android:id="@+id/reel_publish" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Đăng Reel" />
- </LinearLayout>
-</ScrollView>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto" android:id="@+id/reel_create_root"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:orientation="vertical" android:background="#101012">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="56dp" android:gravity="center_vertical" android:paddingHorizontal="8dp">
+        <ImageButton android:id="@+id/reel_back" android:layout_width="48dp" android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless" android:src="@drawable/ic_arrow_back"
+            android:tint="#FFFFFF" android:contentDescription="Quay lại" />
+        <TextView android:id="@+id/reel_header" android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:text="Chỉnh sửa video" android:textColor="#FFFFFF" android:textSize="19sp" android:textStyle="bold" />
+        <Button android:id="@+id/reel_next" style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="wrap_content" android:layout_height="48dp" android:text="Tiếp"
+            android:textColor="#FF7B9E" android:textAllCaps="false" />
+    </LinearLayout>
+
+    <LinearLayout android:id="@+id/reel_editor_panel" android:layout_width="match_parent"
+        android:layout_height="0dp" android:layout_weight="1" android:orientation="vertical">
+        <FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:background="#000000">
+            <androidx.media3.ui.PlayerView android:id="@+id/reel_preview"
+                android:layout_width="match_parent" android:layout_height="match_parent"
+                app:surface_type="surface_view" app:resize_mode="fit" app:use_controller="true" android:keepScreenOn="true" />
+            <ImageView android:id="@+id/reel_preview_poster" android:layout_width="match_parent" android:layout_height="match_parent"
+                android:scaleType="fitCenter" android:contentDescription="Ảnh xem trước video" android:src="@drawable/ic_reel_video" />
+            <ProgressBar android:id="@+id/reel_preview_loading" android:layout_width="40dp" android:layout_height="40dp"
+                android:layout_gravity="center" android:indeterminateTint="#FFFFFF" android:visibility="gone" />
+            <TextView android:id="@+id/reel_preview_error" android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_gravity="center" android:padding="24dp" android:gravity="center" android:textColor="#FFFFFF"
+                android:background="#DD18181B" android:minHeight="64dp" android:clickable="true" android:focusable="true" android:visibility="gone" />
+        </FrameLayout>
+        <TextView android:id="@+id/reel_trim_label" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:paddingHorizontal="16dp" android:paddingTop="12dp" android:text="Chọn đoạn tối đa 60 giây"
+            android:textColor="#EEEEEE" android:textSize="12sp" />
+        <com.example.meetomxh.ui.ReelTrimTimelineView android:id="@+id/reel_timeline"
+            android:layout_width="match_parent" android:layout_height="120dp" android:layout_marginHorizontal="8dp" />
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:paddingHorizontal="12dp">
+            <CheckBox android:id="@+id/reel_mute_audio" android:layout_width="0dp" android:layout_height="48dp" android:layout_weight="1"
+                android:text="Tắt âm thanh" android:textColor="#FFFFFF" android:buttonTint="#FF7B9E" />
+            <Button android:id="@+id/reel_pick_video" style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content" android:layout_height="48dp" android:text="Đổi video"
+                android:textAllCaps="false" android:textColor="#FFFFFF" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <ScrollView android:id="@+id/reel_publishing_panel" android:layout_width="match_parent" android:layout_height="0dp"
+        android:layout_weight="1" android:fillViewport="true" android:visibility="gone">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="20dp">
+            <ImageView android:id="@+id/reel_cover_preview" android:layout_width="112dp" android:layout_height="160dp"
+                android:layout_gravity="center_horizontal" android:scaleType="centerCrop" android:src="@drawable/ic_reel_video"
+                android:background="#28282C" android:contentDescription="Ảnh bìa video thành phẩm" />
+            <TextView android:id="@+id/reel_file_info" android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:gravity="center" android:padding="12dp" android:textColor="#CCCCCC" />
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Ảnh bìa"
+                android:textColor="#FFFFFF" android:textStyle="bold" />
+            <SeekBar android:id="@+id/reel_cover_position" android:layout_width="match_parent" android:layout_height="48dp"
+                android:progressTint="#FF7B9E" android:thumbTint="#FF7B9E" android:contentDescription="Chọn khung ảnh bìa trong đoạn đã cắt" />
+            <EditText android:id="@+id/reel_caption" android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:minLines="3" android:maxLines="6" android:gravity="top" android:padding="12dp"
+                android:hint="Viết nội dung Reel…" android:textColor="#FFFFFF" android:textColorHint="#AAAAAA"
+                android:backgroundTint="#66666B" android:inputType="textCapSentences|textMultiLine" android:maxLength="2000" />
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="20dp"
+                android:text="Ai có thể xem?" android:textColor="#FFFFFF" android:textStyle="bold" />
+            <Spinner android:id="@+id/reel_audience" android:layout_width="match_parent" android:layout_height="56dp"
+                android:backgroundTint="#CCCCCC" android:popupBackground="@color/surface_bg" />
+        </LinearLayout>
+    </ScrollView>
+    <ProgressBar android:id="@+id/reel_upload_progress" style="@android:style/Widget.ProgressBar.Horizontal"
+        android:layout_width="match_parent" android:layout_height="4dp" android:max="100"
+        android:progressTint="#FF4275" android:visibility="gone" />
+    <TextView android:id="@+id/reel_status" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:paddingHorizontal="16dp" android:paddingVertical="8dp" android:maxLines="3" android:textSize="12sp" android:textColor="#CCCCCC" android:accessibilityLiveRegion="polite" />
+    <Button android:id="@+id/reel_publish" android:layout_width="match_parent" android:layout_height="56dp"
+        android:layout_marginHorizontal="16dp" android:layout_marginBottom="8dp" android:text="Đăng Reel"
+        android:textAllCaps="false" android:backgroundTint="#E52D63" android:textColor="#FFFFFF" android:visibility="gone" />
+</LinearLayout>

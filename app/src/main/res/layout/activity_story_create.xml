@@ -1,175 +1,37 @@
-<?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="#121212"
-    tools:context=".StoryCreateActivity">
-
-    <!-- Top Action Bar -->
-    <LinearLayout
-        android:id="@+id/layoutTopBar"
-        android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingHorizontal="12dp"
-        app:layout_constraintTop_toTopOf="parent">
-
-        <ImageButton
-            android:id="@+id/btnCloseStory"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Đóng"
-            android:padding="8dp"
-            android:src="@drawable/ic_clear"
-            app:tint="@color/white" />
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:layout_weight="1"
-            android:fontFamily="sans-serif-bold"
-            android:text="Tạo tin"
-            android:textColor="@color/white"
-            android:textSize="18sp" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnShareStory"
-            style="@style/Widget.Material3.Button.UnelevatedButton"
-            android:layout_width="wrap_content"
-            android:layout_height="36dp"
-            android:insetTop="0dp"
-            android:insetBottom="0dp"
-            android:text="Chia sẻ"
-            android:textAllCaps="false"
-            android:textColor="@color/white"
-            android:textSize="13sp"
-            android:textStyle="bold"
-            app:backgroundTint="@color/brand_blue"
-            app:cornerRadius="18dp" />
-
-    </LinearLayout>
-
-    <!-- Canvas / Preview Area -->
-    <FrameLayout
-        android:id="@+id/layoutStoryCanvas"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_margin="16dp"
-        android:background="@drawable/bg_card_rounded"
-        android:backgroundTint="#242526"
-        app:layout_constraintBottom_toTopOf="@id/layoutBottomControls"
-        app:layout_constraintTop_toBottomOf="@id/layoutTopBar">
-
-        <ImageView
-            android:id="@+id/ivStoryPreview"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:contentDescription="Xem trước tin"
-            android:scaleType="centerCrop"
-            android:visibility="gone" />
-
-        <!-- Placeholder Icon & Text -->
-        <LinearLayout
-            android:id="@+id/layoutStoryPlaceholder"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:gravity="center"
-            android:orientation="vertical"
-            android:padding="24dp">
-
-            <ImageView
-                android:layout_width="64dp"
-                android:layout_height="64dp"
-                android:contentDescription="@null"
-                android:src="@drawable/ic_camera"
-                app:tint="@color/brand_blue" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:fontFamily="sans-serif-bold"
-                android:gravity="center"
-                android:text="Chọn ảnh để tạo tin"
-                android:textColor="@color/white"
-                android:textSize="16sp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:gravity="center"
-                android:text="Tin của bạn sẽ hiển thị trong 24 giờ sau khi tính năng được hỗ trợ trên Cloud."
-                android:textColor="@color/text_secondary"
-                android:textSize="13sp" />
-
-        </LinearLayout>
-
-        <!-- Story Caption Input -->
-        <EditText
-            android:id="@+id/etStoryCaption"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_gravity="bottom"
-            android:layout_margin="16dp"
-            android:background="@drawable/bg_pill_search"
-            android:backgroundTint="#80000000"
-            android:hint="Thêm chú thích cho tin…"
-            android:inputType="textCapSentences|textMultiLine"
-            android:maxLines="3"
-            android:paddingHorizontal="16dp"
-            android:paddingVertical="10dp"
-            android:textColor="@color/white"
-            android:textColorHint="#B0B3B8"
-            android:textSize="14sp" />
-
-    </FrameLayout>
-
-    <!-- Bottom Controls -->
-    <LinearLayout
-        android:id="@+id/layoutBottomControls"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center"
-        android:orientation="horizontal"
-        android:padding="16dp"
-        app:layout_constraintBottom_toBottomOf="parent">
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnPickStoryMedia"
-            style="@style/Widget.Material3.Button.UnelevatedButton"
-            android:layout_width="wrap_content"
-            android:layout_height="44dp"
-            android:layout_marginEnd="12dp"
-            android:backgroundTint="#3A3B3C"
-            android:text="Thư viện ảnh"
-            android:textAllCaps="false"
-            android:textColor="@color/white"
-            android:textSize="14sp"
-            app:cornerRadius="22dp"
-            app:icon="@drawable/ic_photo"
-            app:iconTint="@color/white" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnStoryPrivacy"
-            style="@style/Widget.Material3.Button.UnelevatedButton"
-            android:layout_width="wrap_content"
-            android:layout_height="44dp"
-            android:backgroundTint="#3A3B3C"
-            android:text="Quyền riêng tư"
-            android:textAllCaps="false"
-            android:textColor="@color/white"
-            android:textSize="14sp"
-            app:cornerRadius="22dp"
-            app:icon="@drawable/ic_bookmark"
-            app:iconTint="@color/white" />
-
-    </LinearLayout>
-
-</androidx.constraintlayout.widget.ConstraintLayout>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" android:id="@+id/story_create_root" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:background="#111114">
+ <LinearLayout android:layout_width="match_parent" android:layout_height="56dp" android:gravity="center_vertical" android:paddingHorizontal="8dp">
+  <ImageButton android:id="@+id/story_create_back" android:layout_width="48dp" android:layout_height="48dp" android:background="?attr/selectableItemBackgroundBorderless" android:src="@drawable/ic_arrow_back" android:tint="#FFFFFF" android:contentDescription="Quay lại" />
+  <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Story" android:textColor="#FFFFFF" android:textSize="22sp" android:textStyle="bold" />
+  <ImageButton android:id="@+id/story_undo" android:layout_width="48dp" android:layout_height="48dp" android:background="?attr/selectableItemBackgroundBorderless" android:src="@drawable/ic_story_undo" android:tint="#FFFFFF" android:contentDescription="Hoàn tác" />
+  <ImageButton android:id="@+id/story_redo" android:layout_width="48dp" android:layout_height="48dp" android:background="?attr/selectableItemBackgroundBorderless" android:src="@drawable/ic_story_redo" android:tint="#FFFFFF" android:contentDescription="Làm lại" />
+  <Button android:id="@+id/story_next" style="@style/Widget.Material3.Button.TextButton" android:layout_width="wrap_content" android:layout_height="48dp" android:text="Tiếp" android:textAllCaps="false" android:textColor="#C69AFF" />
+ </LinearLayout>
+ <HorizontalScrollView android:id="@+id/story_tools" android:layout_width="match_parent" android:layout_height="56dp" android:scrollbars="none">
+  <LinearLayout android:layout_width="wrap_content" android:layout_height="match_parent" android:gravity="center_vertical">
+   <Button android:id="@+id/story_text_tool" style="@style/Widget.Material3.Button.TextButton" android:layout_width="64dp" android:layout_height="48dp" android:text="Aa" android:textColor="#FFFFFF" android:contentDescription="Thêm văn bản" />
+   <com.google.android.material.button.MaterialButton android:id="@+id/story_brush_tool" style="@style/Widget.Material3.Button.TextButton" android:layout_width="wrap_content" android:layout_height="48dp" app:icon="@drawable/ic_story_brush" app:iconTint="#FFFFFF" android:text="Vẽ" android:textColor="#FFFFFF" android:textAllCaps="false" />
+   <com.google.android.material.button.MaterialButton android:id="@+id/story_filter_tool" style="@style/Widget.Material3.Button.TextButton" android:layout_width="wrap_content" android:layout_height="48dp" app:icon="@drawable/ic_story_filter" app:iconTint="#FFFFFF" android:text="Filter" android:textColor="#FFFFFF" android:textAllCaps="false" />
+   <com.google.android.material.button.MaterialButton android:id="@+id/story_crop_tool" style="@style/Widget.Material3.Button.TextButton" android:layout_width="wrap_content" android:layout_height="48dp" app:icon="@drawable/ic_story_crop" app:iconTint="#FFFFFF" android:text="9:16" android:textColor="#FFFFFF" android:textAllCaps="false" />
+   <com.google.android.material.button.MaterialButton android:id="@+id/story_rotate_tool" style="@style/Widget.Material3.Button.TextButton" android:layout_width="wrap_content" android:layout_height="48dp" app:icon="@drawable/ic_story_rotate" app:iconTint="#FFFFFF" android:text="Xoay" android:textColor="#FFFFFF" android:textAllCaps="false" />
+  </LinearLayout>
+ </HorizontalScrollView>
+ <androidx.constraintlayout.widget.ConstraintLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:background="#050505">
+  <FrameLayout android:id="@+id/story_stage" android:layout_width="0dp" android:layout_height="0dp" app:layout_constraintDimensionRatio="9:16" app:layout_constraintTop_toTopOf="parent" app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toEndOf="parent">
+   <androidx.media3.ui.PlayerView android:id="@+id/story_edit_player" android:layout_width="match_parent" android:layout_height="match_parent" app:surface_type="surface_view" app:resize_mode="fit" app:use_controller="false" android:visibility="gone" />
+   <ImageView android:id="@+id/story_export_preview" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:contentDescription="Story thành phẩm" android:visibility="gone" />
+   <com.example.meetomxh.ui.StoryCanvasView android:id="@+id/story_canvas" android:layout_width="match_parent" android:layout_height="match_parent" />
+  </FrameLayout>
+ </androidx.constraintlayout.widget.ConstraintLayout>
+ <TextView android:id="@+id/story_create_status" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingHorizontal="16dp" android:paddingVertical="6dp" android:maxLines="3" android:textSize="12sp" android:textColor="#CCCCCC" android:text="Chọn ảnh/video hoặc mở camera để tạo tin" android:accessibilityLiveRegion="polite" />
+ <com.example.meetomxh.ui.ReelTrimTimelineView android:id="@+id/story_trim" android:layout_width="match_parent" android:layout_height="104dp" android:visibility="gone" />
+ <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical">
+  <Button android:id="@+id/story_pick" style="@style/Widget.Material3.Button.TextButton" android:layout_width="0dp" android:layout_height="48dp" android:layout_weight="1" android:text="Thư viện" android:textColor="#FFFFFF" android:textAllCaps="false" />
+  <ImageButton android:id="@+id/story_camera" android:layout_width="48dp" android:layout_height="48dp" android:background="?attr/selectableItemBackgroundBorderless" android:src="@drawable/ic_camera" android:tint="#FFFFFF" android:contentDescription="Chụp ảnh hoặc quay video Story" />
+  <ImageButton android:id="@+id/story_edit_play" android:layout_width="48dp" android:layout_height="48dp" android:background="?attr/selectableItemBackgroundBorderless" android:src="@drawable/ic_reel_pause" android:tint="#FFFFFF" android:contentDescription="Phát hoặc tạm dừng video" android:visibility="gone" />
+  <CheckBox android:id="@+id/story_edit_mute" android:layout_width="wrap_content" android:layout_height="48dp" android:text="Tắt tiếng" android:textColor="#FFFFFF" android:buttonTint="#C69AFF" android:visibility="gone" />
+  <Button android:id="@+id/story_privacy" android:visibility="gone" style="@style/Widget.Material3.Button.TextButton" android:layout_width="wrap_content" android:layout_height="48dp" android:text="Người theo dõi" android:textColor="#FFFFFF" android:textAllCaps="false" />
+ </LinearLayout>
+ <EditText android:id="@+id/story_create_caption" android:visibility="gone" android:layout_width="match_parent" android:layout_height="48dp" android:paddingHorizontal="16dp" android:hint="Mô tả Story…" android:textColor="#FFFFFF" android:textColorHint="#AAAAAA" android:maxLength="2000" android:singleLine="true" android:inputType="textCapSentences" />
+ <ProgressBar android:id="@+id/story_create_progress" style="@android:style/Widget.ProgressBar.Horizontal" android:layout_width="match_parent" android:layout_height="4dp" android:max="100" android:visibility="gone" />
+ <Button android:id="@+id/story_publish" android:visibility="gone" android:layout_width="match_parent" android:layout_height="52dp" android:layout_marginHorizontal="12dp" android:text="Xem trước" android:textAllCaps="false" android:textColor="#FFFFFF" android:backgroundTint="#823CE0" />
+</LinearLayout>

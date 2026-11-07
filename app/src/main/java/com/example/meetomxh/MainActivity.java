@@ -31,10 +31,12 @@ public class MainActivity extends AppCompatActivity {
     private ActivityMainBinding binding;
     private ActionBarDrawerToggle toggle;
     private Observer<JSONObject> badgeObserver;
+    private boolean reelReturnToOrigin;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        reelReturnToOrigin=getIntent().getBooleanExtra(com.example.meetomxh.supabase.PostDetails.EXTRA_REEL_RETURN,false);
         if (!getIntent().getBooleanExtra(RoleResolutionActivity.EXTRA_ROLE_VERIFIED, false)) {
             startActivity(new Intent(this, RoleResolutionActivity.class)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
@@ -98,7 +100,7 @@ public class MainActivity extends AppCompatActivity {
         toggle.syncState();
 
         // Default Fragment
-        if (savedInstanceState == null) {
+        if (savedInstanceState == null && !getIntent().hasExtra(com.example.meetomxh.supabase.PostDetails.EXTRA_REEL_ID)) {
             loadFragment(new FeedFragment());
         }
 
@@ -193,6 +195,12 @@ public class MainActivity extends AppCompatActivity {
             public void handleOnBackPressed() {
                 if (binding.drawerLayout.isDrawerOpen(GravityCompat.START)) {
                     binding.drawerLayout.closeDrawer(GravityCompat.START);
+                } else if(getSupportFragmentManager().findFragmentById(R.id.fragment_container) instanceof ReelsFragment){
+                    if(getSupportFragmentManager().isStateSaved())return;
+                    // Toolbar Back dispatches here too. One exit path stops playback before navigation.
+                    ((ReelsFragment)getSupportFragmentManager().findFragmentById(R.id.fragment_container)).leaveReels();
+                    if(reelReturnToOrigin){finish();return;}
+                    binding.bottomNavigation.setSelectedItemId(R.id.nav_feed);
                 } else {
                     setEnabled(false);
                     try {
@@ -206,10 +214,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void loadFragment(Fragment fragment) {
+        androidx.fragment.app.FragmentManager manager=getSupportFragmentManager();
+        if(isFinishing()||manager.isDestroyed()||manager.isStateSaved())return;
+        Fragment current=manager.findFragmentById(R.id.fragment_container);
+        if(current instanceof ReelsFragment)((ReelsFragment)current).leaveReels();
         setReelsImmersive(false);
-        getSupportFragmentManager().popBackStackImmediate(null,
+        manager.popBackStack(null,
                 androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE);
-        getSupportFragmentManager().beginTransaction()
+        manager.beginTransaction()
                 .replace(R.id.fragment_container, fragment)
                 .commit();
     }

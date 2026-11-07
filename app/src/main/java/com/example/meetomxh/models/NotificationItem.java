@@ -21,6 +21,7 @@ public final class NotificationItem {
         return "friend_request".equals(kind)||"friend_accepted".equals(kind)||"group".equals(kind)||"memories".equals(kind)||"marketplace".equals(kind);
     }
     public String message() {
+        if("story".equals(kind)&&"story".equals(targetType))return actorName+" đã thích tin của bạn.";
         return messageFor(kind, actorName);
     }
     static String messageFor(String kind, String actorName) {

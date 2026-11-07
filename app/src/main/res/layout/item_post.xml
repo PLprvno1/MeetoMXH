@@ -182,7 +182,7 @@
                     android:id="@+id/ivVideoThumbnail"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:contentDescription="Video thumbnail"
+                    android:contentDescription="Ảnh xem trước video"
                     android:scaleType="centerCrop" />
 
                 <ImageView

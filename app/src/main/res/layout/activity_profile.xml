@@ -108,7 +108,7 @@
                 <FrameLayout
                     android:layout_width="78dp"
                     android:layout_height="78dp"
-                    android:background="@drawable/shape_story_ring"
+                    android:background="@drawable/shape_story_ring_seen"
                     android:padding="2.5dp">
 
                     <com.google.android.material.imageview.ShapeableImageView

@@ -47,7 +47,7 @@ public class ModerationDashboardActivity extends AppCompatActivity {
 
     private void loadAudit() {
         form.removeViews(4, Math.max(0, form.getChildCount()-4));
-        Forms.status(this,"Đang tải audit log…");
+        Forms.status(this,"Đang tải nhật ký kiểm duyệt…");
         Api.run(()->RpcClient.call("get_platform_audit",Api.obj("p_limit",50)),new Api.Callback<Object>(){
             @Override public void success(Object value){
                 Forms.status(ModerationDashboardActivity.this,"");
@@ -60,7 +60,7 @@ public class ModerationDashboardActivity extends AppCompatActivity {
                     item.setPadding(12,16,12,16);form.addView(item);
                 }
             }
-            @Override public void error(String error){Forms.status(ModerationDashboardActivity.this,"Không thể tải audit log: "+error);}
+            @Override public void error(String error){Forms.status(ModerationDashboardActivity.this,"Không thể tải nhật ký kiểm duyệt: "+error);}
         });
     }
 
@@ -73,11 +73,11 @@ public class ModerationDashboardActivity extends AppCompatActivity {
 
     private void showReport(JSONObject report) {
         boolean unassigned=report.isNull("assigned_to")||report.optString("assigned_to").isEmpty();
-        String body="Type: "+report.optString("target_kind")+"\nTarget: "+report.optString("target_id")
-                +"\nReason: "+report.optString("reason_code")+"\nDetails: "+report.optString("details")
-                +"\nState: "+report.optString("state");
-        new AlertDialog.Builder(this).setTitle("Report").setMessage(body)
-                .setNeutralButton("Close",null).setPositiveButton(unassigned?"Claim report":"Review…",
+        String body="Loại: "+report.optString("target_kind")+"\nĐối tượng: "+report.optString("target_id")
+                +"\nLý do: "+report.optString("reason_code")+"\nChi tiết: "+report.optString("details")
+                +"\nTrạng thái: "+report.optString("state");
+        new AlertDialog.Builder(this).setTitle("Báo cáo").setMessage(body)
+                .setNeutralButton("Đóng",null).setPositiveButton(unassigned?"Nhận xử lý":"Xem xét…",
                         (d,w)->{if(unassigned)claimReport(report);else moderate(report);}).show();
     }
 
@@ -90,14 +90,14 @@ public class ModerationDashboardActivity extends AppCompatActivity {
                 }catch(org.json.JSONException ignored){}
                 moderate(report);
             }
-            @Override public void error(String error){Forms.status(ModerationDashboardActivity.this,"Could not claim report: "+error);load();}
+                    @Override public void error(String error){Forms.status(ModerationDashboardActivity.this,"Không thể nhận xử lý báo cáo: "+error);load();}
         });
     }
     private void moderate(JSONObject report) {
         EditText reason=new EditText(this);reason.setHint("Lý do xử lý (bắt buộc)");reason.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_FLAG_MULTI_LINE);
         AlertDialog dialog=new AlertDialog.Builder(this).setTitle("Ghi nhận quyết định")
                 .setMessage("Chỉ đóng báo cáo hoặc ghi nhận cảnh cáo.").setView(reason)
-                .setNegativeButton("Hủy",null).setNeutralButton("Warn",null).setPositiveButton("Dismiss",null).create();
+                .setNegativeButton("Hủy",null).setNeutralButton("Cảnh cáo",null).setPositiveButton("Bác bỏ",null).create();
         dialog.setOnShowListener(ignored->{
             dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener(v->submitDecision(report,"warn",reason,dialog));
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v->submitDecision(report,"dismiss",reason,dialog));

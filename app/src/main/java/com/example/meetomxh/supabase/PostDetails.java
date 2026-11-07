@@ -16,6 +16,7 @@ import java.util.Set;
 public final class PostDetails {
     public static final String EXTRA_POST_ID = "post_detail_id";
     public static final String EXTRA_REEL_ID = "target_reel_id";
+    public static final String EXTRA_REEL_RETURN = "reel_return_to_origin";
     private PostDetails() { }
 
     public static void show(Activity activity, String selectedId) {
@@ -25,17 +26,37 @@ public final class PostDetails {
                 if (activity.isFinishing() || activity.isDestroyed()) return;
                 String id = post.optString("id", "");
                 Intent intent;
-                if (post.optBoolean("is_reel", false)) {
+                if (isVideo(post)) {
                     intent = new Intent(activity, MainActivity.class)
                             .putExtra(com.example.meetomxh.RoleResolutionActivity.EXTRA_ROLE_VERIFIED, true)
+                            .putExtra(EXTRA_REEL_RETURN, true)
                             .putExtra(EXTRA_REEL_ID, id);
                 } else {
                     intent = new Intent(activity, PostDetailsActivity.class).putExtra(EXTRA_POST_ID, id);
                 }
                 activity.startActivity(intent);
+                if(isVideo(post))PostViewerUpdates.opening(activity);
             }
             @Override public void error(String error) { unavailable(activity); }
         });
+    }
+
+    public static boolean isVideo(JSONObject post) {
+        if(post.optBoolean("is_reel"))return true;
+        org.json.JSONArray media=post.optJSONArray("media");
+        if(media!=null)for(int i=0;i<media.length();i++){
+            JSONObject item=media.optJSONObject(i);
+            if(item!=null && item.optString("mime_type").startsWith("video/"))return true;
+        }
+        return false;
+    }
+
+    public static void video(android.content.Context context,String id){
+        while(context instanceof android.content.ContextWrapper && !(context instanceof Activity)){
+            android.content.Context next=((android.content.ContextWrapper)context).getBaseContext();
+            if(next==context)break;context=next;
+        }
+        if(context instanceof Activity)show((Activity)context,id);
     }
 
     /** Always resolves share chains through get_post, which enforces current visibility and block rules. */

@@ -21,7 +21,8 @@ public final class RealtimeClient extends WebSocketListener {
   if(event.equals("phx_close")||event.equals("phx_error")){stop();retry();}
   if(event.equals("broadcast")){JSONObject payload=frame.getJSONObject("payload").getJSONObject("payload");String id=payload.optString("event_id");String scope=payload.optString("scope");if(!(scope.equals("messenger")||scope.equals("notifications"))||!id.matches("[0-9a-fA-F-]{36}")||!seen.accept(id))return;receivedEvents++;invalidate();}
  }catch(JSONException ignored){}}
- private void invalidate(){for(Runnable r:subscribers)Api.MAIN.post(r);}
+ private void invalidate(){long expected=epoch;Api.MAIN.post(()->SessionManager.getInstance().runIfCurrent(expected,()->{if(wsEpochCurrent(expected))for(Runnable r:subscribers)r.run();}));}
+ private boolean wsEpochCurrent(long expected){return expected==epoch&&expected==SessionManager.getInstance().generation();}
  private void retry(){Api.MAIN.postDelayed(this::connect,Math.min(30000,1000L<<Math.min(failures++,5)));}
  @Override public void onFailure(WebSocket ws,Throwable t,Response response){if(ws==socket){stop();retry();}}
  @Override public void onClosed(WebSocket ws,int code,String reason){if(ws==socket){stop();retry();}}

@@ -172,10 +172,10 @@ public class ProfileActivity extends AppCompatActivity {
             public void onDeletePostClick(Post post) {
                 new AlertDialog.Builder(ProfileActivity.this)
                         .setTitle("Xóa bài viết?")
-                        .setMessage("Bài viết sẽ được xóa theo quyền và trạng thái trên Cloud.")
+                        .setMessage(post.isReel()?"Đây là cùng một nội dung trên Feed và Reels. Xóa sẽ gỡ khỏi cả hai nơi.":"Bài viết sẽ được xóa theo quyền và trạng thái trên Cloud.")
                         .setNegativeButton("Hủy", null)
                         .setPositiveButton("Xóa", (d, w) -> Api.run(
-                                () -> RpcClient.call("delete_post", Api.obj("p_post_id", post.getPostId(), "p_expected_version", post.version)),
+                                () -> RpcClient.call(post.isReel()?"delete_reel":"delete_post", Api.obj("p_post_id", post.getPostId(), "p_expected_version", post.version)),
                                 new Api.Callback<Object>() {
                                     public void success(Object x) {
                                         com.example.meetomxh.repositories.ReelsRepository.invalidate();
@@ -192,7 +192,7 @@ public class ProfileActivity extends AppCompatActivity {
 
             @Override public void onPinPostClick(Post post) {
                 Api.run(() -> RpcClient.call("set_profile_pinned_post", Api.obj("p_post_id", post.getPostId())), new Api.Callback<Object>() {
-                    public void success(Object r) { loadProfilePinned(); toast("Pinned post updated"); }
+                    public void success(Object r) { loadProfilePinned(); toast("Đã cập nhật bài viết ghim"); }
                     public void error(String e) { toast(e); }
                 });
             }
@@ -206,7 +206,7 @@ public class ProfileActivity extends AppCompatActivity {
         }, false);
         timelineAdapter.setShowPersonFallback(false);
 
-        binding.rvTimeline.setAdapter(timelineAdapter);com.example.meetomxh.supabase.PostUpdates.counts.observe(this,c->{if(c!=null&&timelineAdapter!=null)timelineAdapter.updateCommentCount(c.id,c.comments);});
+        binding.rvTimeline.setAdapter(timelineAdapter);com.example.meetomxh.supabase.PostViewerUpdates.changes.observe(this,ignored->{for(com.example.meetomxh.supabase.PostViewerUpdates.Event event:com.example.meetomxh.supabase.PostViewerUpdates.events())if(event.deleted)timelinePosts.removeIf(p->event.id.equals(p.getPostId()));});com.example.meetomxh.supabase.PostUpdates.counts.observe(this,c->{if(c!=null&&timelineAdapter!=null)timelineAdapter.updateCommentCount(c.id,c.comments);});
 
         binding.scrollProfile.setOnScrollChangeListener((androidx.core.widget.NestedScrollView.OnScrollChangeListener)(v,x,y,oldX,oldY)->{if(y>oldY&&v.getChildAt(0)!=null&&y+v.getHeight()>=v.getChildAt(0).getHeight()-200){if("posts".equals(profileTab)&&timelineAfterId!=null&&!timelineLoading)loadTimeline(true);else if("reels".equals(profileTab)&&reelAfterId!=null&&!reelsLoading)loadProfileReels(true);}});
         binding.rvTimeline.addOnScrollListener(new androidx.recyclerview.widget.RecyclerView.OnScrollListener(){public void onScrolled(androidx.recyclerview.widget.RecyclerView r,int dx,int dy){if(dy>0&&!r.canScrollVertically(1)&&timelineAfterId!=null&&!timelineLoading)loadTimeline(true);}});
@@ -269,10 +269,10 @@ public class ProfileActivity extends AppCompatActivity {
     private void loadProfileReels(boolean append,Runnable onComplete){
         if(reelsLoading){runCompletion(onComplete);return;}
         if(!append){reelAfterTime=null;reelAfterId=null;profileReels.clear();profileReelAdapter.set(profileReels);}
-        reelsLoading=true;binding.tvProfileMediaStatus.setVisibility(View.VISIBLE);binding.tvProfileMediaStatus.setText("Loading Reels...");binding.btnProfileMediaMore.setEnabled(false);
+        reelsLoading=true;binding.tvProfileMediaStatus.setVisibility(View.VISIBLE);binding.tvProfileMediaStatus.setText("Đang tải Reels…");binding.btnProfileMediaMore.setEnabled(false);
         Api.run(()->(JSONArray)RpcClient.call("get_user_reels",Api.obj("p_author",targetUid,"p_after_time",append?reelAfterTime:null,"p_after_id",append?reelAfterId:null,"p_limit",20)),new Api.Callback<JSONArray>(){
-            public void success(JSONArray rows){if(binding==null)return;reelsLoading=false;binding.btnProfileMediaMore.setEnabled(true);Set<String> seen=new HashSet<>();for(Post item:profileReels)seen.add(item.getPostId());if(rows!=null)for(int i=0;i<rows.length();i++){JSONObject row=rows.optJSONObject(i);if(row!=null){Post reel=Dto.post(row);if(seen.add(reel.getPostId()))profileReels.add(reel);}}if(rows!=null&&rows.length()>0){JSONObject last=rows.optJSONObject(rows.length()-1);reelAfterTime=last.optString("created_at",null);reelAfterId=last.optString("id",null);}profileReelAdapter.set(profileReels);binding.tvProfileMediaStatus.setVisibility(profileReels.isEmpty()?View.VISIBLE:View.GONE);if(profileReels.isEmpty())binding.tvProfileMediaStatus.setText("No Reels available for this profile.");boolean more=rows!=null&&rows.length()==20;binding.btnProfileMediaMore.setVisibility(more?View.VISIBLE:View.GONE);runCompletion(onComplete);}
-            public void error(String error){if(binding==null)return;reelsLoading=false;binding.btnProfileMediaMore.setEnabled(true);binding.tvProfileMediaStatus.setVisibility(View.VISIBLE);binding.tvProfileMediaStatus.setText("Could not load Reels. Tap to retry.");binding.tvProfileMediaStatus.setOnClickListener(v->loadProfileReels(false));binding.btnProfileMediaMore.setVisibility(View.GONE);runCompletion(onComplete);}
+            public void success(JSONArray rows){if(binding==null)return;reelsLoading=false;binding.btnProfileMediaMore.setEnabled(true);Set<String> seen=new HashSet<>();for(Post item:profileReels)seen.add(item.getPostId());if(rows!=null)for(int i=0;i<rows.length();i++){JSONObject row=rows.optJSONObject(i);if(row!=null){Post reel=Dto.post(row);if(seen.add(reel.getPostId()))profileReels.add(reel);}}if(rows!=null&&rows.length()>0){JSONObject last=rows.optJSONObject(rows.length()-1);reelAfterTime=last.optString("created_at",null);reelAfterId=last.optString("id",null);}profileReelAdapter.set(profileReels);binding.tvProfileMediaStatus.setVisibility(profileReels.isEmpty()?View.VISIBLE:View.GONE);if(profileReels.isEmpty())binding.tvProfileMediaStatus.setText("Hồ sơ này chưa có Reel nào.");boolean more=rows!=null&&rows.length()==20;binding.btnProfileMediaMore.setVisibility(more?View.VISIBLE:View.GONE);runCompletion(onComplete);}
+            public void error(String error){if(binding==null)return;reelsLoading=false;binding.btnProfileMediaMore.setEnabled(true);binding.tvProfileMediaStatus.setVisibility(View.VISIBLE);binding.tvProfileMediaStatus.setText("Không thể tải Reels. Chạm để thử lại.");binding.tvProfileMediaStatus.setOnClickListener(v->loadProfileReels(false));binding.btnProfileMediaMore.setVisibility(View.GONE);runCompletion(onComplete);}
         });
     }
     private final class ProfileReelAdapter extends androidx.recyclerview.widget.RecyclerView.Adapter<ProfileReelHolder>{
@@ -295,9 +295,9 @@ public class ProfileActivity extends AppCompatActivity {
                 if(rows==null || rows.length()==0){binding.cardFeatured.setVisibility(targetUid.equals(mAuth.uid())?View.VISIBLE:View.GONE);runCompletion(onComplete);return;}
                 binding.cardFeatured.setVisibility(View.VISIBLE);
                 for(int i=0;i<rows.length();i++){ JSONObject item=rows.optJSONObject(i); if(item==null)continue;
-                    ImageView photo=new ImageView(ProfileActivity.this); int size=(int)(100*getResources().getDisplayMetrics().density); photo.setLayoutParams(new LinearLayout.LayoutParams(size,size)); photo.setScaleType(ImageView.ScaleType.CENTER_CROP); photo.setContentDescription("Featured profile photo");
+                    ImageView photo=new ImageView(ProfileActivity.this); int size=(int)(100*getResources().getDisplayMetrics().density); photo.setLayoutParams(new LinearLayout.LayoutParams(size,size)); photo.setScaleType(ImageView.ScaleType.CENTER_CROP); photo.setContentDescription("Ảnh nổi bật trên hồ sơ");
                     Glide.with(ProfileActivity.this).load(Dto.asset(Dto.nullable(item,"asset_id"))).centerCrop().into(photo);
-                    photo.setOnLongClickListener(v->{ if(!targetUid.equals(mAuth.uid()))return false; new AlertDialog.Builder(ProfileActivity.this).setMessage("Remove this featured photo?").setNegativeButton("Cancel",null).setPositiveButton("Remove",(d,w)->Api.run(()->RpcClient.call("remove_profile_featured",Api.obj("p_item_id",item.optString("id"))),new Api.Callback<Object>(){public void success(Object r){loadFeatured();}public void error(String e){toast(e);}})).show();return true;});
+                    photo.setOnLongClickListener(v->{ if(!targetUid.equals(mAuth.uid()))return false; new AlertDialog.Builder(ProfileActivity.this).setMessage("Gỡ ảnh nổi bật này?").setNegativeButton("Hủy",null).setPositiveButton("Gỡ",(d,w)->Api.run(()->RpcClient.call("remove_profile_featured",Api.obj("p_item_id",item.optString("id"))),new Api.Callback<Object>(){public void success(Object r){loadFeatured();}public void error(String e){toast(e);}})).show();return true;});
                     photo.setOnClickListener(v->{JSONArray refs=new JSONArray().put(Dto.asset(Dto.nullable(item,"asset_id")));startActivity(ProfilePhotoViewerActivity.intent(ProfileActivity.this,refs,0));});
                     LinearLayout.LayoutParams lp=(LinearLayout.LayoutParams)photo.getLayoutParams();lp.rightMargin=(int)(8*getResources().getDisplayMetrics().density);photo.setLayoutParams(lp);binding.layoutFeaturedItems.addView(photo);
                 }
@@ -308,7 +308,7 @@ public class ProfileActivity extends AppCompatActivity {
     }
     private void chooseFeaturedPhoto() {
         Api.run(()->(JSONArray)RpcClient.call("list_profile_photo_candidates",Api.obj("p_after_time",null,"p_after_id",null,"p_limit",50)),new Api.Callback<JSONArray>(){
-            public void success(JSONArray rows){if(rows==null||rows.length()==0){toast("Create a personal post with a photo first.");return;}List<JSONObject> options=new ArrayList<>();List<String> labels=new ArrayList<>();for(int i=0;i<rows.length();i++){JSONObject x=rows.optJSONObject(i);if(x!=null){options.add(x);labels.add("Photo · "+x.optString("created_at"));}}new AlertDialog.Builder(ProfileActivity.this).setTitle("Choose featured photo").setItems(labels.toArray(new String[0]),(d,i)->{JSONObject x=options.get(i);Api.run(()->RpcClient.call("set_profile_featured",Api.obj("p_source_post_id",x.optString("post_id"),"p_asset_id",x.optString("asset_id"),"p_position",Math.min(5,binding.layoutFeaturedItems.getChildCount()))),new Api.Callback<Object>(){public void success(Object r){loadFeatured();}public void error(String e){toast(e);}});}).setNegativeButton("Cancel",null).show();}
+            public void success(JSONArray rows){if(rows==null||rows.length()==0){toast("Trước tiên, hãy tạo bài viết cá nhân có ảnh.");return;}List<JSONObject> options=new ArrayList<>();List<String> labels=new ArrayList<>();for(int i=0;i<rows.length();i++){JSONObject x=rows.optJSONObject(i);if(x!=null){options.add(x);labels.add("Ảnh · "+x.optString("created_at"));}}new AlertDialog.Builder(ProfileActivity.this).setTitle("Chọn ảnh nổi bật").setItems(labels.toArray(new String[0]),(d,i)->{JSONObject x=options.get(i);Api.run(()->RpcClient.call("set_profile_featured",Api.obj("p_source_post_id",x.optString("post_id"),"p_asset_id",x.optString("asset_id"),"p_position",Math.min(5,binding.layoutFeaturedItems.getChildCount()))),new Api.Callback<Object>(){public void success(Object r){loadFeatured();}public void error(String e){toast(e);}});}).setNegativeButton("Hủy",null).show();}
             public void error(String e){toast(e);}
         });
     }
@@ -318,7 +318,7 @@ public class ProfileActivity extends AppCompatActivity {
 
     private void loadProfilePinned(Runnable onComplete) {
         Api.run(() -> (JSONObject)RpcClient.call("get_profile_pinned_post",Api.obj("p_owner_id",targetUid)),new Api.Callback<JSONObject>() {
-            public void success(JSONObject post) { if(post==null || post.isNull("id")){binding.cardProfilePinned.setVisibility(View.GONE);runCompletion(onComplete);return;} binding.cardProfilePinned.setVisibility(View.VISIBLE); binding.tvProfilePinned.setText("ðŸ“Œ Pinned · "+post.optString("body","Photo post")); binding.tvProfilePinned.setOnClickListener(v -> com.example.meetomxh.supabase.PostDetails.show(ProfileActivity.this,post.optString("id")));runCompletion(onComplete); }
+            public void success(JSONObject post) { if(post==null || post.isNull("id")){binding.cardProfilePinned.setVisibility(View.GONE);runCompletion(onComplete);return;} binding.cardProfilePinned.setVisibility(View.VISIBLE); binding.tvProfilePinned.setText("Bài viết đã ghim · "+post.optString("body","Bài viết có ảnh")); binding.tvProfilePinned.setOnClickListener(v -> com.example.meetomxh.supabase.PostDetails.show(ProfileActivity.this,post.optString("id")));runCompletion(onComplete); }
             public void error(String e) { binding.cardProfilePinned.setVisibility(View.GONE);runCompletion(onComplete); }
         });
     }
@@ -381,7 +381,7 @@ public class ProfileActivity extends AppCompatActivity {
             public void error(String error) {
                 timelineLoading = false;
                 binding.cardTimelineStatus.setVisibility(View.VISIBLE);
-                binding.tvTimelineStatus.setText("Could not load posts. Pull down to retry.");
+                binding.tvTimelineStatus.setText("Không thể tải bài viết. Kéo xuống để thử lại.");
                 runCompletion(onComplete);
             }
         });
@@ -398,10 +398,14 @@ public class ProfileActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        if(com.example.meetomxh.supabase.PostViewerUpdates.returning(this))return;
+        com.example.meetomxh.ui.StoryRings.invalidate();
         if (targetUid != null) {
             loadUserProfile();
             loadFollowStats();
             loadRelationshipStatus();
+
+            if (profileReelsLoaded && profileReelAdapter != null) loadProfileReels(false);
 
             if (timelineAdapter != null) {
                 timelineAfterTime = null;
@@ -443,6 +447,7 @@ public class ProfileActivity extends AppCompatActivity {
                 binding.cardPersonalDetails.setVisibility(hasGender || hasDob ? View.VISIBLE : View.GONE);
 
                 AvatarViews.load(binding.imgAvatar, user.getAvatarUrl(), user.getAvatarPreset());
+                com.example.meetomxh.ui.StoryRings.bind((View)binding.imgAvatar.getParent(),binding.imgAvatar,targetUid,null);
 
                 updateMessageButton();
                 runCompletion(onComplete);

@@ -1,0 +1,92 @@
+package com.example.meetomxh.ui;
+
+import android.content.Context;
+import android.media.metrics.LogSessionId;
+import android.net.Uri;
+import androidx.annotation.Nullable;
+import androidx.media3.common.Format;
+import androidx.media3.common.MediaItem;
+import androidx.media3.common.MimeTypes;
+import androidx.media3.effect.Presentation;
+import androidx.media3.transformer.Codec;
+import androidx.media3.transformer.Composition;
+import androidx.media3.transformer.DefaultEncoderFactory;
+import androidx.media3.transformer.EditedMediaItem;
+import androidx.media3.transformer.EditedMediaItemSequence;
+import androidx.media3.transformer.Effects;
+import androidx.media3.transformer.ExportException;
+import androidx.media3.transformer.ExportResult;
+import androidx.media3.transformer.ProgressHolder;
+import androidx.media3.transformer.Transformer;
+import androidx.media3.transformer.VideoEncoderSettings;
+import java.io.File;
+import java.util.Collections;
+
+/** Main-thread Transformer owner. Always encodes the requested timestamps, never previous keyframes. */
+public final class ReelClipExporter {
+    public interface Callback { void completed(File file); void failed(String message); }
+    private Transformer transformer;
+    private File output;
+    private final ProgressHolder progress = new ProgressHolder();
+
+    public void start(Context context, File source, File destination, long start, long end,
+                      boolean mute, int width, int height, Callback callback) {
+        cancel();
+        output = destination;
+        DefaultEncoderFactory delegate = new DefaultEncoderFactory.Builder(context)
+                .setRequestedVideoEncoderSettings(new VideoEncoderSettings.Builder().setBitrate((int)Math.min(4_000_000L,
+                        Math.max(250_000L, VideoPublishLimits.EXPORT_BYTES * 8L * 1000L / Math.max(1000L,end-start) - 256_000L))).build())
+                .setEnableFallback(true).build();
+        Codec.EncoderFactory encoder = new Codec.EncoderFactory() {
+            @Override public Codec createForAudioEncoding(Format format, @Nullable LogSessionId id) throws ExportException {
+                return delegate.createForAudioEncoding(format, id);
+            }
+            @Override public Codec createForVideoEncoding(Format format, @Nullable LogSessionId id) throws ExportException {
+                return delegate.createForVideoEncoding(format, id);
+            }
+            @Override public boolean videoNeedsEncoding() { return true; }
+        };
+        MediaItem input = new MediaItem.Builder().setUri(Uri.fromFile(source))
+                .setClippingConfiguration(new MediaItem.ClippingConfiguration.Builder()
+                        .setStartPositionMs(start).setEndPositionMs(end).build()).build();
+        float scale = Math.min(1f, Math.min(1280f / Math.max(1, Math.max(width, height)),
+                720f / Math.max(1, Math.min(width,height))));
+        int targetWidth = Math.max(2, Math.round(width * scale / 2) * 2);
+        int targetHeight = Math.max(2, Math.round(height * scale / 2) * 2);
+        EditedMediaItem edited = new EditedMediaItem.Builder(input).setRemoveAudio(mute).setFrameRate(30)
+                .setEffects(new Effects(Collections.emptyList(), java.util.Arrays.asList(
+                        Presentation.createForWidthAndHeight(targetWidth, targetHeight, Presentation.LAYOUT_SCALE_TO_FIT),
+                        androidx.media3.effect.FrameDropEffect.createDefaultFrameDropEffect(30))))
+                .build();
+        transformer = new Transformer.Builder(context).setVideoMimeType(MimeTypes.VIDEO_H264)
+                .setAudioMimeType(MimeTypes.AUDIO_AAC).setEncoderFactory(encoder)
+                .addListener(new Transformer.Listener() {
+                    @Override public void onCompleted(Composition composition, ExportResult result) {
+                        transformer = null;output = null;
+                        if (!destination.isFile() || destination.length() <= 0 || destination.length() > VideoPublishLimits.EXPORT_BYTES) {
+                            destination.delete();callback.failed("Video xuất vẫn quá lớn (mục tiêu dưới 40 MB). Hãy chọn đoạn ngắn hơn rồi xuất lại.");return;
+                        }
+                        callback.completed(destination);
+                    }
+                    @Override public void onError(Composition composition, ExportResult result, ExportException error) {
+                        transformer = null;output = null;destination.delete();
+                        callback.failed("Không thể xuất đoạn video trên thiết bị này. Hãy chọn đoạn khác hoặc thử video khác.");
+                    }
+                }).build();
+        EditedMediaItemSequence sequence = mute
+                ? EditedMediaItemSequence.withVideoFrom(Collections.singletonList(edited))
+                : EditedMediaItemSequence.withAudioAndVideoFrom(Collections.singletonList(edited));
+        Composition composition = new Composition.Builder(sequence)
+                .setHdrMode(Composition.HDR_MODE_TONE_MAP_HDR_TO_SDR_USING_OPEN_GL).build();
+        try { transformer.start(composition, destination.getAbsolutePath()); }
+        catch (RuntimeException error) { cancel();callback.failed("Không thể bắt đầu xuất video. Chỉnh sửa của bạn vẫn được giữ."); }
+    }
+    public int progress() {
+        return transformer != null && transformer.getProgress(progress) == Transformer.PROGRESS_STATE_AVAILABLE
+                ? progress.progress : -1;
+    }
+    public void cancel() {
+        if (transformer != null) { transformer.cancel();transformer = null; }
+        if (output != null) { output.delete();output = null; }
+    }
+}

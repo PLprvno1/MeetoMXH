@@ -45,6 +45,8 @@
         <!-- Plus (+) Badge for Creating Story (overlaid at bottom-right) -->
         <ImageView
             android:id="@+id/ivAddStoryIcon"
+            android:clickable="true"
+            android:focusable="true"
             android:layout_width="22dp"
             android:layout_height="22dp"
             android:layout_gravity="bottom|end"

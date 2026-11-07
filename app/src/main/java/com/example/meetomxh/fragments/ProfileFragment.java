@@ -67,6 +67,7 @@ public class ProfileFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
+        com.example.meetomxh.ui.StoryRings.invalidate();
         if (binding != null && mAuth != null) loadUserProfile();
     }
 
@@ -78,6 +79,7 @@ public class ProfileFragment extends Fragment {
                 binding.tvFullName.setText(user.getFullName());
                 AvatarViews.load(binding.ivAvatar, user.getAvatarUrl(), user.getAvatarPreset());
                 binding.ivAvatar.setOnClickListener(v -> startActivity(new Intent(requireContext(), ProfileActivity.class).putExtra("target_uid", mAuth.uid())));
+                com.example.meetomxh.ui.StoryRings.bind((View)binding.ivAvatar.getParent(),binding.ivAvatar,mAuth.uid(),v -> startActivity(new Intent(requireContext(), ProfileActivity.class).putExtra("target_uid",mAuth.uid())));
             }
             public void error(String e) {
                 if (isAdded()) Toast.makeText(requireContext(), e, Toast.LENGTH_LONG).show();

@@ -15,7 +15,11 @@ public final class PeoplePicker {
     public interface Selection { void selected(List<String> ids); }
     private PeoplePicker() { }
     public static void show(Activity a,Set<String> excluded,int minimum,boolean multiple,Selection callback) {
+        if(multiple){showGroup(a,excluded,minimum,null,null,callback);return;}
         new Picker(a,excluded,minimum,multiple,callback).show();
+    }
+    public static void showGroup(Activity a,Set<String> excluded,int minimum,String conversation,String preselect,Selection callback){
+        new SmartGroupPicker(a,excluded,minimum,conversation,preselect,callback).show();
     }
     private static final class Picker {
         final Activity a; final Set<String> excluded; final int minimum; final boolean multiple; final Selection callback;

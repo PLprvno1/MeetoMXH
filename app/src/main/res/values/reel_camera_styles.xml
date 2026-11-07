@@ -1,0 +1,13 @@
+<resources>
+    <style name="Widget.Meeto.ReelCamera.Icon" parent="Widget.AppCompat.ImageButton">
+        <item name="android:layout_width">48dp</item><item name="android:layout_height">48dp</item>
+        <item name="android:background">@drawable/bg_reel_camera_action</item>
+        <item name="android:padding">12dp</item><item name="android:tint">#FFFFFF</item>
+    </style>
+    <style name="Widget.Meeto.ReelCamera.Duration" parent="Widget.AppCompat.Button.Borderless">
+        <item name="android:layout_width">64dp</item><item name="android:layout_height">48dp</item>
+        <item name="android:background">@drawable/bg_reel_duration</item><item name="android:textAllCaps">false</item>
+        <item name="android:minWidth">0dp</item><item name="android:minHeight">0dp</item>
+        <item name="android:textSize">14sp</item><item name="android:textStyle">bold</item>
+    </style>
+</resources>

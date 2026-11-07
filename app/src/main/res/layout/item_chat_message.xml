@@ -22,6 +22,15 @@
         <ImageView android:id="@+id/sharedAuthorAvatar" android:layout_width="32dp" android:layout_height="32dp" android:layout_marginBottom="6dp" android:contentDescription="Tác giả bài viết gốc" android:visibility="gone" />
 
         <TextView
+            android:id="@+id/tvMessageSender"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="4dp"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
+        <TextView
             android:id="@+id/tvMessageContext"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -48,6 +57,8 @@
             android:id="@+id/layoutMessageMedia"
             android:layout_width="220dp"
             android:layout_height="180dp"
+            android:background="@drawable/bg_chat_media"
+            android:clipToOutline="true"
             android:layout_marginBottom="6dp"
             android:visibility="gone">
 
@@ -84,7 +95,7 @@
                 android:layout_width="42dp"
                 android:layout_height="42dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Play voice message"
+                android:contentDescription="Phát tin nhắn thoại"
                 android:src="@drawable/ic_play"
                 tools:ignore="SpeakableTextPresentCheck" />
             <ProgressBar

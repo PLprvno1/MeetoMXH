@@ -62,6 +62,11 @@ public final class SupabaseStorage {
         void onSuccess(String assetReference);
         void onFailure(String message);
         default void onProgress(int percent) { }
+        default void onStage(Stage stage) { }
+    }
+    public enum Stage { VALIDATING, RESERVING, UPLOADING, FINALIZING }
+    private static void stage(Transfer transfer,UploadListener listener,Stage value,long epoch){
+        Api.MAIN.post(()->{if(!transfer.cancelled&&epoch==SessionManager.getInstance().generation())listener.onStage(value);});
     }
 
     public static final class Transfer {
@@ -134,7 +139,9 @@ public final class SupabaseStorage {
         File staged = null;
         SecureTusUrlStore tusStore = new SecureTusUrlStore();
         String tusFingerprint = null;
+        String phase="validate";
         try {
+            stage(transfer,listener,Stage.VALIDATING,epoch);
             SupabaseConfig.check();
             ensureCurrent(transfer, epoch);
             String purpose = purpose(folder);
@@ -143,16 +150,37 @@ public final class SupabaseStorage {
             long maxBytes = "audio/mp4".equals(mime) ? 2L * MIB
                     : (purpose.equals("avatar") || purpose.equals("cover") || purpose.equals("group_cover")) ? PROFILE_LIMIT : MEDIA_LIMIT;
             staged = stageAndValidate(resolver, uri, mime, maxBytes, transfer, epoch);
+            if("post".equals(purpose)&&"video/mp4".equals(mime)){
+                JSONObject policy=RpcClient.object("get_reel_upload_policy",Api.obj());
+                long limit=com.example.meetomxh.ui.VideoPublishLimits.effective(policy.optLong("max_bytes",0));
+                if(!policy.optBoolean("automatic_video_distribution")||limit<=0)
+                    throw new ValidationError("Cloud chưa sẵn sàng cho đăng video Task 47. Chưa cấp intent/upload.");
+                if(staged.length()>limit)throw new ValidationError("Video vượt giới hạn Storage hiện tại. Hãy xuất đoạn ngắn hơn.");
+                MediaMetadataRetriever metadata=new MediaMetadataRetriever();
+                try {metadata.setDataSource(staged.getAbsolutePath());
+                    long duration=Long.parseLong(metadata.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION));
+                    if(duration<=0||duration>60_000L)throw new ValidationError("Video bài viết/Reel mới không được quá 60 giây.");
+                }finally{metadata.release();}
+            }
+            android.util.Log.i("MeetoPublish","stage=validated mime="+mime+" bytes="+staged.length());
             String operation = owner + "|" + (purpose.equals("group_cover") ? folder : purpose) + "|" + uri + "|" + mime;
             String requestId = RequestIds.get("upload_direct_v1", operation);
+            phase="reserve";stage(transfer,listener,Stage.RESERVING,epoch);
             JSONObject intent = prepareIntent(folder, purpose, mime, requestId);
             ensureCurrent(transfer, epoch);
             String assetId = intent.getString("id");
             String bucket = intent.getString("bucket_id");
             String path = intent.getString("object_path");
             String token = SessionManager.getInstance().access(false);
+            phase=staged.length()>TUS_THRESHOLD?"upload_tus":"upload_standard";
+            stage(transfer,listener,Stage.UPLOADING,epoch);
 
-            if (staged.length() > TUS_THRESHOLD) {
+            boolean reuseReadyPost = "post".equals(purpose) && "ready".equals(intent.optString("state"));
+            if (reuseReadyPost) {
+                // Task 43 server revalidates a READY reservation; do not upload its bytes again.
+                if (intent.optLong("size_bytes", -1) != staged.length())
+                    throw new ValidationError("File đã thay đổi so với phiên upload. Giữ đúng video bản nháp khi thử lại.");
+            } else if (staged.length() > TUS_THRESHOLD) {
                 tusFingerprint = "meeto-direct-v1:" + assetId;
                 transfer.tusFingerprint = tusFingerprint;
                 uploadTus(staged, bucket, path, mime, token, assetId, tusFingerprint,
@@ -162,21 +190,26 @@ public final class SupabaseStorage {
             }
             ensureCurrent(transfer, epoch);
 
+            phase="finalize";stage(transfer,listener,Stage.FINALIZING,epoch);
             JSONObject ready = finalizeWithRetry(assetId, transfer, epoch,
                     purpose.equals("group_cover") ? folder.substring("group-cover/".length()) : null,
                     "audio/mp4".equals(mime));
             if (!"ready".equals(ready.optString("state"))) throw new IOException("Storage attachment not ready");
-            RequestIds.complete("upload_direct_v1", operation);
+            if("post".equals(purpose)&&ready.optLong("size_bytes",-1)!=staged.length())throw new ValidationError("Object đã tồn tại nhưng dung lượng khác video bản nháp. Chưa đăng nội dung; cần đối chiếu phiên upload.");
+            if (!"post".equals(purpose)) RequestIds.complete("upload_direct_v1", operation);
             if (tusFingerprint != null) tusStore.remove(tusFingerprint);
             String reference = Dto.asset(ready.getString("id"));
             Api.MAIN.post(() -> {
                 if (!transfer.cancelled && epoch == SessionManager.getInstance().generation()) {
                     listener.onProgress(100);
                     listener.onSuccess(reference);
+                    // Preserve the upload key until the UI has received/persisted this reference.
+                    if ("post".equals(purpose)) RequestIds.complete("upload_direct_v1", operation);
                 }
             });
         } catch (Exception error) {
             if (!transfer.cancelled && epoch == SessionManager.getInstance().generation()) {
+                ErrorMapper.diagnostic("upload."+phase,error);
                 String message = error instanceof ValidationError ? error.getMessage() : ErrorMapper.message(error);
                 Api.MAIN.post(() -> {
                     if (!transfer.cancelled && epoch == SessionManager.getInstance().generation()) listener.onFailure(message);
@@ -202,11 +235,11 @@ public final class SupabaseStorage {
     }
 
     private static String normalizeMime(String mime) throws IOException {
-        if (mime == null) throw new ValidationError("Could not identify the selected file type");
+        if (mime == null) throw new ValidationError("Không xác định được định dạng file đã chọn.");
         String value = mime.toLowerCase(Locale.ROOT).trim();
         if (!value.equals("image/png") && !value.equals("image/jpeg") && !value.equals("image/webp")
                 && !value.equals("video/mp4") && !value.equals("audio/mp4"))
-            throw new ValidationError("Choose a PNG, JPEG, WebP, MP4, or recorded M4A file");
+            throw new ValidationError("Hãy chọn ảnh PNG/JPEG/WebP, video MP4 hoặc bản ghi M4A hợp lệ.");
         return value;
     }
 
@@ -224,18 +257,18 @@ public final class SupabaseStorage {
         try (InputStream input = "file".equals(uri.getScheme())
                      ? new FileInputStream(new File(uri.getPath())) : resolver.openInputStream(uri);
              FileOutputStream output = new FileOutputStream(file)) {
-            if (input == null) throw new ValidationError("Cannot read the selected file");
+            if (input == null) throw new ValidationError("Không đọc được file đã chọn.");
             byte[] buffer = new byte[32 * 1024];
             long total = 0;
             int read;
             while ((read = input.read(buffer)) != -1) {
                 ensureCurrent(transfer, epoch);
                 total += read;
-                if (total > maxBytes) throw new ValidationError("File is larger than the allowed " + (maxBytes / MIB) + " MiB limit");
+                if (total > maxBytes) throw new ValidationError("File vượt giới hạn " + (maxBytes / MIB) + " MiB. Hãy cắt hoặc nén trước khi tải lên.");
                 output.write(buffer, 0, read);
             }
             output.flush();
-            if (total == 0) throw new ValidationError("The selected file is empty");
+            if (total == 0) throw new ValidationError("File đã chọn không có dữ liệu.");
             validateSignature(file, mime);
             if (mime.startsWith("image/")) validateImageDecode(file);
             else if ("video/mp4".equals(mime)) validateVideoDecode(file);
@@ -264,7 +297,7 @@ public final class SupabaseStorage {
         } else {
             valid = false;
         }
-        if (!valid) throw new ValidationError("File contents do not match the selected file type");
+        if (!valid) throw new ValidationError("Nội dung file không khớp định dạng đã chọn.");
     }
 
     private static boolean ascii(byte[] data, int offset, String value) {
@@ -296,10 +329,10 @@ public final class SupabaseStorage {
             String duration = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
             Bitmap frame = retriever.getFrameAtTime(0, MediaMetadataRetriever.OPTION_CLOSEST_SYNC);
             if (duration == null || Long.parseLong(duration) <= 0 || frame == null)
-                throw new ValidationError("This MP4 could not be read by the device");
+                throw new ValidationError("Thiết bị không đọc được hình ảnh của video MP4 này.");
             frame.recycle();
         } catch (RuntimeException error) {
-            throw new ValidationError("This MP4 could not be read by the device");
+            throw new ValidationError("Thiết bị không đọc được hình ảnh của video MP4 này.");
         } finally {
             retriever.release();
         }
@@ -380,8 +413,13 @@ public final class SupabaseStorage {
         if (transfer.cancelled) throw new IOException("Upload cancelled");
         transfer.call = SupabaseHttpClient.CLIENT.newCall(request);
         try (Response response = transfer.call.execute()) {
-            if (!response.isSuccessful() && response.code() != 409)
-                throw new ErrorMapper.HttpError(response.code(), storageErrorCode(response));
+            if (!response.isSuccessful()) {
+                ErrorMapper.HttpError error=ErrorMapper.httpError(response.code(),response.peekBody(4096).string());
+                String reason=(error.code+" "+error.serverMessage).toLowerCase(Locale.ROOT);
+                // Only a known existing-object response may proceed to the authenticated finalizer.
+                if(response.code()!=409||!(reason.contains("alreadyexists")||reason.contains("already exists")||reason.contains("duplicate")))throw error;
+                android.util.Log.i("MeetoPublish","stage=upload_standard existing_object=true verify_before_reuse=true");
+            }
         } finally { transfer.call = null; }
     }
 
@@ -429,8 +467,19 @@ public final class SupabaseStorage {
                 uploader.finish();
             }
         };
-        executor.setDelays(new int[]{500, 1500, 3000});
-        if (!executor.makeAttempts()) throw new IOException("Upload cancelled");
+        // One transport attempt. Quota/auth/rate limits must not trigger hidden retries.
+        executor.setDelays(new int[]{});
+        try {
+            if (!executor.makeAttempts()) throw new IOException("Upload cancelled");
+        } catch(ProtocolException error){
+            HttpURLConnection connection=error.getCausingConnection();
+            if(connection!=null){int status=connection.getResponseCode();if(status>=400){
+                String body="";InputStream stream=connection.getErrorStream();
+                if(stream!=null)try(InputStream input=stream){byte[] buffer=new byte[4096];int count=input.read(buffer);if(count>0)body=new String(buffer,0,count,StandardCharsets.UTF_8);}
+                throw ErrorMapper.httpError(status,body);
+            }}
+            throw error;
+        }
         transfer.tusConnection = null;
     }
 
@@ -454,14 +503,6 @@ public final class SupabaseStorage {
         return result.toString();
     }
 
-    private static String storageErrorCode(Response response) {
-        if (response.body() == null) return "storage_error";
-        try {
-            JSONObject body = new JSONObject(response.peekBody(2048).string());
-            return body.optString("error", body.optString("error_code", body.optString("statusCode", "storage_error")));
-        } catch (Exception ignored) { return "storage_error"; }
-    }
-
     private static JSONObject finalizeWithRetry(String assetId, Transfer transfer, long epoch, String groupId,
                                                 boolean awaitAudioVerification) throws Exception {
         Exception last = null;
@@ -472,6 +513,7 @@ public final class SupabaseStorage {
                     : RpcClient.object("finalize_group_cover_upload",Api.obj("p_asset_id",assetId,"p_group_id",groupId)); }
             catch (ErrorMapper.HttpError e) {
                 last = e;
+                if(ErrorMapper.quota(e)||e.status==429)throw e;
                 boolean waitingForVerifier = awaitAudioVerification && e.status == 409
                         && "verification_pending".equals(e.code);
                 if (!waitingForVerifier && (e.status < 500 || attempt == attempts - 1)) throw e;
@@ -482,14 +524,7 @@ public final class SupabaseStorage {
             Thread.sleep(awaitAudioVerification ? 2000L : 300L * (attempt + 1));
         }
         if (last != null) {
-            if (last instanceof ErrorMapper.HttpError) {
-                ErrorMapper.HttpError http = (ErrorMapper.HttpError) last;
-                String code = http.code != null && http.code.matches("[A-Za-z0-9_.-]{1,80}")
-                        ? http.code : "unknown";
-                android.util.Log.w("SupabaseUpload", "Finalize failed: HTTP " + http.status + " code=" + code);
-            } else {
-                android.util.Log.w("SupabaseUpload", "Finalize failed: " + last.getClass().getSimpleName());
-            }
+            ErrorMapper.diagnostic("upload.finalize_exhausted",last);
             throw last;
         }
         throw new IOException("Storage confirmation failed");

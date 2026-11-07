@@ -4,7 +4,14 @@ public class Story {
     private String id, userName, avatarUrl, imageUrl, mediaType = "image/*";
     private String avatarPreset = "neutral", audience = "private", caption = "";
     private String authorId, createdAt, expiresAt;
-    private boolean isAddStory, viewed, own;
+    private boolean isAddStory, viewed, own, liked;
+    private int viewsCount;
+    public boolean isLiked(){return liked;}
+    public void setLiked(boolean value){liked=value;}
+    public int getViewsCount(){return viewsCount;}
+    public void setViewsCount(int value){viewsCount=value;}
+    public boolean isActive(){return !isAddStory && expiryMillis()>System.currentTimeMillis();}
+    public long expiryMillis(){return com.example.meetomxh.ui.StoryTime.millis(expiresAt);}
 
     public Story() { }
 

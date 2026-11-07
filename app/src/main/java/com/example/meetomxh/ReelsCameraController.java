@@ -5,6 +5,7 @@ import android.view.Surface;
 import androidx.camera.core.Camera;
 import androidx.camera.core.CameraSelector;
 import androidx.camera.core.Preview;
+import androidx.camera.core.UseCaseGroup;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.video.FallbackStrategy;
 import androidx.camera.video.Quality;
@@ -44,7 +45,10 @@ public final class ReelsCameraController {
                 capture=VideoCapture.withOutput(recorder);
                 capture.setTargetRotation(rotation);
                 preview.setSurfaceProvider(previewView.getSurfaceProvider());
-                camera=provider.bindToLifecycle(owner,selector,preview,capture);
+                // The preview and encoder share a crop viewport; neither is stretched to 9:16.
+                UseCaseGroup.Builder group=new UseCaseGroup.Builder().addUseCase(preview).addUseCase(capture);
+                if(previewView.getViewPort()!=null)group.setViewPort(previewView.getViewPort());
+                camera=provider.bindToLifecycle(owner,selector,group.build());
                 callback.ready(camera,capture);
             }catch(InterruptedException e){Thread.currentThread().interrupt();callback.error("Không thể khởi tạo camera.");}
             catch(Exception e){callback.error("Camera không sẵn sàng. Hãy đóng ứng dụng khác đang dùng camera rồi thử lại.");}

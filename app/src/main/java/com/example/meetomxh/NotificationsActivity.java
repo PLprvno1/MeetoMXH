@@ -110,6 +110,8 @@ public class NotificationsActivity extends AppCompatActivity {
                 startActivity(new Intent(this,ProfileActivity.class).putExtra("target_uid",item.targetId));break;
             case "conversation":
                 startActivity(new Intent(this,ChatActivity.class).putExtra(ChatActivity.EXTRA_CHAT_ID,item.targetId));break;
+            case "story":
+                startActivity(new Intent(this,StoryViewActivity.class).putExtra(StoryViewActivity.EXTRA_STORY_ID,item.targetId));break;
             default: Toast.makeText(this,"Đích đến chưa được hỗ trợ.",Toast.LENGTH_SHORT).show();
         }
     }

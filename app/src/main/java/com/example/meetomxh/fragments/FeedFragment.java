@@ -135,7 +135,7 @@ public class FeedFragment extends Fragment implements FeedAdapter.OnPostClickLis
 
         new AlertDialog.Builder(requireContext())
                 .setTitle("Xác nhận xóa")
-                .setMessage("Bạn có chắc chắn muốn xóa bài viết này không?")
+                .setMessage(post.isReel()?"Đây là cùng một nội dung trên Feed và Reels. Xóa sẽ gỡ khỏi cả hai nơi.":"Bạn có chắc chắn muốn xóa bài viết này không?")
                 .setPositiveButton("Xóa", (dialog, which) -> {
                     viewModel.deletePost(post.getPostId(), new FeedRepository.OnPostActionListener() {
                         @Override
@@ -178,4 +178,4 @@ public class FeedFragment extends Fragment implements FeedAdapter.OnPostClickLis
         handler.removeCallbacksAndMessages(null);
         binding = null;
     }
- @Override public void onResume(){super.onResume();if(SessionManagerReady()){FeedRepository.getInstance().refresh();if(adapter!=null)adapter.refreshStories();}} private boolean SessionManagerReady(){return com.example.meetomxh.supabase.SessionManager.getInstance().getCurrentUser()!=null;}}
+ @Override public void onResume(){super.onResume();if(SessionManagerReady()){if(!com.example.meetomxh.supabase.PostViewerUpdates.returning(requireActivity()))FeedRepository.getInstance().refresh();if(adapter!=null)adapter.refreshStories();}} private boolean SessionManagerReady(){return com.example.meetomxh.supabase.SessionManager.getInstance().getCurrentUser()!=null;}}

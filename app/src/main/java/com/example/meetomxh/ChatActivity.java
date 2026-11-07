@@ -68,6 +68,7 @@ public class ChatActivity extends AppCompatActivity {
     public static final String EXTRA_JUMP_MESSAGE_SEQ = "jump_message_seq";
 
     private ActivityChatBinding binding;
+    private com.bumptech.glide.RequestManager composerImages;
     private ChatRepository chatRepository;
     private int historyLimit=50; private Subscription messagesRegistration;
     private boolean loadingOlder,hasMoreOlder=true,preserveAnchor;
@@ -90,8 +91,16 @@ public class ChatActivity extends AppCompatActivity {
     private ChatMessage replyTarget;
     private ChatMessage editingTarget;
     private ActivityResultLauncher<PickVisualMediaRequest> imagePickerLauncher;
-    private final ActivityResultLauncher<Intent> detailsLauncher=registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),result->{if(result.getResultCode()==RESULT_OK)finish();});
+    private boolean themePreviewActive;
+    private final ActivityResultLauncher<Intent> detailsLauncher=registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),result->{
+        if(result.getResultCode()!=RESULT_OK)return;
+        if(result.getData()!=null&&result.getData().getBooleanExtra("open_chat_theme_picker",false)){
+            if(binding!=null&&chatId!=null){themePreviewActive=true;ChatCustomizationUi.themes(this,chatId,this::applyChatTheme,()->{},()->{themePreviewActive=false;if(!isFinishing()&&!isDestroyed())refreshConversationState();});}
+        }else finish();
+    });
     private Uri pendingImageUri;
+    private String pendingMediaBody;
+    private ChatRepository.ReplyData pendingMediaReply;
     private SupabaseStorage.Transfer activeUploadCall;
     private String uploadedImageUrl;
     private boolean uploadingImage;
@@ -138,6 +147,7 @@ public class ChatActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         binding = ActivityChatBinding.inflate(getLayoutInflater());
+        composerImages=Glide.with(this);
         setContentView(binding.getRoot());
         ViewCompat.setOnApplyWindowInsetsListener(binding.getRoot(), (root, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars()
@@ -163,9 +173,11 @@ public class ChatActivity extends AppCompatActivity {
             else Toast.makeText(this, "Cần quyền micro để ghi tin nhắn thoại.", Toast.LENGTH_LONG).show();
         });
         imagePickerLauncher = registerForActivityResult(new ActivityResultContracts.PickVisualMedia(), uri -> {
-            if (uri == null || binding == null) return;
+            if (uri == null || binding == null || uploadingImage || sending) return;
             pendingImageUri = uri;
             uploadedImageUrl = null;
+            pendingMediaBody = null;
+            pendingMediaReply = null;
             previewSelectedMedia(uri);
         });
         SessionUser currentUser = SessionManager.getInstance().getCurrentUser();
@@ -179,6 +191,7 @@ public class ChatActivity extends AppCompatActivity {
         binding.tvFailedMessageRetry.setOnClickListener(v->retryFailedMessage());
         binding.rvMessages.setLayoutManager(new LinearLayoutManager(this));
         adapter = new ChatMessageAdapter(currentUid);
+        applyChatTheme("meeto_pink");
         adapter.setInteractionListener(new ChatMessageAdapter.OnMessageInteractionListener() {
             @Override public void onLongPress(ChatMessage message) { showMessageActions(message); }
             @Override public void onReplyTap(String messageId, long seq) { scrollToMessage(messageId, seq); }
@@ -207,9 +220,8 @@ public class ChatActivity extends AppCompatActivity {
         binding.rvMessageSearchResults.setAdapter(searchResultAdapter);
         binding.btnCancelReply.setOnClickListener(v -> clearReplyTarget());
         binding.btnAttachImage.setOnClickListener(v -> {
-            if (uploadingImage) return;
-            if (pendingImageUri != null) startOrRetryImageSend();
-            else imagePickerLauncher.launch(new PickVisualMediaRequest.Builder()
+            if (uploadingImage || sending) return;
+            imagePickerLauncher.launch(new PickVisualMediaRequest.Builder()
                     .setMediaType(ActivityResultContracts.PickVisualMedia.ImageAndVideo.INSTANCE).build());
         });
         binding.btnCancelImageUpload.setOnClickListener(v -> {
@@ -218,10 +230,7 @@ public class ChatActivity extends AppCompatActivity {
                 activeUploadCall = null;
                 uploadingImage = false;
             }
-            pendingImageUri = null;
-            uploadedImageUrl = null;
-            binding.layoutImageUploadStatus.setVisibility(View.GONE);
-            binding.btnAttachImage.setEnabled(true);
+            clearMediaSelection();
         });
         binding.btnChatSearch.setOnClickListener(v -> openMessageSearch());
         binding.btnCloseSearch.setOnClickListener(v -> closeMessageSearch());
@@ -320,6 +329,7 @@ public class ChatActivity extends AppCompatActivity {
         searchGeneration++;
         if (pendingSearch != null) searchHandler.removeCallbacks(pendingSearch);
         if (activeUploadCall != null) activeUploadCall.cancel();
+        composerImages.clear(binding.ivComposerMediaPreview);
         stopAllVoicePlayback();
         releaseRecorder();
         if (voiceFile != null && voiceFile.exists()) voiceFile.delete();
@@ -434,6 +444,9 @@ public class ChatActivity extends AppCompatActivity {
                     @Override public void onState(Chat chat) {
                         if (binding == null || !started || !listeningChatId.equals(chatId)) return;
                         currentChatState = chat;
+                        if(!themePreviewActive)applyChatTheme(chat.themeId);
+                        adapter.setMemberNames(chat.memberNames,"group".equals(chat.getType()));
+                        if("private".equals(chat.getType())&&chat.peerName!=null)binding.tvChatTitle.setText(chat.peerName);
                         if ("group".equals(chat.getType())) {
                             binding.tvChatTitle.setText(chat.title+" · "+(chat.getParticipants()==null?0:chat.getParticipants().size()));com.example.meetomxh.ui.AvatarViews.load(binding.ivChatAvatar,chat.avatar,"neutral");
                             binding.tvChatTitle.setOnClickListener(v -> openConversationDetails());
@@ -474,9 +487,9 @@ public class ChatActivity extends AppCompatActivity {
     private void updateComposerPermissions() {
         if (binding == null) return;
         boolean active = currentChatState != null && "active".equals(currentChatState.state);
-        binding.btnSendMessage.setEnabled(active && !sending);
-        binding.etMessage.setEnabled(active && !sending);
-        binding.btnAttachImage.setEnabled(active && !uploadingImage);
+        binding.btnSendMessage.setEnabled(active && !sending && !uploadingImage);
+        binding.etMessage.setEnabled(active && !sending && !uploadingImage);
+        binding.btnAttachImage.setEnabled(active && !uploadingImage && !sending);
         binding.btnVoiceRecord.setEnabled(false);
         binding.btnVoiceSend.setEnabled(active && !uploadingVoice);
     }
@@ -877,10 +890,13 @@ public class ChatActivity extends AppCompatActivity {
         return String.format(Locale.getDefault(), "%d:%02d", seconds / 60, seconds % 60);
     }
 
-    private void loadOtherProfile(String uid) {if(uid==null)return;otherUid=uid;ProfileClient.get(uid,new Api.Callback<User>(){public void success(User user){if(binding==null||isFinishing())return;binding.tvChatTitle.setText(user.getFullName());com.example.meetomxh.ui.AvatarViews.load(binding.ivChatAvatar,user.getAvatarUrl(),user.getAvatarPreset());}public void error(String e){if(binding!=null)binding.tvChatTitle.setText("Người dùng không khả dụng");}});}
+    private void loadOtherProfile(String uid) {if(uid==null)return;otherUid=uid;ProfileClient.get(uid,new Api.Callback<User>(){public void success(User user){if(binding==null||isFinishing())return;binding.tvChatTitle.setText(currentChatState!=null&&currentChatState.peerName!=null?currentChatState.peerName:user.getFullName());com.example.meetomxh.ui.AvatarViews.load(binding.ivChatAvatar,user.getAvatarUrl(),user.getAvatarPreset());}public void error(String e){if(binding!=null)binding.tvChatTitle.setText("Người dùng không khả dụng");}});}
 
     private void sendCurrentMessage() {
-        if (sending || binding == null) return;
+        if (sending || uploadingImage || binding == null) return;
+        if(pendingImageUri!=null&&editingTarget==null){
+            followImageAfterSend=isAtBottom();startOrRetryImageSend();return;
+        }
         String text = binding.etMessage.getText() == null ? "" : binding.etMessage.getText().toString();
         if (text.trim().isEmpty()) {
             binding.etMessage.setError("Nhập nội dung tin nhắn.");
@@ -957,19 +973,25 @@ public class ChatActivity extends AppCompatActivity {
     }
 
     private void startOrRetryImageSend() {
-        if (binding == null || uploadingImage || chatId == null) return;
+        if (binding == null || uploadingImage || sending || chatId == null) return;
+        if(currentChatState==null||!"active".equals(currentChatState.state))return;
+        if(pendingMediaBody==null){
+            pendingMediaBody=binding.etMessage.getText()==null?"":binding.etMessage.getText().toString();
+            pendingMediaReply=replyTarget==null?null:new ChatRepository.ReplyData(
+                    replyTarget.getMessageId(),replyTarget.getSenderId(),replyTarget.getDisplayText());
+        }
         if (uploadedImageUrl != null) {
             sendUploadedImageMessage();
             return;
         }
         if (pendingImageUri == null) return;
         uploadingImage = true;
-        setImageUploadStatus("Preparing image…", true);
+        setImageUploadStatus("Đang chuẩn bị tệp…", true);
         activeUploadCall = SupabaseStorage.upload(getContentResolver(), pendingImageUri, "chats/" + chatId, currentUid,
                 new SupabaseStorage.UploadListener() {
                     @Override public void onProgress(int percent) {
                         if (!canUpdateImageUi()) return;
-                        binding.tvImageUploadStatus.setText("Uploading image " + percent + "%");
+                        binding.tvImageUploadStatus.setText("Đang tải tệp " + percent + "%");
                     }
                     @Override public void onSuccess(String url) {
                         runOnUiThread(() -> {
@@ -983,51 +1005,49 @@ public class ChatActivity extends AppCompatActivity {
                     @Override public void onFailure(String error) {
                         runOnUiThread(() -> {
                             activeUploadCall = null;
-                            showImageFailure("Image upload failed: " + error);
+                            showImageFailure("Tải tệp thất bại: " + error);
                         });
                     }
                 });
     }
 
     private void previewSelectedMedia(Uri uri) {
-        android.widget.ImageView preview = new android.widget.ImageView(this);
-        int height = (int) (220 * getResources().getDisplayMetrics().density);
-        preview.setLayoutParams(new android.view.ViewGroup.LayoutParams(
-                android.view.ViewGroup.LayoutParams.MATCH_PARENT, height));
-        preview.setScaleType(android.widget.ImageView.ScaleType.CENTER_CROP);
         String mime = getContentResolver().getType(uri);
-        if (mime != null && mime.startsWith("video/")) {
-            Api.run(() -> SupabaseStorage.videoThumbnail(getContentResolver(), uri),
-                    new Api.Callback<android.graphics.Bitmap>() {
-                        @Override public void success(android.graphics.Bitmap bitmap) { if (binding != null) Glide.with(ChatActivity.this).load(bitmap).centerCrop().into(preview); }
-                        @Override public void error(String error) { if (binding != null) preview.setImageResource(R.drawable.ic_photo); }
-                    });
-        } else Glide.with(this).load(uri).centerCrop().into(preview);
-        new AlertDialog.Builder(this).setTitle("Xem trước tệp đính kèm")
-                .setMessage(mime != null && mime.startsWith("video/") ? "Video MP4 sẽ được gửi trong cuộc trò chuyện." : "Ảnh sẽ được gửi trong cuộc trò chuyện.")
-                .setView(preview).setNegativeButton("Hủy", (dialog, which) -> { pendingImageUri = null; })
-                .setPositiveButton("Tải lên và gửi", (dialog, which) -> {
-                    followImageAfterSend = isAtBottom(); startOrRetryImageSend();
-                }).show();
+        boolean video=mime!=null&&mime.startsWith("video/");
+        binding.tvComposerVideoBadge.setVisibility(video?View.VISIBLE:View.GONE);
+        composerImages.load(uri).frame(0).centerCrop()
+                .diskCacheStrategy(com.bumptech.glide.load.engine.DiskCacheStrategy.NONE).skipMemoryCache(true)
+                .placeholder(video?R.drawable.ic_play:R.drawable.ic_photo).error(video?R.drawable.ic_play:R.drawable.ic_photo)
+                .into(binding.ivComposerMediaPreview);
+        setImageUploadStatus(video?"Video đã chọn · Nhấn Gửi để tải lên":"Ảnh đã chọn · Nhấn Gửi để tải lên",false);
+    }
+
+    private void clearMediaSelection(){
+        pendingImageUri=null;uploadedImageUrl=null;pendingMediaBody=null;pendingMediaReply=null;
+        composerImages.clear(binding.ivComposerMediaPreview);
+        binding.tvComposerVideoBadge.setVisibility(View.GONE);
+        binding.layoutImageUploadStatus.setVisibility(View.GONE);
+        updateComposerPermissions();
     }
 
     private void sendUploadedImageMessage() {
         if (binding == null || uploadingImage || uploadedImageUrl == null || chatId == null) return;
         if (!ChatRepository.isValidStorageMediaReference(uploadedImageUrl)) {
-            showImageFailure("Media reference is invalid.");
+            showImageFailure("Tệp đính kèm không hợp lệ.");
             return;
         }
         uploadingImage = true;
-        setImageUploadStatus("Sending image…", true);
-        chatRepository.sendImageMessage(chatId, uploadedImageUrl, new ChatRepository.OnMessageSentListener() {
+        setImageUploadStatus("Đang gửi tệp…", true);
+        final String body=pendingMediaBody==null?"":pendingMediaBody;
+        final ChatRepository.ReplyData reply=pendingMediaReply;
+        chatRepository.sendImageMessage(chatId, uploadedImageUrl,body,reply,new ChatRepository.OnMessageSentListener() {
             @Override public void onSuccess(String messageId) {
                 if (!canUpdateImageUi()) return;
                 uploadingImage = false;
-                pendingImageUri = null;
-                uploadedImageUrl = null;
                 activeUploadCall = null;
-                binding.layoutImageUploadStatus.setVisibility(View.GONE);
-                binding.btnAttachImage.setEnabled(true);
+                if(body.equals(binding.etMessage.getText().toString()))binding.etMessage.setText("");
+                if(reply!=null&&replyTarget!=null&&reply.messageId.equals(replyTarget.getMessageId()))clearReplyTarget();
+                clearMediaSelection();
                 if (followImageAfterSend) {
                     messageToScrollTo = messageId;
                     int position = adapter.indexOfMessage(messageId);
@@ -1043,7 +1063,7 @@ public class ChatActivity extends AppCompatActivity {
                 }
             }
             @Override public void onError(String error) {
-                showImageFailure("Could not send image message: " + error);
+                showImageFailure("Chưa gửi được tệp: " + error);
             }
         });
     }
@@ -1054,8 +1074,8 @@ public class ChatActivity extends AppCompatActivity {
         uploadingImage = false;
         binding.progressImageUpload.setVisibility(View.GONE);
         binding.layoutImageUploadStatus.setVisibility(View.VISIBLE);
-        binding.tvImageUploadStatus.setText(message + " Tap attach to retry.");
-        binding.btnAttachImage.setEnabled(true);
+        binding.tvImageUploadStatus.setText(message + " Nhấn Gửi để thử lại hoặc × để bỏ tệp.");
+        updateComposerPermissions();
         binding.btnCancelImageUpload.setEnabled(true);
         Toast.makeText(this, message, Toast.LENGTH_LONG).show();
     }
@@ -1065,7 +1085,7 @@ public class ChatActivity extends AppCompatActivity {
         binding.layoutImageUploadStatus.setVisibility(View.VISIBLE);
         binding.tvImageUploadStatus.setText(message);
         binding.progressImageUpload.setVisibility(busy ? View.VISIBLE : View.GONE);
-        binding.btnAttachImage.setEnabled(!busy);
+        updateComposerPermissions();
         binding.btnCancelImageUpload.setEnabled(!busy);
     }
 
@@ -1308,7 +1328,7 @@ public class ChatActivity extends AppCompatActivity {
             ((com.example.meetomxh.supabase.Observer<?>) messagesRegistration).refresh();
     }
 
-    private void showFailedOutbox(){if(chatId==null||binding==null)return;Api.run(()->MessageOutbox.forConversation(chatId),new Api.Callback<org.json.JSONArray>(){public void success(org.json.JSONArray rows){if(binding==null)return;failedRequestId=rows.length()==0?null:rows.optJSONObject(rows.length()-1).optString("p_client_request_id");binding.tvFailedMessageRetry.setVisibility(failedRequestId==null?View.GONE:View.VISIBLE);failedVoiceMatchesPreview=false;if(failedRequestId!=null){org.json.JSONObject row=rows.optJSONObject(rows.length()-1);String body=row.optString("p_body","");org.json.JSONArray assets=row.optJSONArray("p_assets");failedVoiceMatchesPreview="voice".equals(row.optString("p_kind"))&&uploadedVoiceReference!=null&&assets!=null&&assets.length()==1&&com.example.meetomxh.supabase.Dto.assetId(uploadedVoiceReference).equals(assets.optString(0));binding.tvFailedMessageRetry.setText("Message failed · "+("voice".equals(row.optString("p_kind"))?"Tap to retry voice message":body.isEmpty()?"Tap to retry attachment":"Tap to retry: "+(body.length()>48?body.substring(0,48)+"…":body)));}}public void error(String e){android.util.Log.w("ChatActivity","Outbox unavailable",new IllegalStateException(e));}});}
+    private void showFailedOutbox(){if(chatId==null||binding==null)return;Api.run(()->MessageOutbox.forConversation(chatId),new Api.Callback<org.json.JSONArray>(){public void success(org.json.JSONArray rows){if(binding==null)return;failedRequestId=rows.length()==0?null:rows.optJSONObject(rows.length()-1).optString("p_client_request_id");binding.tvFailedMessageRetry.setVisibility(failedRequestId==null?View.GONE:View.VISIBLE);failedVoiceMatchesPreview=false;if(failedRequestId!=null){org.json.JSONObject row=rows.optJSONObject(rows.length()-1);String body=row.optString("p_body","");org.json.JSONArray assets=row.optJSONArray("p_assets");failedVoiceMatchesPreview="voice".equals(row.optString("p_kind"))&&uploadedVoiceReference!=null&&assets!=null&&assets.length()==1&&com.example.meetomxh.supabase.Dto.assetId(uploadedVoiceReference).equals(assets.optString(0));binding.tvFailedMessageRetry.setText("Gửi tin nhắn thất bại · "+("voice".equals(row.optString("p_kind"))?"Chạm để gửi lại tin nhắn thoại":body.isEmpty()?"Chạm để gửi lại tệp":"Chạm để gửi lại: "+(body.length()>48?body.substring(0,48)+"…":body)));}}public void error(String e){android.util.Log.w("ChatActivity","Outbox unavailable",new IllegalStateException(e));}});}
     private void retryFailedMessage(){if(failedRequestId==null||chatId==null)return;String request=failedRequestId;boolean clearVoice=failedVoiceMatchesPreview;binding.tvFailedMessageRetry.setEnabled(false);Api.run(()->MessageOutbox.retryOne(chatId,request),new Api.Callback<String>(){public void success(String messageId){if(binding==null)return;binding.tvFailedMessageRetry.setEnabled(true);if(clearVoice){discardVoicePreview();clearReplyTarget();}messageToScrollTo=isAtBottom()?messageId:null;refetchMessages();showFailedOutbox();}public void error(String e){if(binding!=null){binding.tvFailedMessageRetry.setEnabled(true);Toast.makeText(ChatActivity.this,e,Toast.LENGTH_LONG).show();showFailedOutbox();}}});}
 
     private void clearReplyTarget() {
@@ -1359,6 +1379,28 @@ public class ChatActivity extends AppCompatActivity {
                 || !binding.rvMessages.canScrollVertically(1);
     }
 
+    private void applyChatTheme(String id){
+        if(binding==null)return;
+        com.example.meetomxh.ui.ChatThemeRegistry.Palette p=com.example.meetomxh.ui.ChatThemeRegistry.get(id).palette(this);
+        binding.getRoot().setBackgroundColor(p.background);binding.layoutChatHeader.setBackgroundColor(p.input);
+        binding.layoutChatComposer.setBackgroundColor(p.input);binding.tvChatTitle.setTextColor(p.text);
+        binding.btnChatSearch.setBackground(com.example.meetomxh.ui.ChatThemeRegistry.shape(p.input,24,this));
+        android.graphics.drawable.GradientDrawable input=com.example.meetomxh.ui.ChatThemeRegistry.shape(p.input,22,this);
+        input.setStroke(Math.round(getResources().getDisplayMetrics().density),p.border);binding.etMessage.setBackground(input);
+        binding.etMessage.setTextColor(p.text);binding.etMessage.setHintTextColor(p.secondary);
+        binding.btnSendMessage.setBackgroundTintList(android.content.res.ColorStateList.valueOf(p.sent));binding.btnSendMessage.setTextColor(p.sentText);
+        for(android.widget.ImageButton button:new android.widget.ImageButton[]{binding.btnChatBack,binding.btnChatSearch,binding.btnAttachImage,binding.btnCancelImageUpload,binding.btnCancelReply})
+            button.setImageTintList(android.content.res.ColorStateList.valueOf(p.accent));
+        binding.layoutImageUploadStatus.setBackgroundColor(p.input);binding.tvImageUploadStatus.setTextColor(p.secondary);
+        binding.tvComposerVideoBadge.setBackground(com.example.meetomxh.ui.ChatThemeRegistry.shape(p.sent,14,this));binding.tvComposerVideoBadge.setTextColor(p.sentText);
+        binding.layoutReplyComposer.setBackgroundColor(p.input);binding.tvReplyComposer.setTextColor(p.secondary);
+        binding.layoutMessageSearch.setBackgroundColor(p.input);binding.etSearchMessages.setTextColor(p.text);binding.etSearchMessages.setHintTextColor(p.secondary);
+        binding.etSearchMessages.setBackground(com.example.meetomxh.ui.ChatThemeRegistry.shape(p.input,20,this));
+        binding.tvMessageSearchState.setTextColor(p.secondary);binding.tvMessagesState.setTextColor(p.secondary);
+        binding.tvFailedMessageRetry.setBackgroundColor(p.input);binding.tvFailedMessageRetry.setTextColor(p.text);
+        binding.progressSending.setIndeterminateTintList(android.content.res.ColorStateList.valueOf(p.sentText));
+        if(adapter!=null)adapter.setTheme(this,id);
+    }
     private void openConversationDetails(){if(chatId==null)return;detailsLauncher.launch(new Intent(this,ConversationDetailsActivity.class).putExtra(ConversationDetailsActivity.EXTRA_CHAT_ID,chatId));}
 
     private void openOtherProfile() {

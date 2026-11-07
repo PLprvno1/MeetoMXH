@@ -16,7 +16,8 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
-import com.example.meetomxh.ChatImageViewerActivity;
+import com.example.meetomxh.PostMediaViewerActivity;
+import com.example.meetomxh.supabase.PostViewerUpdates;
 import com.example.meetomxh.CreatePostActivity;
 import com.example.meetomxh.R;
 import com.example.meetomxh.ReportContentActivity;
@@ -76,6 +77,23 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private final boolean memoryMode;
     private final boolean hiddenMemoryMode;
     private boolean showPersonFallback = true;
+    private final java.util.Map<String,Long> viewerVersions=new java.util.HashMap<>();
+    private androidx.lifecycle.LifecycleOwner viewerOwner;
+    private final androidx.lifecycle.Observer<Long> viewerObserver=ignored->applyViewerUpdates();
+    @Override public void onAttachedToRecyclerView(@NonNull RecyclerView recycler){
+        super.onAttachedToRecyclerView(recycler);android.content.Context context=recycler.getContext();
+        while(context instanceof android.content.ContextWrapper&&!(context instanceof androidx.lifecycle.LifecycleOwner))context=((android.content.ContextWrapper)context).getBaseContext();
+        if(context instanceof androidx.lifecycle.LifecycleOwner){viewerOwner=(androidx.lifecycle.LifecycleOwner)context;PostViewerUpdates.changes.observe(viewerOwner,viewerObserver);}
+    }
+    @Override public void onDetachedFromRecyclerView(@NonNull RecyclerView recycler){PostViewerUpdates.changes.removeObserver(viewerObserver);viewerOwner=null;super.onDetachedFromRecyclerView(recycler);}
+    private void applyViewerUpdates(){
+        for(PostViewerUpdates.Event event:PostViewerUpdates.events()){
+            if(viewerVersions.getOrDefault(event.id,0L)>=event.revision)continue;viewerVersions.put(event.id,event.revision);
+            for(int i=0;i<postList.size();i++)if(event.id.equals(postList.get(i).getPostId())){
+                if(event.deleted){postList.remove(i);notifyItemRemoved(getHeaderOffset()+i);}else{event.apply(postList.get(i));notifyItemChanged(getHeaderOffset()+i);}break;
+            }
+        }
+    }
 
     public FeedAdapter(OnPostClickListener listener) {
         this(listener, true);
@@ -101,8 +119,13 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             List<Story> rows=com.example.meetomxh.supabase.StoryClient.list(null);
             List<Story> out=new ArrayList<>(); Story add=new Story("create_story", "Tin của bạn", com.example.meetomxh.supabase.Dto.asset(com.example.meetomxh.supabase.Dto.nullable(me,"avatar_asset_id")), "", true);
             add.setAvatarPreset(me.optString("avatar_preset","neutral")); out.add(add);
+            String self=com.example.meetomxh.supabase.SessionManager.getInstance().uid();add.setAuthorId(self);
             java.util.LinkedHashMap<String,Story> latestByAuthor=new java.util.LinkedHashMap<>();
-            for(Story s:rows) latestByAuthor.put(s.getAuthorId(),s);
+            for(Story s:rows){
+                if(self.equals(s.getAuthorId())){
+                    if(!com.example.meetomxh.supabase.StoryClient.validId(add.getId())){add.setId(s.getId());add.setExpiresAt(s.getExpiresAt());add.setCreatedAt(s.getCreatedAt());}
+                }else latestByAuthor.putIfAbsent(s.getAuthorId(),s);
+            }
             out.addAll(latestByAuthor.values());
             return out;
         },new com.example.meetomxh.supabase.Api.Callback<List<Story>>() {
@@ -359,6 +382,7 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 if (listener != null) listener.onAuthorClick(post);
             };
             binding.ivAvatar.setOnClickListener(authorClickListener);
+            com.example.meetomxh.ui.StoryRings.bind(binding.ivAvatar,binding.ivAvatar,post.getAuthorUid(),authorClickListener);
             binding.tvUserName.setOnClickListener(authorClickListener);
 
             // Post Image
@@ -554,6 +578,7 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         private void bindSharedPost(Post post, boolean showPersonFallback) {
             binding.cardSharedPost.setVisibility(View.GONE);
             binding.ivSharedPostMedia.setVisibility(View.GONE);
+            binding.ivSharedPostMedia.setOnClickListener(null);
             if (!"share".equals(post.getType())) return;
             binding.cardSharedPost.setVisibility(View.VISIBLE);
             binding.tvSharedPostAuthor.setText("Đang tải bài viết gốc…");
@@ -570,7 +595,9 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                     String sharedAvatar=com.example.meetomxh.supabase.Dto.asset(author==null?null:com.example.meetomxh.supabase.Dto.nullable(author,"avatar_asset_id"));if(showPersonFallback)com.example.meetomxh.ui.AvatarViews.load(binding.ivSharedPostAvatar,sharedAvatar,"neutral");else com.example.meetomxh.ui.AvatarViews.loadWithoutPersonFallback(binding.ivSharedPostAvatar,sharedAvatar);
                     binding.tvSharedPostBody.setText(original.optString("body",""));
                     org.json.JSONArray media=original.optJSONArray("media");
-                    if(media!=null&&media.length()>0){String ref=com.example.meetomxh.supabase.Dto.asset(media.optJSONObject(0).optString("asset_id"));binding.ivSharedPostMedia.setVisibility(View.VISIBLE);Glide.with(binding.ivSharedPostMedia).load(ref).placeholder(R.drawable.ic_media_error).error(R.drawable.ic_media_error).into(binding.ivSharedPostMedia);}
+                    if(media!=null&&media.length()>0){String ref=com.example.meetomxh.supabase.Dto.asset(media.optJSONObject(0).optString("asset_id"));binding.ivSharedPostMedia.setVisibility(View.VISIBLE);Glide.with(binding.ivSharedPostMedia).load(ref).placeholder(R.drawable.ic_media_error).error(R.drawable.ic_media_error).into(binding.ivSharedPostMedia);
+                        if(!original.optBoolean("is_reel")&&media.optJSONObject(0).optString("mime_type").startsWith("image/"))binding.ivSharedPostMedia.setOnClickListener(v->PostMediaViewerActivity.open(v.getContext(),source,ref,0));
+                    }
                 }
                 @Override public void error(String error) { if(post.getPostId().equals(boundPostId)){binding.tvSharedPostAuthor.setText("Bài viết gốc không còn khả dụng với bạn.");binding.tvSharedPostBody.setText("");} }
             });
@@ -579,17 +606,10 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         private void openMediaViewer(View view, Post post) {
             if (post.getImageUrls() == null || post.getImageUrls().isEmpty()) return;
             if ("video".equals(post.getMediaType())) {
-                view.getContext().startActivity(new Intent(view.getContext(),
-                        com.example.meetomxh.VideoPlayerActivity.class)
-                        .putExtra(com.example.meetomxh.VideoPlayerActivity.EXTRA_ASSET, post.getPostImage()));
+                com.example.meetomxh.supabase.PostDetails.video(view.getContext(),post.getPostId());
                 return;
             }
-            Intent intent = new Intent(view.getContext(), ChatImageViewerActivity.class)
-                    .putExtra(ChatImageViewerActivity.EXTRA_IMAGE_URLS,
-                            post.getImageUrls().toArray(new String[0]))
-                    .putExtra(ChatImageViewerActivity.EXTRA_START_INDEX,
-                            Math.max(0, post.getImageUrls().indexOf(post.getPostImage())));
-            view.getContext().startActivity(intent);
+            PostMediaViewerActivity.open(view.getContext(),post.getPostId(),post.getPostImage(),Math.max(0,post.getImageUrls().indexOf(post.getPostImage())));
         }
     }
 }

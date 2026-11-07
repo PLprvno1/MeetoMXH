@@ -10,6 +10,10 @@ public final class FeedRepository {
  private FeedRepository(){SessionManager.getInstance().listeners.add(()->{if(ownerEpoch!=SessionManager.getInstance().generation()){loading=false;refreshPending=false;loadingState.setValue(false);posts.setValue(new ArrayList<>());afterTime=null;afterId=null;ownerEpoch=SessionManager.getInstance().generation();}});}
  public static synchronized FeedRepository getInstance(){if(instance==null)instance=new FeedRepository();return instance;}
  public LiveData<List<Post>> getPosts(){return posts;}
+ public void applyViewerEvent(PostViewerUpdates.Event event){
+  List<Post> current=posts.getValue();if(current==null)return;List<Post> next=new ArrayList<>(current);
+  for(int i=0;i<next.size();i++)if(event.id.equals(next.get(i).getPostId())){if(event.deleted)next.remove(i);else event.apply(next.get(i));posts.setValue(next);return;}
+ }
  public void listenToRealPosts(){refresh();}
  public void refresh(){if(loading){refreshPending=true;return;}afterTime=null;afterId=null;load(false);}
  public void loadMore(){if(afterId!=null)load(true);}
@@ -32,9 +36,9 @@ public final class FeedRepository {
    public void error(String message){if(!append)posts.setValue(new ArrayList<>());error.setValue(message);finishLoad();}
   });
  } public void toggleLikePost(String id,OnPostActionListener cb){Post p=find(id);if(p==null){cb.onFailure("Hãy tải lại bài viết rồi thử lại.");return;}setReaction(id,p.isLiked()?null:"like",cb);}
- public void setReaction(String id,String type,OnPostActionListener cb){Post p=find(id);if(p==null){cb.onFailure("Hãy tải lại bài viết rồi thử lại.");return;}Api.run(()->RpcClient.object("set_post_reaction",Api.obj("p_post_id",id,"p_reaction",type)),new Api.Callback<JSONObject>(){public void success(JSONObject result){p.setReaction(Dto.nullable(result,"reaction"));p.setLikesCount(result.optInt("reactions_count",p.getLikesCount()));error.setValue(null);cb.onSuccess("Updated");}public void error(String message){error.setValue(message);cb.onFailure(message);}});}
+ public void setReaction(String id,String type,OnPostActionListener cb){Post p=find(id);if(p==null){cb.onFailure("Hãy tải lại bài viết rồi thử lại.");return;}Api.run(()->RpcClient.object("set_post_reaction",Api.obj("p_post_id",id,"p_reaction",type)),new Api.Callback<JSONObject>(){public void success(JSONObject result){p.setReaction(Dto.nullable(result,"reaction"));p.setLikesCount(result.optInt("reactions_count",p.getLikesCount()));PostViewerUpdates.publish(p,false);error.setValue(null);cb.onSuccess("Updated");}public void error(String message){error.setValue(message);cb.onFailure(message);}});}
  public void sharePost(Post p,String text,OnPostActionListener cb){String root=p.getOriginalPostId()==null?p.getPostId():p.getOriginalPostId();String payload=root+text;String uuid=RequestIds.get("share",payload);Api.run(()->{Object row=RpcClient.call("share_post",Api.obj("p_original",root,"p_body",text,"p_audience","public","p_client_request_id",uuid));RequestIds.complete("share",payload);return row;},callback(cb));}
- public void deletePost(String id,OnPostActionListener cb){Post p=find(id);if(p==null){cb.onFailure("Hãy tải lại bài viết.");return;}Api.run(()->RpcClient.call("delete_post",Api.obj("p_post_id",id,"p_expected_version",p.version)),new Api.Callback<Object>(){public void success(Object value){ReelsRepository.invalidate();refresh();cb.onSuccess("Đã cập nhật");}public void error(String e){cb.onFailure(e);}});}
+ public void deletePost(String id,OnPostActionListener cb){Post p=find(id);if(p==null){cb.onFailure("Hãy tải lại bài viết.");return;}Api.run(()->RpcClient.call(p.isReel()?"delete_reel":"delete_post",Api.obj("p_post_id",id,"p_expected_version",p.version)),new Api.Callback<Object>(){public void success(Object value){if(p.isReel()&&value instanceof JSONObject)PostUpdates.changed((JSONObject)value,true);else{ReelsRepository.invalidate();refresh();}cb.onSuccess("Đã cập nhật");}public void error(String e){cb.onFailure(e);}});}
  public void edit(Post p,String body,String audience,OnPostActionListener cb){JSONArray assets=new JSONArray();for(String ref:p.getImageUrls())assets.put(Dto.assetId(ref));action("edit_post",Api.obj("p_post_id",p.getPostId(),"p_body",body,"p_audience",audience,"p_assets",assets,"p_expected_version",p.version),cb);}
  private Post find(String id){if(posts.getValue()!=null)for(Post p:posts.getValue())if(id.equals(p.getPostId()))return p;return null;}
  private void action(String rpc,JSONObject args,OnPostActionListener cb){Api.run(()->RpcClient.call(rpc,args),callback(cb));}
