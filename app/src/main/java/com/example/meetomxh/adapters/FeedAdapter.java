@@ -77,6 +77,7 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private final boolean memoryMode;
     private final boolean hiddenMemoryMode;
     private boolean showPersonFallback = true;
+    private static final Object ENGAGEMENT_PAYLOAD=new Object();
     private final java.util.Map<String,Long> viewerVersions=new java.util.HashMap<>();
     private androidx.lifecycle.LifecycleOwner viewerOwner;
     private final androidx.lifecycle.Observer<Long> viewerObserver=ignored->applyViewerUpdates();
@@ -90,7 +91,7 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         for(PostViewerUpdates.Event event:PostViewerUpdates.events()){
             if(viewerVersions.getOrDefault(event.id,0L)>=event.revision)continue;viewerVersions.put(event.id,event.revision);
             for(int i=0;i<postList.size();i++)if(event.id.equals(postList.get(i).getPostId())){
-                if(event.deleted){postList.remove(i);notifyItemRemoved(getHeaderOffset()+i);}else{event.apply(postList.get(i));notifyItemChanged(getHeaderOffset()+i);}break;
+                if(event.deleted){postList.remove(i);notifyItemRemoved(getHeaderOffset()+i);}else{event.apply(postList.get(i));if(event.engagementOnly)notifyItemChanged(getHeaderOffset()+i,ENGAGEMENT_PAYLOAD);else notifyItemChanged(getHeaderOffset()+i);}break;
             }
         }
     }
@@ -201,6 +202,16 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             ItemPostBinding binding = ItemPostBinding.inflate(inflater, parent, false);
             return new PostViewHolder(binding, memoryMode, hiddenMemoryMode);
         }
+    }
+
+    @Override
+    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder,int position,@NonNull List<Object> payloads){
+        int index=position-getHeaderOffset();
+        if(holder instanceof PostViewHolder&&index>=0&&index<postList.size()&&!payloads.isEmpty()){
+            boolean engagementOnly=true;for(Object payload:payloads)if(payload!=ENGAGEMENT_PAYLOAD){engagementOnly=false;break;}
+            if(engagementOnly){((PostViewHolder)holder).bindEngagement(postList.get(index));return;}
+        }
+        onBindViewHolder(holder,position);
     }
 
     @Override
@@ -350,6 +361,13 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 binding.btnLike.setContentDescription("Thích bài viết");
             }
             binding.tvLikeText.setVisibility(View.GONE);
+        }
+        private void bindEngagement(Post post){
+            renderReaction(post);
+            binding.tvLikesCount.setText(post.getLikesCount()+" lượt thích");
+            binding.tvCommentsCount.setText(post.getCommentsCount()+" bình luận");
+            binding.btnBookmark.setImageResource(post.isSaved()?R.drawable.ic_bookmark:R.drawable.ic_bookmark_outline);
+            binding.btnBookmark.setContentDescription(post.isSaved()?"Bỏ lưu bài viết":"Lưu bài viết");
         }
         public void bind(Post post, OnPostClickListener listener, boolean showPersonFallback) {
             boundPostId = post.getPostId();
