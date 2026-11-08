@@ -58,6 +58,7 @@ public class InboxFragment extends Fragment {
     private final Map<String, Boolean> muteOverrides = new HashMap<>(), archiveOverrides = new HashMap<>();
     private final Set<String> blockedConversations = new HashSet<>();
     private final Set<String> pendingArchives = new HashSet<>();
+    private final com.example.meetomxh.ui.InboxNewMessages newMessages=new com.example.meetomxh.ui.InboxNewMessages();
 
     @Nullable
     @Override
@@ -164,6 +165,7 @@ public class InboxFragment extends Fragment {
         searchGeneration++;
         if (pendingConversationSearch != null) searchHandler.removeCallbacks(pendingConversationSearch);
         chatsLoaded = false;
+        newMessages.clear();
         super.onDestroyView();
     }
 
@@ -199,6 +201,7 @@ public class InboxFragment extends Fragment {
             return;
         }
         if (chats.isEmpty()) {
+            newMessages.update(Collections.emptyList());
             adapter.submitList(Collections.emptyList());
             binding.progressInbox.setVisibility(View.GONE);
             binding.rvInbox.setVisibility(View.GONE);
@@ -208,6 +211,7 @@ public class InboxFragment extends Fragment {
         }
 
         List<Inbox> rows = new ArrayList<>();
+        List<Chat> visibleChats = new ArrayList<>();
         for (Chat chat : chats) {
             if (ConversationVisibility.isHidden(currentUid, chat) || blockedConversations.contains(chat.getChatId())) continue;
             if(chat.archived!=showArchived)continue;
@@ -229,8 +233,17 @@ public class InboxFragment extends Fragment {
             row.setUnread(chat.isUnreadFor(currentUid));
             row.setMuted(chat.muted);
             rows.add(row);
+            visibleChats.add(chat);
         }
+        boolean revealNewest=newMessages.update(visibleChats);
         adapter.submitList(rows);
+        if(revealNewest&&!rows.isEmpty()){
+            // DiffUtil preserves the old visible item when a row moves above it.
+            // A new message must reveal the new first row instead of retaining that anchor.
+            binding.rvInbox.stopScroll();
+            LinearLayoutManager manager=(LinearLayoutManager)binding.rvInbox.getLayoutManager();
+            if(manager!=null)manager.scrollToPositionWithOffset(0,0);
+        }
         binding.progressInbox.setVisibility(View.GONE);
         binding.tvInboxState.setVisibility(View.GONE);
         binding.rvInbox.setVisibility(rows.isEmpty() ? View.GONE : View.VISIBLE);

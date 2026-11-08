@@ -47,6 +47,7 @@ public class MainActivity extends AppCompatActivity {
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+        com.example.meetomxh.notifications.SystemNotifications.requestPermission(this);
         // Material 3 defaults to an 80dp minimum. Keep all five compact tab hit areas
         // inside the 54dp content area above the gesture-navigation inset.
         int tabHeight=(int)(54*getResources().getDisplayMetrics().density+.5f);
@@ -301,6 +302,7 @@ public class MainActivity extends AppCompatActivity {
 
     @Override protected void onResume() {
         super.onResume();
+        com.example.meetomxh.notifications.SystemNotifications.refresh(this);
         refreshDrawerProfile();
     }
 
@@ -327,5 +329,10 @@ public class MainActivity extends AppCompatActivity {
         if(drawerProfileRequest!=null)drawerProfileRequest.remove();
         if (badgeObserver != null) badgeObserver.remove();
         super.onDestroy();
+    }
+    @Override public void onRequestPermissionsResult(int requestCode,String[] permissions,int[] grantResults){
+        super.onRequestPermissionsResult(requestCode,permissions,grantResults);
+        if(requestCode==com.example.meetomxh.notifications.SystemNotifications.PERMISSION_REQUEST)
+            com.example.meetomxh.notifications.SystemNotifications.refresh(this);
     }
 }

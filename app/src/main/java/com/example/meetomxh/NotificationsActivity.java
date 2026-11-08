@@ -47,6 +47,12 @@ public class NotificationsActivity extends AppCompatActivity {
             }
         });
         selectFilter();observe();
+        String pushId=getIntent().getStringExtra("push_notification_id"),recipient=getIntent().getStringExtra("push_recipient");
+        if(com.example.meetomxh.supabase.StoryClient.validId(pushId)&&com.example.meetomxh.supabase.SessionManager.getInstance().uid().equals(recipient)){
+            try{JSONObject row=new JSONObject(getIntent().getStringExtra("push_row"));
+                if(pushId.equals(row.optString("id")))openNotification(new NotificationItem(row));
+            }catch(Exception ignored){}
+        }
     }
     private void selectFilter(){
         int blue=ContextCompat.getColor(this,R.color.brand_blue),white=ContextCompat.getColor(this,R.color.white);

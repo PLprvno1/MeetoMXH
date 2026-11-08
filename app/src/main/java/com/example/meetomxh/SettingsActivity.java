@@ -214,7 +214,11 @@ public class SettingsActivity extends AppCompatActivity {
                 JSONObject prefs = settings.optJSONObject("preferences"); if (prefs == null) prefs = new JSONObject();
                 final JSONObject current = prefs;
                 LinearLayout options = new LinearLayout(SettingsActivity.this); options.setOrientation(LinearLayout.VERTICAL); options.setPadding(20,8,20,8);
-                CheckBox enabled = new CheckBox(SettingsActivity.this); enabled.setText("Thông báo trong ứng dụng"); enabled.setChecked(settings.optBoolean("enabled",true)); options.addView(enabled);
+                CheckBox enabled = new CheckBox(SettingsActivity.this); enabled.setText("Bật thông báo"); enabled.setChecked(settings.optBoolean("enabled",true)); options.addView(enabled);
+                com.google.android.material.button.MaterialButton androidSettings=new com.google.android.material.button.MaterialButton(SettingsActivity.this);
+                androidSettings.setText("Cài đặt thông báo Android");androidSettings.setAllCaps(false);
+                androidSettings.setOnClickListener(v->startActivity(new Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                    .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE,getPackageName())));options.addView(androidSettings);
                 String[] keys={"reaction","comment","reply","follow_request","follow_accepted","message_request","group_invite","follow","message","story","moderation","mention","tag"};
                 String[] labels={"Cảm xúc","Bình luận","Trả lời","Yêu cầu theo dõi","Chấp nhận theo dõi","Tin nhắn chờ","Lời mời nhóm chat","Theo dõi","Tin nhắn","Tin trả lời story","Kiểm duyệt","Mention","Gắn thẻ"};
                 CheckBox[] boxes=new CheckBox[keys.length];
