@@ -155,7 +155,7 @@ public final class AdminReportActions {
         badgeRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
 
         TextView tvKind = new TextView(host);
-        tvKind.setText(report.optString("target_kind", "report").toUpperCase(java.util.Locale.ROOT));
+        tvKind.setText(com.example.meetomxh.ui.AdminUi.kind(report.optString("target_kind", "report")));
         tvKind.setBackgroundResource(R.drawable.bg_badge_admin);
         tvKind.setTextColor(ContextCompat.getColor(host, R.color.brand_blue));
         tvKind.setTextSize(11);
@@ -163,7 +163,7 @@ public final class AdminReportActions {
         badgeRow.addView(tvKind);
 
         TextView tvReason = new TextView(host);
-        tvReason.setText(report.optString("reason_code", ""));
+        tvReason.setText(com.example.meetomxh.ui.AdminUi.reason(report.optString("reason_code", "")));
         tvReason.setBackgroundResource(R.drawable.bg_badge_member);
         tvReason.setTextColor(ContextCompat.getColor(host, R.color.text_secondary));
         tvReason.setTextSize(11);
@@ -191,7 +191,7 @@ public final class AdminReportActions {
         body.addView(badgeRow);
 
         // Details Section
-        String details = report.optString("details", "");
+        String details = com.example.meetomxh.ui.AdminUi.text(report,"details");
         if (!details.isEmpty()) {
             TextView tvDetailsHeading = new TextView(host);
             tvDetailsHeading.setText("Nội dung báo cáo:");
@@ -226,7 +226,9 @@ public final class AdminReportActions {
             tvTargetHeading.setLayoutParams(tlp);
             body.addView(tvTargetHeading);
 
-            String targetText = target.optString("body", target.optString("caption", target.optString("display_name", "")));
+            String targetText = com.example.meetomxh.ui.AdminUi.text(target,"body");
+            if(targetText.isEmpty())targetText=com.example.meetomxh.ui.AdminUi.text(target,"caption");
+            if(targetText.isEmpty())targetText=com.example.meetomxh.ui.AdminUi.text(target,"display_name");
             TextView tvTarget = new TextView(host);
             tvTarget.setText(targetText.isEmpty() ? "(Không có văn bản)" : targetText);
             tvTarget.setTextColor(ContextCompat.getColor(host, R.color.text_primary));
@@ -311,15 +313,8 @@ public final class AdminReportActions {
         JSONArray allowed = report.optJSONArray("permitted_actions");
         if (allowed != null && allowed.length() > 0) {
             builder.setPositiveButton("Quyết định xử lý", (d, w) -> {
-                String[] labels = new String[allowed.length()];
-                for (int i = 0; i < labels.length; i++) {
-                    labels[i] = label(allowed.optString(i));
-                }
-                show(new AlertDialog.Builder(host)
-                        .setTitle("Chọn quyết định kiểm duyệt")
-                        .setItems(labels, (x, n) -> decide(report, allowed.optString(n)))
-                        .setNegativeButton("Hủy", null)
-                        .create());
+                show(com.example.meetomxh.ui.AdminUi.actions(host,"Chọn quyết định kiểm duyệt",
+                        allowed,n->decide(report,allowed.optString(n))));
             });
         }
 
@@ -332,7 +327,7 @@ public final class AdminReportActions {
             case "assigned": return "Đang xử lý";
             case "resolved": return "Đã giải quyết";
             case "dismissed": return "Đã bác bỏ";
-            default: return state;
+            default: return com.example.meetomxh.ui.AdminUi.state(state);
         }
     }
 
@@ -464,7 +459,7 @@ public final class AdminReportActions {
         container.setPadding(dp(20), dp(10), dp(20), dp(8));
 
         TextView tvExplanation = new TextView(host);
-        tvExplanation.setText("Quyết định và lý do được lưu trữ trong audit hệ thống. Gỡ nội dung không hỗ trợ khôi phục.");
+        tvExplanation.setText("Quyết định và lý do được lưu vào nhật ký hệ thống. Gỡ nội dung không hỗ trợ khôi phục.");
         tvExplanation.setTextColor(ContextCompat.getColor(host, R.color.text_secondary));
         tvExplanation.setTextSize(13);
         container.addView(tvExplanation);

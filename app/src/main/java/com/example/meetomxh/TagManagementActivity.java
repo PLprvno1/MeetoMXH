@@ -13,7 +13,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 public final class TagManagementActivity extends AppCompatActivity {
-    private String policy = "followers";
+    private String policy = "everyone";
     private boolean review = true;
 
     private TextView tvTagPolicySummary;
@@ -53,7 +53,7 @@ public final class TagManagementActivity extends AppCompatActivity {
     private void loadSettings() {
         Api.run(() -> RpcClient.object("get_tagging_settings", Api.obj()), new Api.Callback<JSONObject>() {
             public void success(JSONObject o) {
-                policy = o.optString("tagging_policy", "followers");
+                policy = o.optString("tagging_policy", "everyone");
                 review = o.optBoolean("tag_review_required", true);
                 tvTagPolicySummary.setText(label(policy) + " · " + (review ? "Duyệt trước" : "Tự động chấp nhận"));
             }
@@ -65,7 +65,7 @@ public final class TagManagementActivity extends AppCompatActivity {
     }
 
     private void editSettings() {
-        String[] labels = {"Mọi người", "Người theo dõi", "Không ai"};
+        String[] labels = {"Mọi người", "Người theo dõi / Đang theo dõi", "Không ai"};
         String[] values = {"everyone", "followers", "nobody"};
         int selected = policy.equals("everyone") ? 0 : policy.equals("nobody") ? 2 : 1;
 
@@ -190,7 +190,7 @@ public final class TagManagementActivity extends AppCompatActivity {
     }
 
     private String label(String p) {
-        return "everyone".equals(p) ? "Mọi người" : "nobody".equals(p) ? "Không ai" : "Người theo dõi";
+        return "everyone".equals(p) ? "Mọi người" : "nobody".equals(p) ? "Không ai" : "Người theo dõi / Đang theo dõi";
     }
 
     private void toast(String e) {

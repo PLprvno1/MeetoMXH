@@ -82,7 +82,10 @@ public class RegisterActivity extends AppCompatActivity {
                         "p_location_audience", "private",
                         "p_expected_version", current.getLong("version")));
             }, new Api.Callback<JSONObject>() {
-                public void success(JSONObject profile) { chooseProfilePhotos(); }
+                public void success(JSONObject profile) {
+                    OnboardingFlow.markSocialSetupPending(RegisterActivity.this, SessionManager.getInstance().uid());
+                    enterMain();
+                }
                 public void error(String error) { submitButton.setEnabled(true);Forms.status(RegisterActivity.this, error); }
             });
         } else {

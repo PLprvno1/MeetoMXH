@@ -8,7 +8,7 @@
             android:background="?attr/selectableItemBackgroundBorderless" android:src="@drawable/ic_arrow_back"
             android:tint="@color/text_primary" android:contentDescription="Quay lại" />
         <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-            android:text="Âm nhạc Openverse" android:textColor="@color/text_primary" android:textSize="19sp" android:textStyle="bold" />
+            android:text="Thư viện nhạc Meeto" android:textColor="@color/text_primary" android:textSize="19sp" android:textStyle="bold" />
     </LinearLayout>
     <EditText android:id="@+id/music_picker_query" android:layout_width="match_parent" android:layout_height="52dp"
         android:singleLine="true" android:imeOptions="actionSearch" android:hint="Tìm bài hát hoặc nghệ sĩ"
@@ -19,7 +19,7 @@
             android:layout_height="match_parent" android:gravity="center_vertical" />
     </HorizontalScrollView>
     <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingVertical="8dp"
-        android:text="Chỉ hiện bản nhạc được Openverse ghi nhận CC0. Hãy kiểm tra nguồn và giấy phép trước khi đăng; thông tin này không bảo đảm tuyệt đối về bản quyền."
+        android:text="Nhạc Meeto · Tải từng bài khi nghe thử hoặc chọn. Bài đã tải có thể nghe lại khi mất mạng."
         android:textColor="@color/text_secondary" android:textSize="12sp" />
     <ProgressBar android:id="@+id/music_picker_progress" android:layout_width="32dp" android:layout_height="32dp"
         android:layout_gravity="center_horizontal" android:visibility="invisible" />

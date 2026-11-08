@@ -27,7 +27,8 @@ BEGIN
  OR to_regprocedure('private.meeto_finish_media_cleanup(uuid,integer,boolean,text)') IS NULL
  OR to_regprocedure('public.meeto_worker_claim_cleanup(integer)') IS NULL
  OR to_regprocedure('public.meeto_worker_finish_cleanup(uuid,integer,boolean,text)') IS NULL
- OR to_regprocedure('private.meeto_worker_finish_run(uuid,jsonb)') IS NULL
+ OR to_regprocedure('private.meeto_finish_worker_run(uuid,jsonb)') IS NULL
+ OR to_regprocedure('public.meeto_worker_finish_run(uuid,jsonb)') IS NULL
  OR to_regprocedure('private.schedule_media_cleanup()') IS NULL
  OR to_regprocedure('private.task43_asset_live(uuid)') IS NULL
  OR to_regclass('private.worker_invocations') IS NULL
@@ -41,24 +42,30 @@ BEGIN
  END IF;
  IF EXISTS(SELECT 1 FROM (VALUES
   ('private.worker_invocations','singleton'),('private.worker_invocations','run_id'),
-  ('private.worker_invocations','consumed_at'),('private.worker_invocations','completed_at'),
+  ('private.worker_invocations','expires_at'),('private.worker_invocations','consumed_at'),
+  ('private.worker_invocations','completed_at'),
   ('private.worker_invocations','execution_until'),('public.event_outbox','id'),
   ('public.event_outbox','event_key'),('public.event_outbox','event_type'),
   ('public.event_outbox','aggregate_type'),('public.event_outbox','aggregate_id'),
   ('public.event_outbox','payload'),('public.event_outbox','state'),('public.event_outbox','attempts'),
-  ('public.event_outbox','available_at'),('public.event_outbox','lease_until'),('public.event_outbox','processed_at'),
+  ('public.event_outbox','created_at'),('public.event_outbox','available_at'),
+  ('public.event_outbox','lease_until'),('public.event_outbox','processed_at'),
   ('public.media_assets','id'),('public.media_assets','owner_id'),('public.media_assets','bucket_id'),
   ('public.media_assets','object_path'),('public.media_assets','purpose'),('public.media_assets','mime_type'),
   ('public.media_assets','state'),('public.media_assets','delete_after'),('public.media_assets','metadata'),
   ('public.post_media','post_id'),('public.post_media','asset_id'),
   ('public.message_media','message_id'),('public.message_media','asset_id'),
   ('public.posts','id'),('public.posts','reel_cover_asset_id'),('public.posts','state'),
-  ('public.stories','id'),('public.stories','media_asset_id'),
+  ('public.stories','id'),('public.stories','media_asset_id'),('public.stories','state'),('public.stories','expires_at'),
   ('public.messages','id'),('public.messages','state'),
   ('public.profiles','id'),('public.profiles','avatar_asset_id'),('public.profiles','cover_asset_id'),
   ('public.conversations','avatar_asset_id'),('public.conversations','state'),
   ('public.profile_album_items','asset_id'),('public.profile_album_items','source_post_id'),
-  ('public.reports','post_id'),('public.reports','story_id'),('public.reports','message_id')
+  ('public.reports','post_id'),('public.reports','story_id'),('public.reports','message_id'),
+  ('storage.objects','id'),('storage.objects','bucket_id'),('storage.objects','name'),
+  ('storage.objects','owner_id'),('storage.objects','metadata'),
+  ('storage.buckets','id'),('storage.buckets','public'),('storage.buckets','allowed_mime_types'),
+  ('cron.job','jobname'),('cron.job','active')
  ) needed(table_name,column_name)
  WHERE NOT EXISTS(SELECT 1 FROM information_schema.columns c
   WHERE c.table_schema=split_part(needed.table_name,'.',1)
@@ -97,8 +104,11 @@ BEGIN
   IF (SELECT count(*) FROM cron.job WHERE jobname='meeto-media-cleanup-every-five-minutes' AND NOT active)<>1 THEN
    RAISE EXCEPTION 'Pause the shared media cleanup/voice verification schedule before applying 54B.2';
   END IF;
-  IF NOT has_table_privilege(current_user,'public.event_outbox','SELECT,INSERT,UPDATE')
-   OR NOT has_table_privilege(current_user,'public.media_assets','SELECT,UPDATE')
+  IF NOT has_table_privilege(current_user,'public.event_outbox','SELECT')
+   OR NOT has_table_privilege(current_user,'public.event_outbox','INSERT')
+   OR NOT has_table_privilege(current_user,'public.event_outbox','UPDATE')
+   OR NOT has_table_privilege(current_user,'public.media_assets','SELECT')
+   OR NOT has_table_privilege(current_user,'public.media_assets','UPDATE')
    OR NOT has_table_privilege(current_user,'storage.objects','SELECT')
    OR NOT has_table_privilege(current_user,'storage.buckets','SELECT')
    OR NOT EXISTS(SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
@@ -389,7 +399,7 @@ BEGIN
   INSERT INTO private.media_cleanup_recovery_log(source_event_id,attempt,request_id,action,storage_outcome,reason,receipt)
   VALUES(e.id,e.attempts,p_request_id,'dead_letter_unknown','unknown',btrim(p_reason),
     jsonb_build_object('event_id',e.id,'asset_id',e.aggregate_id,'attempt',e.attempts,
-      'state','dead','storage_outcome','unknown','storage_delete_asserted',false))
+      'state','dead','storage_outcome','unknown','storage_delete_asserted',false));
   changed:=changed+1;
  END LOOP;
  SELECT coalesce(jsonb_agg(l.receipt ORDER BY l.source_event_id),'[]'::jsonb) INTO rows
@@ -407,7 +417,7 @@ CREATE FUNCTION private.meeto_reconcile_cleanup_event(
 ) RETURNS jsonb
 LANGUAGE plpgsql SET search_path='' AS $$
 DECLARE e public.event_outbox; a public.media_assets; object_owner text; object_mime text;
- object_id uuid; replacement uuid; saved private.media_cleanup_recovery_log; receipt jsonb;
+ object_id uuid; replacement uuid; saved private.media_cleanup_recovery_log; receipt jsonb; expected_path text;
 BEGIN
  IF p_event_id IS NULL OR p_attempt IS NULL OR p_request_id IS NULL
  OR p_storage_state IS NULL OR p_storage_state NOT IN ('absent','present','unknown') OR p_reason IS NULL
@@ -422,10 +432,11 @@ BEGIN
  IF NOT FOUND OR e.event_type<>'media.retire' OR e.aggregate_type<>'media_asset'
   OR e.state<>'dead' OR e.attempts<>p_attempt THEN RAISE EXCEPTION 'cleanup_event_not_dead_lettered'; END IF;
  SELECT * INTO a FROM public.media_assets WHERE id=e.aggregate_id FOR UPDATE;
- IF NOT FOUND OR a.state<>'pending_delete' OR a.owner_id IS NULL
-  OR a.object_path<>a.owner_id::text||'/'||a.id::text||'/original.'||
+ expected_path:=a.owner_id::text||'/'||a.id::text||'/original.'||
    CASE a.mime_type WHEN 'image/png' THEN 'png' WHEN 'image/jpeg' THEN 'jpg'
-    WHEN 'image/webp' THEN 'webp' WHEN 'video/mp4' THEN 'mp4' WHEN 'audio/mp4' THEN 'm4a' END
+    WHEN 'image/webp' THEN 'webp' WHEN 'video/mp4' THEN 'mp4' WHEN 'audio/mp4' THEN 'm4a' END;
+ IF NOT FOUND OR a.state<>'pending_delete' OR a.owner_id IS NULL
+  OR a.object_path IS DISTINCT FROM expected_path
   OR NOT EXISTS(SELECT 1 FROM storage.buckets b WHERE b.id=a.bucket_id AND b.public IS FALSE
     AND a.mime_type=ANY(coalesce(b.allowed_mime_types,ARRAY[]::text[])))
   OR NOT ((a.bucket_id='profile-media' AND a.purpose IN ('avatar','cover')

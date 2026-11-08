@@ -82,12 +82,14 @@
         <activity android:name=".music.OpenverseMusicPickerActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".ProfileAlbumsActivity" android:exported="false" />
         <activity android:name=".ProfilePhotoViewerActivity" android:exported="false" />
+        <activity android:name=".FeaturedAlbumViewerActivity" android:exported="false" />
 
         <activity
             android:name=".CreatePostActivity"
             android:exported="false" />
 
         <activity android:name=".SettingsActivity" android:exported="false" />
+        <activity android:name=".ChangePasswordActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".TagManagementActivity" android:exported="false" />
         <activity android:name=".StoryCreateActivity" android:exported="false" />
         <activity android:name=".StoryCameraActivity" android:exported="false" android:screenOrientation="portrait" android:configChanges="orientation|screenSize|keyboardHidden" />

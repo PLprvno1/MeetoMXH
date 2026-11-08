@@ -117,7 +117,7 @@ public final class RoleResolutionActivity extends AppCompatActivity {
                     return;
                 }
                 String userId = SessionManager.getInstance().uid();
-                if (!OnboardingFlow.socialSetupDone(RoleResolutionActivity.this, userId)) {
+                if (OnboardingFlow.socialSetupPending(RoleResolutionActivity.this, userId)) {
                     routeOnboardingPhotos();
                     return;
                 }
@@ -163,6 +163,8 @@ public final class RoleResolutionActivity extends AppCompatActivity {
     }
 
     private void routeOnboardingPhotos() {
+        // Optional welcome screens are offered once, even if the user leaves before finishing them.
+        OnboardingFlow.markSocialSetupDone(this, SessionManager.getInstance().uid());
         Intent intent = new Intent(this, ProfileEditActivity.class)
                 .putExtra(ProfileEditActivity.EXTRA_ONBOARDING_ASSETS_ONLY, true)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);

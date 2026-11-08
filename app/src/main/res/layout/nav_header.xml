@@ -30,13 +30,14 @@
         android:textColor="@color/text_primary"
         android:textSize="18sp"
         android:textStyle="bold"
+        android:text="Tài khoản"
         tools:text="Hồ Long" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="2dp"
-        android:text="Chuyển tài khoản hoặc quản lý trang"
+        android:text="Trang cá nhân"
         android:textColor="@color/text_secondary"
         android:textSize="13sp" />
 

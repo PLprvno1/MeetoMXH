@@ -31,6 +31,7 @@ public class MainActivity extends AppCompatActivity {
     private ActivityMainBinding binding;
     private ActionBarDrawerToggle toggle;
     private Observer<JSONObject> badgeObserver;
+    private Subscription drawerProfileRequest;
     private boolean reelReturnToOrigin;
 
     @Override
@@ -98,6 +99,16 @@ public class MainActivity extends AppCompatActivity {
         );
         binding.drawerLayout.addDrawerListener(toggle);
         toggle.syncState();
+        android.view.View drawerHeader=binding.navView.getHeaderView(0);
+        drawerHeader.setContentDescription("Trang cá nhân");
+        drawerHeader.setOnClickListener(v->{
+            binding.drawerLayout.closeDrawer(GravityCompat.START);
+            String uid=SessionManager.getInstance().uid();
+            if(uid!=null)startActivity(new Intent(this,ProfileActivity.class).putExtra("target_uid",uid));
+        });
+        binding.drawerLayout.addDrawerListener(new androidx.drawerlayout.widget.DrawerLayout.SimpleDrawerListener(){
+            @Override public void onDrawerOpened(android.view.View drawerView){refreshDrawerProfile();}
+        });
 
         // Default Fragment
         if (savedInstanceState == null && !getIntent().hasExtra(com.example.meetomxh.supabase.PostDetails.EXTRA_REEL_ID)) {
@@ -156,7 +167,13 @@ public class MainActivity extends AppCompatActivity {
         // Drawer Navigation View listener
         binding.navView.setNavigationItemSelectedListener(item -> {
             int itemId = item.getItemId();
-            if (itemId == R.id.drawer_saved) {
+            if (itemId == R.id.drawer_create_post) {
+                startActivity(new Intent(this,CreatePostActivity.class));
+            } else if (itemId == R.id.drawer_create_story) {
+                startActivity(new Intent(this,StoryCreateActivity.class));
+            } else if (itemId == R.id.drawer_create_reel) {
+                startActivity(new Intent(this,ReelsCameraActivity.class));
+            } else if (itemId == R.id.drawer_saved) {
                 startActivity(new Intent(this, SavedPostsActivity.class));
             } else if (itemId == R.id.drawer_settings) {
                 startActivity(new Intent(this, SettingsActivity.class));
@@ -282,7 +299,32 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    @Override protected void onResume() {
+        super.onResume();
+        refreshDrawerProfile();
+    }
+
+    private void refreshDrawerProfile() {
+        if(binding==null||isFinishing()||isDestroyed())return;
+        String uid=SessionManager.getInstance().uid();
+        if(uid==null||uid.isEmpty())return;
+        if(drawerProfileRequest!=null)drawerProfileRequest.remove();
+        final long epoch=SessionManager.getInstance().generation();
+        drawerProfileRequest=Api.run(()->com.example.meetomxh.supabase.Dto.user(
+                com.example.meetomxh.supabase.ProfileClient.self()),new Api.Callback<com.example.meetomxh.models.User>(){
+            public void success(com.example.meetomxh.models.User user){
+                if(isFinishing()||isDestroyed()||epoch!=SessionManager.getInstance().generation())return;
+                android.view.View header=binding.navView.getHeaderView(0);
+                android.widget.TextView name=header.findViewById(R.id.navHeaderName);
+                name.setText(user.getFullName());
+                com.example.meetomxh.ui.AvatarViews.load(header.findViewById(R.id.navHeaderAvatar),user.getAvatarUrl(),user.getAvatarPreset());
+            }
+            public void error(String error){/* Keep the last loaded profile; drawer navigation remains available. */}
+        });
+    }
+
     @Override protected void onDestroy() {
+        if(drawerProfileRequest!=null)drawerProfileRequest.remove();
         if (badgeObserver != null) badgeObserver.remove();
         super.onDestroy();
     }

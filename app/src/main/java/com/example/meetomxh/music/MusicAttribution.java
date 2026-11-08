@@ -14,7 +14,7 @@ public final class MusicAttribution {
     public static void bind(Context context,TextView view,JSONObject metadata){
         String title=metadata==null?"":metadata.optString("title","").trim();
         if(title.isEmpty()){view.setText("");view.setVisibility(View.GONE);view.setOnClickListener(null);return;}
-        String creator=metadata.optString("creator","").trim();
+        String creator=metadata.optString("artist",metadata.optString("creator","")).trim();
         view.setText("♫ "+title+(creator.isEmpty()?"":" · "+creator)+" · CC0");view.setVisibility(View.VISIBLE);
         if(OpenverseMusicClient.validPublishedMetadata(metadata))view.setOnClickListener(v->showLinks(context,metadata));
         else view.setOnClickListener(null);

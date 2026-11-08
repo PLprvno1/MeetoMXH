@@ -18,8 +18,7 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
+            android:orientation="vertical">
 
             <TextView
                 android:id="@+id/tvAuditOperation"
@@ -27,7 +26,7 @@
                 android:layout_height="wrap_content"
                 android:background="@drawable/bg_badge_admin"
                 android:fontFamily="sans-serif-bold"
-                android:text="REMOVE"
+                android:text="Gỡ nội dung"
                 android:textColor="@color/brand_blue"
                 android:textSize="11sp" />
 
@@ -35,22 +34,18 @@
                 android:id="@+id/tvAuditSubject"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="6dp"
+                android:layout_marginTop="6dp"
                 android:background="@drawable/bg_badge_member"
                 android:fontFamily="sans-serif-medium"
-                android:text="post"
+                android:text="Bài viết"
                 android:textColor="@color/text_secondary"
                 android:textSize="11sp" />
-
-            <View
-                android:layout_width="0dp"
-                android:layout_height="1dp"
-                android:layout_weight="1" />
 
             <TextView
                 android:id="@+id/tvAuditTime"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
                 android:text="07/11/2026 14:30"
                 android:textColor="@color/text_tertiary"
                 android:textSize="11sp" />
@@ -70,8 +65,8 @@
                 android:id="@+id/tvAuditOldState"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:fontFamily="monospace"
-                android:text="published"
+                android:fontFamily="sans-serif"
+                android:text="Đang hiển thị"
                 android:textColor="@color/text_secondary"
                 android:textSize="12sp" />
 
@@ -88,8 +83,8 @@
                 android:id="@+id/tvAuditNewState"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:fontFamily="monospace"
-                android:text="deleted"
+                android:fontFamily="sans-serif"
+                android:text="Đã gỡ"
                 android:textColor="@color/text_primary"
                 android:textSize="12sp"
                 android:textStyle="bold" />
@@ -122,9 +117,9 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:ellipsize="middle"
-                android:fontFamily="monospace"
+                android:fontFamily="sans-serif"
                 android:maxLines="1"
-                android:text="Actor: 1234-5678"
+                android:text="Thực hiện: #1234"
                 android:textColor="@color/text_tertiary"
                 android:textSize="11sp" />
 

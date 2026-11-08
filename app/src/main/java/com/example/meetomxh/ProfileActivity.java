@@ -56,6 +56,7 @@ public class ProfileActivity extends AppCompatActivity {
     private String targetUid;
     private boolean targetProfileExists;
     private boolean profileContentAllowed=true;
+    private boolean followListsAllowed;
 
     private FeedAdapter timelineAdapter;
     private final List<Post> timelinePosts = new ArrayList<>();
@@ -102,6 +103,8 @@ public class ProfileActivity extends AppCompatActivity {
         binding.btnFollow.setVisibility(isSelf ? View.GONE : View.VISIBLE);
         binding.tvFollowers.setOnClickListener(v -> openFollowList("followers"));
         binding.tvFollowing.setOnClickListener(v -> openFollowList("following"));
+        binding.layoutStatFollowers.setOnClickListener(v -> openFollowList("followers"));
+        binding.layoutStatFollowing.setOnClickListener(v -> openFollowList("following"));
         binding.btnFollow.setOnClickListener(v -> toggleFollow());
         loadFollowStats();
 
@@ -260,9 +263,16 @@ public class ProfileActivity extends AppCompatActivity {
             profileReelsLoaded = true; reelAfterTime = null; reelAfterId = null; profileReels.clear();
             profileReelAdapter.set(profileReels); loadProfileReels(false);
         }
-        binding.btnProfilePosts.setText(posts ? "B\u00e0i vi\u1ebft \u2713" : "B\u00e0i vi\u1ebft");
-        binding.btnProfileReels.setText("Reels");
-        binding.btnProfileAbout.setText("About");
+        updateProfileTab(binding.btnProfilePosts, "B\u00e0i vi\u1ebft", posts);
+        updateProfileTab(binding.btnProfileReels, "Reels", reels);
+        updateProfileTab(binding.btnProfileAbout, "About", about);
+    }
+
+    private void updateProfileTab(android.widget.TextView view, String label, boolean selected) {
+        view.setText(selected ? label + " \u2713" : label);
+        view.setTypeface(null, selected ? Typeface.BOLD : Typeface.NORMAL);
+        view.setTextColor(getColor(selected ? R.color.text_primary : R.color.text_secondary));
+        view.setSelected(selected);
     }
 
     private void loadProfileReels(boolean append){loadProfileReels(append,null);}
@@ -279,39 +289,35 @@ public class ProfileActivity extends AppCompatActivity {
         private final List<Post> items=new ArrayList<>();
         void set(List<Post> next){items.clear();if(next!=null)items.addAll(next);notifyDataSetChanged();}
         @androidx.annotation.NonNull @Override public ProfileReelHolder onCreateViewHolder(@androidx.annotation.NonNull ViewGroup parent,int type){View v=android.view.LayoutInflater.from(parent.getContext()).inflate(com.example.meetomxh.R.layout.item_profile_reel,parent,false);int cellWidth=getResources().getDisplayMetrics().widthPixels/3;v.setLayoutParams(new androidx.recyclerview.widget.RecyclerView.LayoutParams(-1,cellWidth*16/9));return new ProfileReelHolder(v);}
-        @Override public void onBindViewHolder(@androidx.annotation.NonNull ProfileReelHolder holder,int position){Post reel=items.get(position);String cover=reel.getReelCoverAssetId()==null?(reel.getImageUrls().isEmpty()?null:reel.getImageUrls().get(0)):Dto.asset(reel.getReelCoverAssetId());if(cover==null){holder.cover.setImageResource(com.example.meetomxh.R.drawable.ic_media_error);}else Glide.with(ProfileActivity.this).load(cover).apply(com.bumptech.glide.request.RequestOptions.frameOf(1_000_000)).centerCrop().placeholder(com.example.meetomxh.R.drawable.ic_media_error).error(com.example.meetomxh.R.drawable.ic_media_error).into(holder.cover);holder.views.setText("\u25c9 "+formatCount(reel.getReelViewsCount()));holder.likes.setText("\u2665 "+formatCount(reel.getLikesCount()));holder.itemView.setOnClickListener(v->com.example.meetomxh.supabase.PostDetails.show(ProfileActivity.this,reel.getPostId()));}
+        @Override public void onBindViewHolder(@androidx.annotation.NonNull ProfileReelHolder holder,int position){
+            Post reel=items.get(position);
+            // Private MP4 assets need authenticated frame extraction, not Glide's image stream decoder.
+            // The shared loader falls back to the video when a dedicated cover is absent/unavailable.
+            com.example.meetomxh.ui.MediaThumbnailLoader.load(holder.cover,reel);
+            holder.views.setText("\u25c9 "+formatCount(reel.getReelViewsCount()));
+            holder.likes.setText("\u2665 "+formatCount(reel.getLikesCount()));
+            holder.itemView.setOnClickListener(v->com.example.meetomxh.supabase.PostDetails.show(ProfileActivity.this,reel.getPostId()));
+        }
+        @Override public void onViewRecycled(@androidx.annotation.NonNull ProfileReelHolder holder){
+            com.example.meetomxh.ui.MediaThumbnailLoader.clear(holder.cover);
+            holder.itemView.setOnClickListener(null);
+            super.onViewRecycled(holder);
+        }
         @Override public int getItemCount(){return items.size();}
     }
     private static final class ProfileReelHolder extends androidx.recyclerview.widget.RecyclerView.ViewHolder{final ImageView cover;final android.widget.TextView views,likes;ProfileReelHolder(View v){super(v);cover=v.findViewById(com.example.meetomxh.R.id.profile_reel_cover);views=v.findViewById(com.example.meetomxh.R.id.profile_reel_views);likes=v.findViewById(com.example.meetomxh.R.id.profile_reel_likes);}}
 
-    private void loadFeatured() {
-        loadFeatured(null);
-    }
+    private com.example.meetomxh.ui.FeaturedAlbumsUi featuredAlbums;
 
-    private void loadFeatured(Runnable onComplete) {
-        Api.run(() -> (JSONArray)RpcClient.call("list_profile_featured",Api.obj("p_owner_id",targetUid)),new Api.Callback<JSONArray>() {
-            public void success(JSONArray rows) {
-                binding.layoutFeaturedItems.removeAllViews();
-                if(rows==null || rows.length()==0){binding.cardFeatured.setVisibility(targetUid.equals(mAuth.uid())?View.VISIBLE:View.GONE);runCompletion(onComplete);return;}
-                binding.cardFeatured.setVisibility(View.VISIBLE);
-                for(int i=0;i<rows.length();i++){ JSONObject item=rows.optJSONObject(i); if(item==null)continue;
-                    ImageView photo=new ImageView(ProfileActivity.this); int size=(int)(100*getResources().getDisplayMetrics().density); photo.setLayoutParams(new LinearLayout.LayoutParams(size,size)); photo.setScaleType(ImageView.ScaleType.CENTER_CROP); photo.setContentDescription("Ảnh nổi bật trên hồ sơ");
-                    Glide.with(ProfileActivity.this).load(Dto.asset(Dto.nullable(item,"asset_id"))).centerCrop().into(photo);
-                    photo.setOnLongClickListener(v->{ if(!targetUid.equals(mAuth.uid()))return false; new AlertDialog.Builder(ProfileActivity.this).setMessage("Gỡ ảnh nổi bật này?").setNegativeButton("Hủy",null).setPositiveButton("Gỡ",(d,w)->Api.run(()->RpcClient.call("remove_profile_featured",Api.obj("p_item_id",item.optString("id"))),new Api.Callback<Object>(){public void success(Object r){loadFeatured();}public void error(String e){toast(e);}})).show();return true;});
-                    photo.setOnClickListener(v->{JSONArray refs=new JSONArray().put(Dto.asset(Dto.nullable(item,"asset_id")));startActivity(ProfilePhotoViewerActivity.intent(ProfileActivity.this,refs,0));});
-                    LinearLayout.LayoutParams lp=(LinearLayout.LayoutParams)photo.getLayoutParams();lp.rightMargin=(int)(8*getResources().getDisplayMetrics().density);photo.setLayoutParams(lp);binding.layoutFeaturedItems.addView(photo);
-                }
-                runCompletion(onComplete);
-            }
-            public void error(String e){binding.cardFeatured.setVisibility(View.GONE);runCompletion(onComplete);}
-        });
+    private com.example.meetomxh.ui.FeaturedAlbumsUi featuredAlbums() {
+        if (featuredAlbums == null) featuredAlbums = new com.example.meetomxh.ui.FeaturedAlbumsUi(
+                this, targetUid, binding.cardFeatured, binding.layoutFeaturedItems);
+        return featuredAlbums;
     }
-    private void chooseFeaturedPhoto() {
-        Api.run(()->(JSONArray)RpcClient.call("list_profile_photo_candidates",Api.obj("p_after_time",null,"p_after_id",null,"p_limit",50)),new Api.Callback<JSONArray>(){
-            public void success(JSONArray rows){if(rows==null||rows.length()==0){toast("Trước tiên, hãy tạo bài viết cá nhân có ảnh.");return;}List<JSONObject> options=new ArrayList<>();List<String> labels=new ArrayList<>();for(int i=0;i<rows.length();i++){JSONObject x=rows.optJSONObject(i);if(x!=null){options.add(x);labels.add("Ảnh · "+x.optString("created_at"));}}new AlertDialog.Builder(ProfileActivity.this).setTitle("Chọn ảnh nổi bật").setItems(labels.toArray(new String[0]),(d,i)->{JSONObject x=options.get(i);Api.run(()->RpcClient.call("set_profile_featured",Api.obj("p_source_post_id",x.optString("post_id"),"p_asset_id",x.optString("asset_id"),"p_position",Math.min(5,binding.layoutFeaturedItems.getChildCount()))),new Api.Callback<Object>(){public void success(Object r){loadFeatured();}public void error(String e){toast(e);}});}).setNegativeButton("Hủy",null).show();}
-            public void error(String e){toast(e);}
-        });
-    }
+    private void loadFeatured() { loadFeatured(null); }
+    private void loadFeatured(Runnable onComplete) { featuredAlbums().load(onComplete); }
+    private void chooseFeaturedPhoto() { featuredAlbums().create(); }
+
     private void loadProfilePinned() {
         loadProfilePinned(null);
     }
@@ -427,6 +433,7 @@ public class ProfileActivity extends AppCompatActivity {
                 if (isFinishing() || binding == null) { runCompletion(onComplete); return; }
                 targetProfileExists = true;
                 binding.tvFullName.setText(user.getFullName());binding.tvUsername.setText(user.username==null?"":"@"+user.username);binding.tvUsername.setVisibility(user.username==null?View.GONE:View.VISIBLE);profileContentAllowed=user.contentAllowed;
+                followListsAllowed=targetUid.equals(mAuth.uid())||!user.accountPrivate;
                 binding.tvBio.setText(user.getBio());
                 String location = user.getLocation();
                 boolean hasLocation = location != null && !location.trim().isEmpty();
@@ -525,6 +532,7 @@ public class ProfileActivity extends AppCompatActivity {
         });
     }
     private void openFollowList(String direction) {
+        if(!targetUid.equals(mAuth.uid())&&!followListsAllowed){toast("Chỉ chủ tài khoản được xem danh sách của tài khoản riêng tư.");return;}
         startActivity(new Intent(this,FollowListActivity.class).putExtra("target_uid",targetUid).putExtra("direction",direction));
     }
 
@@ -557,6 +565,13 @@ public class ProfileActivity extends AppCompatActivity {
 
     private void openChatWithTarget() {
         if(targetProfileExists)com.example.meetomxh.supabase.SocialActions.contact(this,targetUid);
+    }
+
+    @Override protected void onDestroy() {
+        if (featuredAlbums != null) featuredAlbums.close();
+        // Recycle visible cells too, cancelling pending frame loads and releasing their bitmaps.
+        if(binding!=null)binding.rvProfileMedia.setAdapter(null);
+        super.onDestroy();
     }
 
 

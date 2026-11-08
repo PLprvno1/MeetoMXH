@@ -258,11 +258,18 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
-                        android:text="Tiểu sử"
+                        android:text="Biệt danh"
                         android:textColor="@color/text_secondary"
                         android:textSize="13sp" />
 
-                    <EditText android:id="@+id/etUsername" android:layout_width="match_parent" android:layout_height="48dp" android:layout_marginTop="8dp" android:background="@drawable/bg_edittext" android:hint="Tên người dùng (3–30 ký tự)" android:inputType="textNoSuggestions" android:singleLine="true" android:maxLength="30" android:paddingHorizontal="14dp" android:textColor="@color/text_primary" android:textColorHint="@color/text_secondary" />
+                    <EditText android:id="@+id/etUsername" android:layout_width="match_parent" android:layout_height="48dp" android:layout_marginTop="8dp" android:background="@drawable/bg_edittext" android:hint="Biệt danh (3–30 ký tự)" android:inputType="textNoSuggestions" android:singleLine="true" android:maxLength="30" android:paddingHorizontal="14dp" android:textColor="@color/text_primary" android:textColorHint="@color/text_secondary" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:text="Tiểu sử"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="13sp" />
                     <EditText
                         android:id="@+id/etBio"
                         android:layout_width="match_parent"

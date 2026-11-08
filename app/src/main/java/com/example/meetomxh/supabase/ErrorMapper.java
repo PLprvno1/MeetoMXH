@@ -47,8 +47,15 @@ public final class ErrorMapper {
    if("invalid_reel_audience".equals(e.serverMessage))return "Hãy chọn quyền Công khai, Người theo dõi hoặc Chỉ mình tôi cho Reel.";
    if("invalid_reel_video".equals(e.serverMessage))return "Video chưa đáp ứng kiểm tra định dạng, dung lượng, quyền sở hữu hoặc trạng thái Storage của Reels.";
    if("invalid_reel".equals(e.serverMessage))return "Reel cần video tối đa 60 giây, caption tối đa 2.000 ký tự và quyền riêng tư hợp lệ.";
-   if("username_taken".equals(e.serverMessage))return "Tên người dùng đã được sử dụng.";
-   if("invalid_username".equals(e.serverMessage))return "Tên người dùng cần 3–30 ký tự chữ thường, số, dấu chấm hoặc gạch dưới.";
+   if("username_taken".equals(e.serverMessage))return "Biệt danh đã được sử dụng.";
+   if("tag_target_unavailable".equals(e.serverMessage))return "Không thể gắn thẻ người đã chọn: kiểm tra kết nối theo dõi, quyền nhận thẻ và quyền xem bài viết của họ.";
+   if("mention_target_unavailable".equals(e.serverMessage))return "Người được nhắc đến không còn khả dụng hoặc không có quyền xem nội dung này. Hãy bỏ nhắc tên đó hoặc đổi quyền xem phù hợp.";
+   if("featured_album_limit".equals(e.serverMessage))return "Bạn có thể tạo tối đa 12 album ảnh nổi bật.";
+   if("album_version_conflict".equals(e.serverMessage))return "Album đã thay đổi hoặc đã được lưu. Hãy đóng cửa sổ và tải lại trang cá nhân trước khi chỉnh sửa tiếp.";
+   if("invalid_album_photos".equals(e.serverMessage))return "Hãy chọn từ 1 đến 50 ảnh hợp lệ cho album.";
+   if("album_photo_unavailable".equals(e.serverMessage)||"source_post_unavailable".equals(e.serverMessage))return "Có ảnh hoặc bài viết nguồn không còn khả dụng. Hãy tải lại và chọn ảnh khác.";
+   if("invalid_username".equals(e.serverMessage))return "Biệt danh cần 3–30 ký tự chữ thường, số, dấu chấm hoặc gạch dưới.";
+   if("follow_list_private".equals(e.serverMessage))return "Chỉ chủ tài khoản được xem danh sách người theo dõi và đang theo dõi của tài khoản riêng tư.";
    if("approved_follow_required".equals(e.serverMessage))return "Hãy theo dõi và chờ chấp nhận để nhắn tin.";
    if("message_request_required".equals(e.serverMessage))return "Người nhận chưa chấp nhận nhắn tin. Hãy gửi lời giới thiệu từ hồ sơ.";
    if("message_request_already_sent".equals(e.serverMessage))return "Bạn đã gửi một yêu cầu. Không thể gửi thêm khi chưa được chấp nhận.";

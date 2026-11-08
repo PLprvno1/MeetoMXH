@@ -57,6 +57,7 @@ public class InboxFragment extends Fragment {
     private boolean searchingConversations;
     private final Map<String, Boolean> muteOverrides = new HashMap<>(), archiveOverrides = new HashMap<>();
     private final Set<String> blockedConversations = new HashSet<>();
+    private final Set<String> pendingArchives = new HashSet<>();
 
     @Nullable
     @Override
@@ -70,6 +71,9 @@ public class InboxFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         chatRepository = ChatRepository.getInstance();
+        binding.swipeInbox.setOnRefreshListener(this::refreshInbox);
+        binding.swipeInbox.setOnChildScrollUpCallback((parent,child)->binding!=null
+                &&binding.rvInbox.getVisibility()==View.VISIBLE&&binding.rvInbox.canScrollVertically(-1));
         binding.btnClearConversations.setOnClickListener(v->binding.etSearchConversations.setText(""));
         binding.btnCreateChatGroup.setOnClickListener(v -> new android.app.AlertDialog.Builder(requireContext()).setItems(new String[]{"Tin nhắn mới","Tạo nhóm chat","Tin nhắn chờ","Lời mời nhóm chat",showArchived?"Hộp thư đến":"Đã lưu trữ"},(d,i)->{
             if(i==0)PeoplePicker.show(requireActivity(),java.util.Collections.emptySet(),1,false,ids->SocialActions.contact(requireActivity(),ids.get(0)));
@@ -97,12 +101,19 @@ public class InboxFragment extends Fragment {
     @Override
     public void onStart() {
         super.onStart();
+        startChatsListener();
+        if(binding!=null&&!binding.etSearchConversations.getText().toString().trim().isEmpty())
+            scheduleConversationSearch(binding.etSearchConversations.getText().toString());
+    }
+
+    private void startChatsListener() {
         if (binding == null || chatsRegistration != null || currentUid == null || currentUid.trim().isEmpty()) return;
         long listenerGeneration = ++chatsListenerGeneration;
         chatsRegistration = chatRepository.listenToCurrentUserChats(new ChatRepository.OnChatsListener() {
             @Override
             public void onChats(List<Chat> items) {
                 if (!isCurrentChatsListener(listenerGeneration)) return;
+                if(!searchingConversations)binding.swipeInbox.setRefreshing(false);
                 chatsLoaded = true;
                 allChats = items == null ? new ArrayList<>() : new ArrayList<>(items);
                 Set<String> incomingIds = new HashSet<>(); for (Chat chat : allChats) incomingIds.add(chat.getChatId());
@@ -120,6 +131,7 @@ public class InboxFragment extends Fragment {
             @Override
             public void onError(String error) {
                 if (!isCurrentChatsListener(listenerGeneration)) return;
+                if(!searchingConversations)binding.swipeInbox.setRefreshing(false);
                 binding.progressInbox.setVisibility(View.GONE);
                 binding.rvInbox.setVisibility(View.GONE);
                 binding.tvInboxState.setVisibility(View.VISIBLE);
@@ -130,6 +142,9 @@ public class InboxFragment extends Fragment {
 
     @Override
     public void onStop() {
+        if(binding!=null)binding.swipeInbox.setRefreshing(false);
+        searchGeneration++;
+        if(pendingConversationSearch!=null)searchHandler.removeCallbacks(pendingConversationSearch);
         removeChatsListener();
         super.onStop();
     }
@@ -143,7 +158,7 @@ public class InboxFragment extends Fragment {
         profilesLoading.clear();
         chats.clear();
         allChats.clear();
-        muteOverrides.clear(); archiveOverrides.clear(); blockedConversations.clear();
+        muteOverrides.clear(); archiveOverrides.clear(); blockedConversations.clear();pendingArchives.clear();
         searchGeneration++;
         if (pendingConversationSearch != null) searchHandler.removeCallbacks(pendingConversationSearch);
         chatsLoaded = false;
@@ -156,6 +171,17 @@ public class InboxFragment extends Fragment {
             chatsRegistration.remove();
             chatsRegistration = null;
         }
+    }
+
+    private void refreshInbox() {
+        if(binding==null)return;
+        if(currentUid==null||!java.util.Objects.equals(currentUid,SessionManager.getInstance().uid())){
+            binding.swipeInbox.setRefreshing(false);return;
+        }
+        String query=binding.etSearchConversations.getText().toString();
+        scheduleConversationSearch(query);
+        removeChatsListener();
+        startChatsListener();
     }
 
     private boolean isCurrentChatsListener(long generation) {
@@ -175,7 +201,7 @@ public class InboxFragment extends Fragment {
             binding.progressInbox.setVisibility(View.GONE);
             binding.rvInbox.setVisibility(View.GONE);
             binding.tvInboxState.setVisibility(View.VISIBLE);
-            binding.tvInboxState.setText("Chưa có cuộc trò chuyện nào.\nMở hồ sơ một người để bắt đầu nhắn tin.");
+            binding.tvInboxState.setText(showArchived?"Chưa có hội thoại đã lưu trữ.":"Chưa có cuộc trò chuyện nào.\nMở hồ sơ một người để bắt đầu nhắn tin.");
             return;
         }
 
@@ -219,12 +245,15 @@ public class InboxFragment extends Fragment {
             return;
         }
         if (query.length() > 80) {
+            binding.swipeInbox.setRefreshing(false);
             showState("Tối đa 80 ký tự."); return;
         }
         searchingConversations = true;
         pendingConversationSearch = () -> chatRepository.searchConversations(query, showArchived, new ChatRepository.OnChatsListener() {
             @Override public void onChats(List<Chat> result) {
                 if (binding == null || generation != searchGeneration) return;
+                binding.swipeInbox.setRefreshing(false);
+                chatsLoaded=true;
                 chats = result == null ? new ArrayList<>() : new ArrayList<>(result);
                 for (Chat chat : chats) applyActionState(chat);
                 sortChatsNewestFirst();
@@ -237,6 +266,7 @@ public class InboxFragment extends Fragment {
             }
             @Override public void onError(String error) {
                 if (binding == null || generation != searchGeneration) return;
+                binding.swipeInbox.setRefreshing(false);
                 showState(error == null ? "Không thể tìm kiếm. Thử lại." : error);
             }
         });
@@ -284,7 +314,7 @@ public class InboxFragment extends Fragment {
         Boolean muted = muteOverrides.get(chat.getChatId());
         if (muted != null) { if (chat.muted == muted) muteOverrides.remove(chat.getChatId()); else chat.muted = muted; }
         Boolean archived = archiveOverrides.get(chat.getChatId());
-        if (archived != null) { if (chat.archived == archived) archiveOverrides.remove(chat.getChatId()); else chat.archived = archived; }
+        if (archived != null) { if (chat.archived == archived&&!pendingArchives.contains(chat.getChatId())) archiveOverrides.remove(chat.getChatId()); else chat.archived = archived; }
     }
 
     private void showConversationActions(Inbox inbox) {
@@ -292,15 +322,23 @@ public class InboxFragment extends Fragment {
         Chat target = null;
         for (Chat chat : chats) if (chat.getChatId().equals(inbox.getId())) { target = chat; break; }
         if (target == null) return;
+        if(pendingArchives.contains(target.getChatId()))return;
+        final FragmentInboxBinding actionBinding=binding;
         ConversationListActions.show(requireActivity(), target, inbox, (updated, action) -> {
-            if (binding == null || !isAdded()) return;
+            if (binding == null || binding!=actionBinding || !isAdded()
+                    ||!java.util.Objects.equals(currentUid,SessionManager.getInstance().uid())) return;
             String id = updated.getChatId();
             if (action == ConversationListActions.Change.MUTED) muteOverrides.put(id, updated.muted);
-            if (action == ConversationListActions.Change.ARCHIVED) archiveOverrides.put(id, updated.archived);
+            if(action==ConversationListActions.Change.ARCHIVING){pendingArchives.add(id);archiveOverrides.put(id,updated.archived);}
+            if(action==ConversationListActions.Change.ARCHIVED||action==ConversationListActions.Change.ARCHIVE_FAILED){
+                pendingArchives.remove(id);archiveOverrides.put(id,updated.archived);
+            }
             if (action == ConversationListActions.Change.BLOCKED) blockedConversations.add(id);
             for (Chat chat : allChats) if (id.equals(chat.getChatId())) { chat.muted = updated.muted; chat.archived = updated.archived; }
             for (Chat chat : chats) if (id.equals(chat.getChatId())) { chat.muted = updated.muted; chat.archived = updated.archived; }
             renderChats();
+            if(action==ConversationListActions.Change.ARCHIVE_FAILED&&searchingConversations)
+                scheduleConversationSearch(binding.etSearchConversations.getText().toString());
         });
     }
 

@@ -286,7 +286,7 @@ public class ModerationDashboardActivity extends AppCompatActivity {
         box.addView(tvEmail);
 
         TextView tvRole = new TextView(this);
-        tvRole.setText("Vai trò: Kiểm duyệt viên (Moderator)");
+        tvRole.setText("Vai trò: Kiểm duyệt viên");
         tvRole.setTextColor(ContextCompat.getColor(this, R.color.brand_blue));
         tvRole.setTextSize(13);
         tvRole.setTypeface(null, android.graphics.Typeface.BOLD);
@@ -314,10 +314,10 @@ public class ModerationDashboardActivity extends AppCompatActivity {
         View card = LayoutInflater.from(this).inflate(R.layout.item_admin_report, modContent, false);
 
         TextView tvKind = card.findViewById(R.id.tvReportTargetKind);
-        tvKind.setText(row.optString("target_kind", "report").toUpperCase(java.util.Locale.ROOT));
+        tvKind.setText(com.example.meetomxh.ui.AdminUi.kind(row.optString("target_kind", "report")));
 
         TextView tvReason = card.findViewById(R.id.tvReportReason);
-        tvReason.setText(row.optString("reason_code", "Lý do khác"));
+        tvReason.setText(com.example.meetomxh.ui.AdminUi.reason(row.optString("reason_code", "")));
 
         TextView tvState = card.findViewById(R.id.tvReportState);
         String state = row.optString("state", "open");
@@ -330,11 +330,12 @@ public class ModerationDashboardActivity extends AppCompatActivity {
                         "dismissed".equals(state) ? R.color.text_secondary : R.color.status_warning));
 
         TextView tvPreview = card.findViewById(R.id.tvReportPreview);
-        String preview = row.optString("details", row.optString("preview", "(Không có bản xem trước)"));
+        String preview = com.example.meetomxh.ui.AdminUi.text(row,"details");
+        if(preview.isEmpty())preview="Chưa có nội dung báo cáo";
         tvPreview.setText(preview);
 
         TextView tvTime = card.findViewById(R.id.tvReportTime);
-        tvTime.setText(row.optString("created_at", ""));
+        tvTime.setText(com.example.meetomxh.ui.AdminUi.timestamp(row.optString("created_at", "")));
 
         TextView tvSnippet = card.findViewById(R.id.tvReportIdSnippet);
         String id = row.optString("id", "");
@@ -346,44 +347,7 @@ public class ModerationDashboardActivity extends AppCompatActivity {
 
     private void renderAuditCard(JSONObject row) {
         View card = LayoutInflater.from(this).inflate(R.layout.item_admin_audit, modContent, false);
-
-        TextView tvOp = card.findViewById(R.id.tvAuditOperation);
-        tvOp.setText(row.optString("operation", "").toUpperCase(java.util.Locale.ROOT));
-
-        TextView tvSubject = card.findViewById(R.id.tvAuditSubject);
-        tvSubject.setText(row.optString("subject_type", ""));
-
-        TextView tvTime = card.findViewById(R.id.tvAuditTime);
-        tvTime.setText(row.optString("created_at", ""));
-
-        TextView tvOldState = card.findViewById(R.id.tvAuditOldState);
-        TextView tvNewState = card.findViewById(R.id.tvAuditNewState);
-        String oldState = row.optString("old_state", "");
-        String newState = row.optString("new_state", "");
-        if (!oldState.isEmpty() || !newState.isEmpty()) {
-            tvOldState.setText(oldState.isEmpty() ? "none" : oldState);
-            tvNewState.setText(newState.isEmpty() ? "none" : newState);
-        } else {
-            card.findViewById(R.id.layoutAuditTransition).setVisibility(View.GONE);
-        }
-
-        TextView tvReason = card.findViewById(R.id.tvAuditReason);
-        String reason = row.optString("reason", "");
-        tvReason.setText(reason.isEmpty() ? "(Không ghi lý do)" : "Lý do: " + reason);
-
-        TextView tvActor = card.findViewById(R.id.tvAuditActor);
-        String actor = row.optString("actor_id", "");
-        tvActor.setText("Actor: " + (actor.length() > 8 ? actor.substring(0, 8) + "…" : actor));
-
-        TextView tvReportRef = card.findViewById(R.id.tvAuditReportRef);
-        String reportId = row.optString("report_id", "");
-        if (!reportId.isEmpty()) {
-            tvReportRef.setText("Report: #" + (reportId.length() > 8 ? reportId.substring(0, 8) : reportId));
-            tvReportRef.setVisibility(View.VISIBLE);
-        } else {
-            tvReportRef.setVisibility(View.GONE);
-        }
-
+        com.example.meetomxh.ui.AdminUi.bindAudit(card, row);
         modContent.addView(card);
     }
 
@@ -393,7 +357,7 @@ public class ModerationDashboardActivity extends AppCompatActivity {
             case "assigned": return "Đang xử lý";
             case "resolved": return "Đã giải quyết";
             case "dismissed": return "Đã bác bỏ";
-            default: return state;
+            default: return com.example.meetomxh.ui.AdminUi.state(state);
         }
     }
 

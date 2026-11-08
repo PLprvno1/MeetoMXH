@@ -78,11 +78,21 @@
                 android:textSize="15sp" />
 
             <!-- Password Input -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/passwordInputLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                app:boxBackgroundMode="none"
+                app:hintEnabled="false"
+                app:endIconMode="password_toggle"
+                app:endIconContentDescription="Hiện hoặc ẩn mật khẩu"
+                app:endIconTint="@color/text_secondary">
+
             <EditText
                 android:id="@+id/etPassword"
                 android:layout_width="match_parent"
                 android:layout_height="52dp"
-                android:layout_marginTop="12dp"
                 android:autofillHints="password"
                 android:background="@drawable/bg_edittext"
                 android:hint="Mật khẩu"
@@ -91,6 +101,8 @@
                 android:textColor="@color/text_primary"
                 android:textColorHint="@color/text_secondary"
                 android:textSize="15sp" />
+
+            </com.google.android.material.textfield.TextInputLayout>
 
             <!-- Login Button -->
             <androidx.appcompat.widget.AppCompatButton

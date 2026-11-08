@@ -52,6 +52,7 @@ public class SearchFragment extends Fragment {
         binding.swipeSearch.setOnRefreshListener(()->restart(false));restart(false);
     }
     private void restart(boolean debounce){
+        binding.etSearchExplore.setHint(users?"Tìm tên hoặc biệt danh…":"Tìm bài viết…");
         generation++;if(request!=null)request.remove();if(pending!=null)handler.removeCallbacks(pending);busy=false;more=false;lastAppend=false;
         afterName=null;afterId=null;afterTime=null;afterRank=-1;searchUsers.clear();searchPosts.clear();people.notifyDataSetChanged();posts.setRows(searchPosts);
         binding.btnClearSearch.setVisibility(query.isEmpty()?View.GONE:View.VISIBLE);binding.btnLoadMore.setVisibility(View.GONE);binding.btnRetry.setVisibility(View.GONE);

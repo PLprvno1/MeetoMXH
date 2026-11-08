@@ -35,9 +35,9 @@
             android:layout_width="match_parent" android:layout_height="120dp" android:layout_marginHorizontal="8dp" />
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:paddingHorizontal="12dp">
             <CheckBox android:id="@+id/reel_mute_audio" android:layout_width="0dp" android:layout_height="48dp" android:layout_weight="1"
-                android:text="Tắt âm thanh" android:textColor="#FFFFFF" android:buttonTint="#FF7B9E" />
+                android:text="Tắt tiếng gốc" android:textColor="#FFFFFF" android:buttonTint="#FF7B9E" />
             <Button android:id="@+id/reel_music_button" style="@style/Widget.Material3.Button.TextButton"
-                android:layout_width="wrap_content" android:layout_height="48dp" android:text="Âm nhạc"
+                android:layout_width="wrap_content" android:layout_height="48dp" android:text="Thêm nhạc"
                 android:textAllCaps="false" android:textColor="#FF7B9E" />
             <Button android:id="@+id/reel_pick_video" style="@style/Widget.Material3.Button.TextButton"
                 android:layout_width="wrap_content" android:layout_height="48dp" android:text="Đổi video"

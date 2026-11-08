@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="80dp"
+    android:orientation="horizontal" android:gravity="center_vertical" android:paddingHorizontal="16dp"
+    android:paddingVertical="12dp" android:background="?attr/selectableItemBackground">
+    <com.google.android.material.imageview.ShapeableImageView android:id="@+id/followAvatar"
+        android:layout_width="52dp" android:layout_height="52dp" android:scaleType="centerCrop"
+        android:contentDescription="Ảnh đại diện" app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full" />
+    <TextView android:id="@+id/followName" android:layout_width="0dp" android:layout_height="wrap_content"
+        android:layout_weight="1" android:layout_marginStart="12dp" android:layout_marginEnd="12dp"
+        android:textColor="@color/text_primary" android:textSize="15sp" android:textStyle="bold" android:maxLines="2" android:ellipsize="end" />
+    <com.google.android.material.button.MaterialButton android:id="@+id/followAction"
+        style="@style/Widget.Material3.Button.OutlinedButton" android:layout_width="wrap_content"
+        android:layout_height="48dp" android:minWidth="104dp" android:insetTop="4dp" android:insetBottom="4dp"
+        android:textAllCaps="false" android:textSize="12sp" android:paddingHorizontal="12dp" app:cornerRadius="12dp" />
+</LinearLayout>

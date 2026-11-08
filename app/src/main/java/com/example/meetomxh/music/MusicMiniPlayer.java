@@ -25,12 +25,7 @@ public final class MusicMiniPlayer extends FrameLayout {
     private boolean dragging;
     private Runnable closed = () -> {};
     private java.util.function.Consumer<String> error = ignored -> {};
-    private final Player.Listener listener = new Player.Listener() {
-        @Override public void onEvents(Player observed, Player.Events events) { update(); }
-        @Override public void onPlayerError(androidx.media3.common.PlaybackException failure) {
-            close(); error.accept("Không phát được đoạn nhạc này. Hãy thử lại hoặc chọn bài khác.");
-        }
-    };
+    private Player.Listener listener;
     private final Runnable tick = new Runnable() {
         @Override public void run() {
             if (player == null) return;
@@ -45,12 +40,7 @@ public final class MusicMiniPlayer extends FrameLayout {
         seek = findViewById(R.id.mini_music_seek); play = findViewById(R.id.mini_music_play);
         action = findViewById(R.id.mini_music_action);
         findViewById(R.id.mini_music_close).setOnClickListener(v -> close());
-        play.setOnClickListener(v -> {
-            if (player == null) return;
-            if (player.isPlaying()) player.pause();
-            else { if (player.getPlaybackState() == Player.STATE_ENDED) player.seekTo(0); player.play(); }
-            update();
-        });
+        play.setOnClickListener(v -> toggle());
         seek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             public void onStartTrackingTouch(SeekBar bar) { dragging = true; }
             public void onProgressChanged(SeekBar bar, int position, boolean user) {
@@ -70,9 +60,30 @@ public final class MusicMiniPlayer extends FrameLayout {
     public boolean isOpen() { return player != null; }
     public long positionMs() { return player == null ? 0 : Math.max(0, player.getCurrentPosition()); }
     public void pause() { if (player != null) player.pause(); update(); }
+    public void toggle() {
+        if(player==null)return;
+        if(player.isPlaying())player.pause();
+        else{if(player.getPlaybackState()==Player.STATE_ENDED)player.seekTo(0);player.play();}
+        update();
+    }
     public void show(OpenverseTrack track, Mode mode, Player prepared, long lengthMs,
                      long positionMs, boolean autoplay, Runnable confirm) {
         close(); player = prepared; durationMs = Math.max(1, lengthMs);
+        listener=new Player.Listener(){
+            @Override public void onEvents(Player observed,Player.Events events){if(player==prepared)update();}
+            @Override public void onPlaybackStateChanged(int state){
+                if(player==prepared)android.util.Log.i("MeetoMusic","stage=mini_player_state state="+state+" playWhenReady="+prepared.getPlayWhenReady());
+            }
+            @Override public void onPlaybackSuppressionReasonChanged(int reason){
+                if(player==prepared)android.util.Log.i("MeetoMusic","stage=mini_player_suppression reason="+reason);
+            }
+            @Override public void onPlayerError(androidx.media3.common.PlaybackException failure){
+                if(player!=prepared)return;
+                MusicDiagnostics.failure("mini_player_async",failure);
+                int code=failure.errorCode;
+                close();error.accept("Không phát được bản phối (mã Media3 "+code+"). Hãy thử lại; bản chỉnh sửa vẫn được giữ.");
+            }
+        };
         title.setText(track.title + (mode == Mode.TRACK && !track.creator.isEmpty() ? " · " + track.creator : ""));
         action.setText(mode == Mode.TRACK ? "Chọn nhạc" : "Xác nhận");
         action.setOnClickListener(v -> confirm.run());
@@ -86,7 +97,11 @@ public final class MusicMiniPlayer extends FrameLayout {
     public void close() {
         main.removeCallbacks(tick); dragging = false;
         Player previous = player; player = null;
-        if (previous != null) { previous.removeListener(listener); previous.release(); }
+        Player.Listener previousListener=listener;listener=null;
+        if (previous != null) {
+            if(previousListener!=null)previous.removeListener(previousListener);
+            try{previous.release();}catch(RuntimeException releaseError){MusicDiagnostics.failure("mini_player_release",releaseError);}
+        }
         setVisibility(GONE);
         if (previous != null) closed.run();
     }

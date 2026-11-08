@@ -270,5 +270,5 @@ public class Post {
     public void setReelViewsCount(int value){reelViewsCount=Math.max(0,value);}
     public JSONObject getMusicMetadata(){return musicMetadata;}
     public void setMusicMetadata(JSONObject value){musicMetadata=value;}
-    public String getMusicLabel(){if(musicMetadata==null)return "";String title=musicMetadata.optString("title","").trim(),creator=musicMetadata.optString("creator","").trim();return title.isEmpty()?"":"♫ "+title+(creator.isEmpty()?"":" · "+creator);}
+    public String getMusicLabel(){if(musicMetadata==null)return "";String title=musicMetadata.optString("title","").trim(),creator=musicMetadata.optString("artist",musicMetadata.optString("creator","")).trim();return title.isEmpty()?"":"♫ "+title+(creator.isEmpty()?"":" · "+creator);}
 }

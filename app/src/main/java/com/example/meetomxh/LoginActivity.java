@@ -74,6 +74,7 @@ public class LoginActivity extends AppCompatActivity {
         binding.btnLogin.setEnabled(!value);
         binding.etEmail.setEnabled(!value);
         binding.etPassword.setEnabled(!value);
+        binding.passwordInputLayout.setEnabled(!value);
         binding.btnLogin.setText(value ? "Đang đăng nhập…" : "Đăng nhập");
     }
 

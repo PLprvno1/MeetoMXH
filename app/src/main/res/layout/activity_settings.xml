@@ -69,6 +69,13 @@
 
             <!-- Section 1: Tài khoản & Hồ sơ -->
             <TextView
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:layout_marginStart="4dp" android:layout_marginBottom="8dp"
+                android:text="Kết nối &amp; tương tác" android:textColor="@color/text_secondary"
+                android:textSize="13sp" android:textStyle="bold" />
+            <include android:id="@+id/connectionSettingsCard" layout="@layout/card_settings_options" />
+
+            <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="4dp"
@@ -148,10 +155,44 @@
                             android:layout_height="wrap_content"
                             android:layout_marginStart="14dp"
                             android:layout_weight="1"
-                            android:text="Thông tin tài khoản Supabase"
+                            android:text="Thông tin tài khoản"
                             android:textColor="@color/text_primary"
                             android:textSize="15sp" />
 
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginStart="52dp"
+                        android:background="@color/divider_color" />
+
+                    <LinearLayout
+                        android:id="@+id/rowChangePassword"
+                        android:layout_width="match_parent"
+                        android:layout_height="54dp"
+                        android:background="?android:attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingHorizontal="16dp">
+
+                        <ImageView
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_edit"
+                            app:tint="@color/brand_blue" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="14dp"
+                            android:layout_weight="1"
+                            android:text="Đổi mật khẩu"
+                            android:textColor="@color/text_primary"
+                            android:textSize="15sp" />
                     </LinearLayout>
 
                 </LinearLayout>

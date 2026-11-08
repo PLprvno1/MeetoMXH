@@ -18,10 +18,24 @@ SELECT n.nspname,p.proname,pg_get_function_identity_arguments(p.oid) AS argument
  p.proacl,md5(pg_get_functiondef(p.oid)) AS definition_hash
 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
 WHERE (n.nspname='private' AND p.proname IN
- ('meeto_claim_media_cleanup','meeto_finish_media_cleanup','schedule_media_cleanup','task43_asset_live'))
+ ('meeto_claim_media_cleanup','meeto_finish_media_cleanup','meeto_finish_worker_run',
+  'schedule_media_cleanup','task43_asset_live'))
  OR (n.nspname='public' AND p.proname IN
  ('meeto_worker_claim_cleanup','meeto_worker_finish_cleanup','meeto_worker_finish_run'))
 ORDER BY n.nspname,p.proname,arguments;
+
+-- Effective worker ACLs (including inherited grants); private implementation
+-- functions must remain internal and public worker wrappers service_role-only.
+SELECT n.nspname,p.proname,pg_get_function_identity_arguments(p.oid) AS arguments,
+ r.rolname,has_function_privilege(r.oid,p.oid,'EXECUTE') AS can_execute
+FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace CROSS JOIN pg_roles r
+WHERE ((n.nspname='private' AND p.proname IN
+ ('meeto_claim_media_cleanup','meeto_finish_media_cleanup','meeto_finish_worker_run'))
+ OR (n.nspname='public' AND p.proname IN
+ ('meeto_worker_claim_cleanup','meeto_worker_finish_cleanup','meeto_worker_finish_run')))
+ AND r.rolname IN ('anon','authenticated','service_role')
+ORDER BY n.nspname,p.proname,arguments,r.rolname;
+
 SELECT t.tgname,t.tgenabled,t.tgisinternal,pg_get_triggerdef(t.oid) AS trigger_definition
 FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid
 JOIN pg_namespace n ON n.oid=c.relnamespace
@@ -98,5 +112,5 @@ SELECT schemaname,tablename,policyname,permissive,roles,cmd,qual,with_check
 FROM pg_policies WHERE schemaname='storage' AND tablename='objects'
 ORDER BY policyname;
 
--- No DELETE outcome can be established from SQL alone. For each 14-event lease,
+-- No DELETE outcome can be established from SQL alone. For each exhausted lease,
 -- owner must GET-confirm the exact bucket, then HEAD-confirm that exact object.

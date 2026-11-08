@@ -21,7 +21,9 @@ import androidx.media3.transformer.Transformer;
 import androidx.media3.transformer.VideoEncoderSettings;
 import com.example.meetomxh.music.MusicComposition;
 import com.example.meetomxh.music.OpenverseTrack;
+import com.example.meetomxh.music.MusicLibraryCache;
 import java.io.File;
+import java.io.IOException;
 import java.util.Collections;
 
 /** Main-thread Transformer owner. Always encodes the requested timestamps, never previous keyframes. */
@@ -29,6 +31,8 @@ public final class ReelClipExporter {
     public interface Callback { void completed(File file); void failed(String message); }
     private Transformer transformer;
     private File output;
+    private long generation;
+    private MusicLibraryCache.Lease musicLease;
     private final ProgressHolder progress = new ProgressHolder();
 
     public void start(Context context, File source, File destination, long start, long end,
@@ -40,7 +44,22 @@ public final class ReelClipExporter {
                       boolean mute, int sourceVolume, int width, int height, OpenverseTrack music,
                       int musicVolume, Callback callback) {
         cancel();
+        final long run = generation;
+        // Refuse aliasing before assigning output: cancel must never delete the source.
+        try {
+            if (source.getCanonicalFile().equals(destination.getCanonicalFile()))
+                throw new IOException("Tệp xuất phải khác video nguồn.");
+        } catch (IOException error) { callback.failed(error.getMessage());return; }
         output = destination;
+        try {
+        File parent = destination.getParentFile();
+        if (parent == null || !parent.isDirectory() || parent.getUsableSpace() < 64L * 1024 * 1024)
+            throw new IOException("Cần ít nhất 64 MiB trống để xuất Reel. Bản chỉnh sửa vẫn được giữ.");
+        if (music != null && music.library != null) {
+            musicLease = new MusicLibraryCache(context).acquire(music.library);
+            if (musicLease == null || !musicLease.file.getCanonicalPath().equals(new File(music.localPath).getCanonicalPath()))
+                throw new IOException("Tệp nhạc thiếu hoặc hỏng. Hãy tải lại bài nhạc.");
+        }
         DefaultEncoderFactory delegate = new DefaultEncoderFactory.Builder(context)
                 .setRequestedVideoEncoderSettings(new VideoEncoderSettings.Builder().setBitrate((int)Math.min(4_000_000L,
                         Math.max(250_000L, VideoPublishLimits.EXPORT_BYTES * 8L * 1000L / Math.max(1000L,end-start) - 256_000L))).build())
@@ -72,7 +91,7 @@ public final class ReelClipExporter {
                     java.util.Arrays.asList(Presentation.createForWidthAndHeight(targetWidth,targetHeight,Presentation.LAYOUT_SCALE_TO_FIT),
                             androidx.media3.effect.FrameDropEffect.createDefaultFrameDropEffect(30)),
                     Composition.HDR_MODE_TONE_MAP_HDR_TO_SDR_USING_OPEN_GL);}
-            catch(Exception error){destination.delete();callback.failed("Không thể chuẩn bị đoạn nhạc đã chọn. Bản chỉnh sửa vẫn được giữ.");return;}
+            catch(Exception error){fail(run,callback,"Không thể chuẩn bị đoạn nhạc đã chọn. Hãy tải lại nhạc hoặc chọn bài khác. Bản chỉnh sửa vẫn được giữ.");return;}
         }else{
             EditedMediaItemSequence sequence=mute
                     ?EditedMediaItemSequence.withVideoFrom(Collections.singletonList(edited))
@@ -84,26 +103,37 @@ public final class ReelClipExporter {
                 .setAudioMimeType(MimeTypes.AUDIO_AAC).setEncoderFactory(encoder)
                 .addListener(new Transformer.Listener() {
                     @Override public void onCompleted(Composition composition, ExportResult result) {
-                        transformer = null;output = null;
+                        if (run != generation) return;
+                        transformer = null;output = null;releaseLease();
                         if (!destination.isFile() || destination.length() <= 0 || destination.length() > VideoPublishLimits.EXPORT_BYTES) {
                             destination.delete();callback.failed("Video xuất vẫn quá lớn (mục tiêu dưới 40 MB). Hãy chọn đoạn ngắn hơn rồi xuất lại.");return;
                         }
                         callback.completed(destination);
                     }
                     @Override public void onError(Composition composition, ExportResult result, ExportException error) {
-                        transformer = null;output = null;destination.delete();
-                        callback.failed("Không thể xuất đoạn video trên thiết bị này. Hãy chọn đoạn khác hoặc thử video khác.");
+                        fail(run,callback,"Không thể xuất đoạn video trên thiết bị này. Hãy kiểm tra dung lượng, codec hoặc thử lại. Bản nguồn vẫn được giữ.");
                     }
                 }).build();
         try { transformer.start(composition, destination.getAbsolutePath()); }
-        catch (RuntimeException error) { cancel();callback.failed("Không thể bắt đầu xuất video. Chỉnh sửa của bạn vẫn được giữ."); }
+        catch (RuntimeException error) { fail(run,callback,"Không thể bắt đầu xuất video. Chỉnh sửa của bạn vẫn được giữ."); }
+        } catch (Exception error) {
+            fail(run,callback,error instanceof IOException ? error.getMessage() : "Không chuẩn bị được bản xuất Reel. Bản nguồn vẫn được giữ.");
+        }
     }
     public int progress() {
         return transformer != null && transformer.getProgress(progress) == Transformer.PROGRESS_STATE_AVAILABLE
                 ? progress.progress : -1;
     }
     public void cancel() {
-        if (transformer != null) { transformer.cancel();transformer = null; }
-        if (output != null) { output.delete();output = null; }
+        generation++;
+        Transformer old = transformer;transformer = null;
+        try { if (old != null) old.cancel(); }
+        catch (RuntimeException ignored) { /* Cleanup must also run after a codec failure. */ }
+        finally { if (output != null) { output.delete();output = null; } releaseLease(); }
+    }
+    private void releaseLease() { if (musicLease != null) { musicLease.close();musicLease = null; } }
+    private void fail(long run, Callback callback, String message) {
+        if (run != generation) return;
+        cancel();callback.failed(message);
     }
 }

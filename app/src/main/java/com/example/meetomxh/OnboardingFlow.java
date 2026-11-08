@@ -16,6 +16,7 @@ public final class OnboardingFlow {
         JSONObject profile = ProfileClient.self();
         if (profile.optBoolean("onboarding_completed")) return profile;
         SessionManager session = SessionManager.getInstance();
+        String userId = session.uid();
         String name = session.pending("signup_name").trim();
         String birthDate = session.pending("signup_dob").trim();
         String gender = session.pending("signup_gender").trim();
@@ -30,6 +31,7 @@ public final class OnboardingFlow {
                 "p_location", location.isEmpty() ? null : location,
                 "p_location_audience", "private",
                 "p_expected_version", profile.getLong("version")));
+        markSocialSetupPending(MeetoApplication.get(), userId);
         session.pending("signup_name", "");
         session.pending("signup_dob", "");
         session.pending("signup_gender", "");
@@ -41,8 +43,20 @@ public final class OnboardingFlow {
         return context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean("done_" + userId, false);
     }
 
+    /** Only a newly completed signup may request the optional first-login screens. */
+    public static void markSocialSetupPending(Context context, String userId) {
+        if (userId == null || userId.isEmpty() || socialSetupDone(context, userId)) return;
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean("pending_" + userId, true).apply();
+    }
+
+    public static boolean socialSetupPending(Context context, String userId) {
+        return userId != null && !socialSetupDone(context, userId)
+                && context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean("pending_" + userId, false);
+    }
+
     public static void markSocialSetupDone(Context context, String userId) {
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean("done_" + userId, true).apply();
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+                .putBoolean("done_" + userId, true).remove("pending_" + userId).apply();
     }
 
     public static boolean socialFollowSelected(Context context, String userId) {

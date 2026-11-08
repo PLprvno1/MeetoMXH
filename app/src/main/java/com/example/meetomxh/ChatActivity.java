@@ -324,6 +324,7 @@ public class ChatActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
+        if (forwardPicker != null) forwardPicker.close();
         removeMessagesListener();
         removeChatStateListener();
         searchGeneration++;
@@ -1215,65 +1216,16 @@ public class ChatActivity extends AppCompatActivity {
         binding.etMessage.requestFocus();
     }
 
-    private void chooseForwardTarget(ChatMessage message) {
-        if (binding == null || message == null) return;
-        chatRepository.loadCurrentUserChats(new ChatRepository.OnChatsListener() {
-            @Override public void onChats(List<Chat> chats) {
-                if (binding == null || isFinishing() || isDestroyed()) return;
-                List<Chat> targets = new ArrayList<>(); List<String> labels = new ArrayList<>();
-                if (chats != null) for (Chat chat : chats) {
-                    if (chat == null || chat.getChatId() == null || chat.getChatId().equals(chatId)
-                            || !"active".equals(chat.state)) continue;
-                    if (targets.size() >= 20) break;
-                    targets.add(chat);
-                    labels.add("group".equals(chat.getType()) && chat.title != null && !chat.title.trim().isEmpty()
-                            ? chat.title : "Cuộc trò chuyện riêng");
-                }
-                if (targets.isEmpty()) { Toast.makeText(ChatActivity.this, "Không có cuộc trò chuyện đích khả dụng.", Toast.LENGTH_SHORT).show(); return; }
-                int[] pendingNames = {0};
-                for (int i = 0; i < targets.size(); i++) {
-                    Chat target = targets.get(i);
-                    if ("group".equals(target.getType())) continue;
-                    String peer = null;
-                    if (target.getParticipants() != null) for (String participant : target.getParticipants())
-                        if (participant != null && !participant.equals(currentUid)) { peer = participant; break; }
-                    if (peer == null) continue;
-                    final int index = i; pendingNames[0]++;
-                    ProfileClient.get(peer, new Api.Callback<User>() {
-                        @Override public void success(User user) {
-                            if (binding == null) return;
-                            labels.set(index, user.getFullName());
-                            if (--pendingNames[0] == 0) showForwardChooser(message, targets, labels);
-                        }
-                        @Override public void error(String error) {
-                            if (binding == null) return;
-                            labels.set(index, "Cuộc trò chuyện riêng");
-                            if (--pendingNames[0] == 0) showForwardChooser(message, targets, labels);
-                        }
-                    });
-                }
-                if (pendingNames[0] == 0) showForwardChooser(message, targets, labels);
-            }
-            @Override public void onError(String error) {
-                if (binding != null) Toast.makeText(ChatActivity.this, error, Toast.LENGTH_LONG).show();
-            }
-        });
-    }
+    private com.example.meetomxh.ui.ForwardMessagePicker forwardPicker;
 
-    private void showForwardChooser(ChatMessage message, List<Chat> targets, List<String> labels) {
-        if (binding == null || isFinishing() || isDestroyed()) return;
-        String preview = message.getText().length() > 140 ? message.getText().substring(0, 140) + "…" : message.getText();
-        new AlertDialog.Builder(this).setTitle("Chuyển tiếp văn bản")
-                .setMessage(preview).setItems(labels.toArray(new String[0]), (dialog, index) -> {
-                    Chat target = targets.get(index);
-                    new AlertDialog.Builder(this).setTitle("Gửi đến " + labels.get(index))
-                            .setMessage(preview).setNegativeButton("Hủy", null)
-                            .setPositiveButton("Gửi", (d, w) -> chatRepository.forwardTextMessage(
-                                    message.getMessageId(), target.getChatId(), new ChatRepository.OnMessageActionListener() {
-                                        @Override public void onSuccess() { Toast.makeText(ChatActivity.this, "Đã chuyển tiếp.", Toast.LENGTH_SHORT).show(); }
-                                        @Override public void onError(String error) { Toast.makeText(ChatActivity.this, error, Toast.LENGTH_LONG).show(); }
-                                    })).show();
-                }).show();
+    private void chooseForwardTarget(ChatMessage message) {
+        if (binding == null || message == null || message.isRecalled() || message.getText() == null
+                || message.getMessageId() == null || chatId == null || isFinishing() || isDestroyed()) return;
+        if (forwardPicker != null && forwardPicker.isShowing()) return;
+        if (forwardPicker != null) forwardPicker.close();
+        forwardPicker = new com.example.meetomxh.ui.ForwardMessagePicker(
+                this, chatId, message.getMessageId(), message.getText());
+        forwardPicker.show();
     }
 
     private void copyMessage(ChatMessage message) {

@@ -400,7 +400,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:fontFamily="sans-serif-bold"
-                    android:text="Tin nổi bật"
+                    android:text="Ảnh nổi bật"
                     android:textColor="@color/text_primary"
                     android:textSize="13sp"
                     android:textStyle="bold" />
@@ -411,7 +411,7 @@
                     android:layout_height="28dp"
                     android:background="?android:attr/selectableItemBackgroundBorderless"
                     android:clickable="true"
-                    android:contentDescription="Thêm tin nổi bật"
+                    android:contentDescription="Thêm album ảnh nổi bật"
                     android:focusable="true"
                     android:padding="4dp"
                     android:src="@drawable/ic_add"
@@ -419,19 +419,12 @@
 
             </LinearLayout>
 
-            <HorizontalScrollView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:scrollbars="none">
-
                 <LinearLayout
                     android:id="@+id/layoutFeaturedItems"
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal" />
-
-            </HorizontalScrollView>
+                    android:layout_marginTop="8dp"
+                    android:orientation="vertical" />
 
         </LinearLayout>
 

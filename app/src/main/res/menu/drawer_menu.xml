@@ -2,6 +2,21 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <group android:checkableBehavior="single">
         <item
+            android:id="@+id/drawer_create_post"
+            android:checkable="false"
+            android:icon="@drawable/ic_edit"
+            android:title="Đăng bài" />
+        <item
+            android:id="@+id/drawer_create_story"
+            android:checkable="false"
+            android:icon="@drawable/ic_add_box"
+            android:title="Đăng Story" />
+        <item
+            android:id="@+id/drawer_create_reel"
+            android:checkable="false"
+            android:icon="@drawable/ic_reel_video"
+            android:title="Đăng Reel" />
+        <item
             android:id="@+id/drawer_saved"
             android:icon="@drawable/ic_bookmark"
             android:title="Đã lưu" />

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto" style="@style/Widget.Meeto.Card"
+    android:layout_width="match_parent" android:layout_height="wrap_content"
+    android:layout_marginBottom="16dp" app:cardCornerRadius="14dp">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+        <include android:id="@+id/settingsOptionOne" layout="@layout/item_settings_option" />
+        <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginStart="52dp" android:background="@color/divider_color" />
+        <include android:id="@+id/settingsOptionTwo" layout="@layout/item_settings_option" />
+        <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginStart="52dp" android:background="@color/divider_color" />
+        <include android:id="@+id/settingsOptionThree" layout="@layout/item_settings_option" />
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

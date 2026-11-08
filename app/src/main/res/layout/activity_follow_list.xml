@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical"
+    android:background="@color/app_bg" android:fitsSystemWindows="true">
+    <com.google.android.material.appbar.MaterialToolbar android:id="@+id/followToolbar"
+        android:layout_width="match_parent" android:layout_height="56dp" android:background="@color/surface_bg"
+        app:titleTextColor="@color/text_primary" app:navigationIcon="@drawable/ic_arrow_back"
+        app:navigationIconTint="@color/text_primary" app:navigationContentDescription="Quay lại" />
+    <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider_color" />
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout android:id="@+id/swipeFollowList"
+        android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
+        <FrameLayout android:layout_width="match_parent" android:layout_height="match_parent">
+            <androidx.recyclerview.widget.RecyclerView android:id="@+id/followList" android:layout_width="match_parent"
+                android:layout_height="match_parent" android:paddingTop="8dp" android:paddingBottom="16dp" android:clipToPadding="false" />
+            <ProgressBar android:id="@+id/followProgress" android:layout_width="36dp" android:layout_height="36dp"
+                android:layout_gravity="center" android:visibility="gone" />
+            <TextView android:id="@+id/followState" android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_gravity="center" android:gravity="center" android:padding="32dp"
+                android:textColor="@color/text_secondary" android:textSize="15sp" android:visibility="gone"
+                android:accessibilityLiveRegion="polite" />
+        </FrameLayout>
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+    <TextView android:id="@+id/followFooter" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:gravity="center" android:padding="12dp" android:textColor="@color/text_secondary" android:visibility="gone" />
+</LinearLayout>

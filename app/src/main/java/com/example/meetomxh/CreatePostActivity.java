@@ -71,7 +71,7 @@ public class CreatePostActivity extends AppCompatActivity {
         }
         if (editorOutput != null) new File(editorOutput).delete();
         editorOutput = null;
-        editorMusicMetadata=null;musicCapabilityValidated=false;
+        musicCapabilityValidated=false;
         // Cancellation retains the original video.
         // The original selected URI is retained on cancellation.
     });

@@ -2,7 +2,7 @@
 
 Date: **2026-11-07, Asia/Bangkok**. Scope: repair the media-retirement worker and prepare a bounded owner-run recovery for the Cloud backlog. No Cloud migration, Storage operation, cron edit, Edge Function deployment, Android build/test/emulator, or Git push was run.
 
-**SOURCE VERIFIED: YES, by migration and worker source inspection. CLOUD VERIFIED BY CODEX: NO. SQL RUNTIME VERIFIED: NO. ANDROID RUNTIME VERIFIED: NO.** The 14 processing and 10 pending rows below are owner-provided Cloud query results; this report does not claim to have queried the project.
+**SOURCE VERIFIED: YES, by migration and worker source inspection. CLOUD VERIFIED BY CODEX: NO. SQL RUNTIME VERIFIED: NO. ANDROID RUNTIME VERIFIED: NO.** The owner reports that 01050/01100 and the new recovery objects are absent, the cleanup cron is paused, both worker-finish functions exist under their distinct names, and the latest counts are 17 processing events at attempts=5 plus 12 pending events. Codex has not queried Cloud; refresh exact IDs, lease expiry and row details with the read-only preflight before acting.
 
 ## Findings
 
@@ -12,7 +12,7 @@ The worker source has several paths that can leave the event processing without 
 
 A Storage DELETE can finish before the finish RPC fails or its response is lost. Conversely, an expired lease does not show that DELETE ran. The old worker treats any 2xx DELETE as success without checking the exact object afterward. worker_invocations.completed_at closes the invocation record; it does not attest that every object delete and every finish RPC succeeded.
 
-The four listed categories among the 14 exhausted events (Post JPEG, chat PNG, profile avatar PNG/JPEG, and Post MP4) were already represented in the old cleanup whitelist. The old cleanup whitelist omitted Story media and voice `audio/mp4`; this explains why the 10 pending Story/audio events were not eligible under that function. It does **not** identify the individual failure point for any of the 14 exhausted events.
+The four categories in the initial 14-event exhausted snapshot (Post JPEG, chat PNG, profile avatar PNG/JPEG, and Post MP4) were already represented in the old cleanup whitelist. The initial 10-event pending snapshot contained Story media and voice `audio/mp4`, which the old cleanup whitelist omitted. The latest 17/12 snapshot has not been independently categorized here; this historical breakdown does **not** identify the failure point for any exhausted event.
 
 ## Supported media contract
 
@@ -43,6 +43,8 @@ The worker never reads or logs message text, captions, Storage response bodies, 
 
 No deployed migration was edited. The 54B migration is changed only to require 01050 in the intended first-deployment sequence. If Cloud already contains 01100, do not run either local migration as written; prepare a new later forward-only migration after live catalog review.
 
+**54B.2.1 source-review update (2026-11-07):** the undeployed 01050 migration already named `private.meeto_finish_worker_run(uuid,jsonb)` correctly. Its prerequisite guard now also checks the separate `public.meeto_worker_finish_run(uuid,jsonb)` wrapper used by the Edge Function, plus columns used by the worker-token, event, Story-reference, Storage catalog/bucket, and cron checks. The preflight inventories both function signatures and effective worker ACLs, and no longer hardcodes the initial 14-event count. This does not verify live Cloud catalog types/ACLs or SQL execution.
+
 ## Claim, Storage and finish
 
 The updated worker validates the claimed UUIDs, attempt range, MIME, purpose, bucket, owner, and exact path before issuing DELETE. After DELETE, including a timeout or non-2xx response, it checks that the bucket exists and HEADs the exact object. The outcome is persisted per event and attempt as absent, present, or unknown before finish.
@@ -51,7 +53,7 @@ Finish marks the registry asset deleted only when the recorded outcome is absent
 
 The observation absent means the exact object was absent when checked after this attempt. It does not prove which actor deleted it. The worker records only HTTP status and outcome, never raw Storage bodies. If finish commits but the HTTP response is lost, the attempt audit still shows the committed result.
 
-## Recovery for the 14 exhausted events
+## Recovery for the 17 exhausted events in the latest owner snapshot
 
 The migration adds a bounded owner-only reaper. It accepts an explicit, unique event-ID list and expected count (maximum 25), verifies every row is media.retire / media_asset, processing, attempts 5, lease expired, and asset pending_delete, and refuses while the cleanup schedule is active or a worker invocation/token is still within its execution window. The owner must first pause the shared cleanup/voice-verification schedule and wait for all in-flight invocations and unconsumed tokens to expire. The migration also requires its SECURITY DEFINER owner to have the worker table rights and Storage catalog SELECT/RLS bypass needed for exact object matching. The reaper then moves only those exact exhausted events to dead, stores lease_expired_outcome_unknown, and writes an audit row with storage_outcome=unknown. It does not touch media_assets, issue a Storage request, or claim success.
 
@@ -63,12 +65,12 @@ After dead-lettering, the owner must inspect each exact bucket/object with a suc
 
 The SQL function cannot independently prove that an operator actually made the HTTP HEAD request. owner_head is an explicit operator attestation, corroborated by bucket/catalog state. The operator must retain the per-object Storage response or console evidence in the project’s incident record. A lease, run summary, 404 without confirming the bucket, or missing catalog row alone is insufficient.
 
-Use the exact IDs returned by the read-only preflight; do not paste a guessed list. After pausing the cleanup cron, waiting past the worker execution window, and reviewing all 14 exact rows, the owner invocation has this form:
+Use the exact IDs returned by a fresh read-only preflight; do not paste a guessed list. The reaper accepts 1–25 unique IDs, so the latest count of 17 fits its bound. After pausing the cleanup cron, waiting past the worker execution window, and reviewing all 17 exact rows, the owner invocation has this form:
 
     SELECT private.meeto_reap_exhausted_cleanup(
       ARRAY[/* exact reviewed event UUIDs */]::uuid[],
       /* a new owner-generated request UUID */ '...'::uuid,
-      14,
+      17,
       'Cleanup worker paused and drained; exact expired attempts reviewed; Storage result remains unknown'
     );
 
@@ -84,34 +86,37 @@ For each reaped event, only after the owner directly checked the exact object:
 
 The examples are templates and intentionally contain no usable event IDs. Recovery functions are private, have no public PostgREST wrapper, and are revoked from PUBLIC, anon, authenticated, and service_role. Do not replace them with hand-written updates to event_outbox or media_assets.
 
-## Handling the 10 pending events
+## Handling the 12 pending events in the latest owner snapshot
 
-The 6 chat audio/mp4 objects use chat-media, purpose message, and original.m4a; voice upload source permits 2 MiB. The 4 Story images use social-media, purpose story, and the exact PNG/JPEG suffix. The migration adds both to the cleanup whitelist only with their private-bucket MIME checks.
+The initial 10-event snapshot was reported as six chat audio/mp4 objects and four Story images. The latest count is 12; refresh the bucket/purpose/MIME breakdown and exact rows from preflight rather than assuming it is unchanged. Source support remains limited to the explicit chat-media/message/audio/mp4 and social-media/story image/video combinations, with private-bucket MIME and reference checks.
 
-They remain pending during the Admin migration. After 01050 and 01100 are installed and the updated Edge Function is deployed, the normal worker can claim due supported events. A sent Message, live Story, report link, removed/recalled Message reference, unknown MIME/path/owner, or evidence hold keeps its asset out of deletion. A blocked event remains visible for owner review.
+The 12 latest pending events remain untouched during recovery and the Admin migration. After 01050 and 01100 are installed and the updated Edge Function is deployed, the normal worker can claim due supported events. A sent Message, live Story, report link, removed/recalled Message reference, unknown MIME/path/owner, or evidence hold keeps its asset out of deletion. A blocked event remains visible for owner review.
 
 ## Deploy and pause order
 
-1. Run TASK54B2_MEDIA_CLEANUP_PREFLIGHT_READONLY.sql. Confirm 01050 and 01100 are absent, source prerequisites and all three private bucket MIME lists match, and the 14 exact rows still match the expected state. If 01100 is present, stop and use a new later migration.
+1. Run TASK54B2_MEDIA_CLEANUP_PREFLIGHT_READONLY.sql. Confirm 01050 and 01100 are absent, source prerequisites and all three private bucket MIME lists match, and the latest 17 exhausted / 12 pending rows still match the expected state. Review the 17 exact event IDs and each current asset/reference row. If 01100 is present, stop and use a new later migration.
 2. Pause only `meeto-media-cleanup-every-five-minutes` using the owner’s scheduled-job controls. This job invokes a shared one-shot worker that also checks voice-audio verification, so voice verification will be delayed while paused; its records are not deleted. The separate chat outbox dispatcher is not part of this pause.
 3. Wait for the current invocation to complete or pass `execution_until`, and for any unconsumed worker token to expire. Allow a drain interval longer than the configured worker window. Verify the job is inactive, no valid token/invocation remains, and no newly claimed processing rows appeared. `completed_at` alone is not proof of per-file results.
-4. Apply `20261107001050_media_cleanup_recovery.sql` first. It creates audit/recovery functions and tightens worker RPC behavior but does not rewrite historical events or delete files. The migration refuses to run unless the shared schedule is inactive and every issued worker token/invocation has expired or completed. Do not use one bulk push that would immediately proceed to 01100 before the explicit recovery gate. Supabase compares migration files with the remote ledger and applies pending files in timestamp order; inspect the proposed set with `supabase migration list --remote` and `supabase db push --dry-run --remote` first. Use an owner-approved staged migration procedure to apply 01050 alone. If SQL Editor is used, only after verifying the entire migration committed and the catalog checks pass, record its ledger version with `supabase migration repair 20261107001050 --status applied --remote`; this command changes migration history only and must never be used to skip SQL execution or bypass the gate. See [Supabase migration deployment](https://supabase.com/docs/guides/deployment/database-migrations) and [CLI reference](https://supabase.com/docs/reference/cli/introduction).
-5. Run the bounded reaper for the exact 14 IDs. Confirm all 14 are now dead with unknown outcome and no media row was changed. Keep the cleanup cron paused.
+4. Apply `20261107001050_media_cleanup_recovery.sql` first. It creates audit/recovery functions and tightens worker RPC behavior but does not rewrite historical events or delete files. The migration refuses to run unless the shared schedule is inactive and every issued worker token/invocation has expired or completed. Do not use one bulk push that would immediately proceed to 01100 before the explicit recovery gate. Because earlier SQL Editor deployments may be absent from the migration ledger, inspect the remote/local migration plan before using a migration runner; do not let it replay unrecorded historical migrations. Use an owner-approved staged procedure to apply 01050 alone. This task does not repair or edit migration history. The amended 01100 checks the installed 01050 catalog objects/signatures directly rather than requiring a ledger row, while retaining its own duplicate-install and state guards. See [Supabase migration deployment](https://supabase.com/docs/guides/deployment/database-migrations) and [CLI reference](https://supabase.com/docs/reference/cli/introduction).
+   Keep the worker paused and do not invoke its claim path between 01050 and 01100: 01050's claim still calls the installed pre-54B.1 `schedule_media_cleanup()`. Its own claim guard blocks Storage deletion for Task43-live assets, but the older scheduler could first mark a Reel cover or album-referenced asset `pending_delete`. 01100 installs the Task43/hold-aware scheduler.
+5. Run the bounded reaper once for the exact 17 IDs with `p_expected_count = 17`. Confirm all 17 are dead with unknown outcome and no media row was changed. Keep the cleanup cron paused.
 6. Apply 20261107001100_admin_logic_hardening.sql. Its guards require the 01050 objects, the shared schedule still paused, no active/unexpired worker token, and zero `media.retire` rows in `processing`; pending/dead rows are not silently reset.
 7. Deploy the updated meeto-background-cleanup Edge Function. This task prepared source only; it did not deploy it.
 8. Run TASK54B2_MEDIA_CLEANUP_POSTDEPLOY_READONLY.sql, review holds/references and reconcile each old event after direct Storage checks.
-9. Resume the same cleanup schedule only after migration 01100 and the new Edge Function are both active. Then monitor the ten pending events and any new replacement events. Re-enable the paused schedule explicitly.
+9. Resume the same cleanup schedule only after migration 01100 and the new Edge Function are both active. Then monitor the 12 pending events and any new replacement events. Re-enable the paused schedule explicitly.
 
 Timestamp 01050 is intentionally between the last listed deployed migration 01000 and the un-deployed Admin migration 01100. Supabase migration ordering must be confirmed against the live ledger and dry-run output before applying. This avoids making cleanup migration 01050 depend on 54B objects while still ensuring 54B cannot run first. If 01100 is already in the Cloud ledger, stop: 01050's guard requires a later forward-only migration after live review.
+
+**54B.2.2 source-review update (2026-11-07):** corrected the missing PL/pgSQL statement terminator in the bounded reaper. The 01050 finish-worker prerequisites use the historical private `meeto_finish_worker_run(uuid,jsonb)` name and separately require the public `meeto_worker_finish_run(uuid,jsonb)` wrapper. The undeployed 01100 guard no longer relies on a 01050 ledger row because this project has SQL Editor deployments missing from that ledger; it still checks actual recovery objects/signatures before proceeding. No SQL was executed and no ledger or Cloud state was changed.
 
 ## Verification status and remaining blockers
 
 **Source verified:** old claim/finish/worker paths; upload MIME/path contracts; bucket names and privacy; final Task43 reference graph; request/deletion behavior; new source changes and migration order. The account deletion request source only sets deletion_requested_at; it does not delete the profile. A later hard deletion can null media_assets.owner_id, and this cleanup intentionally leaves such rows for manual review. The migration itself now refuses to apply unless the shared scheduled job is paused and all recorded worker invocations/tokens have drained.
 
-**Cloud verified:** no new live query performed by Codex. The 14 processing and 10 pending counts are supplied by the owner. Their exact event IDs, current Storage HEAD outcomes, effective Cloud ACL/owners, current cron state, schema ledger and actual Edge version remain unverified here.
+**Cloud evidence:** no live query performed by Codex. Owner-reported current facts are: 01050/01100 and their new objects absent, cron paused, `private.meeto_finish_worker_run(uuid,jsonb)` and `public.meeto_worker_finish_run(uuid,jsonb)` present, and 17 processing attempts=5 plus 12 pending. Exact event IDs, current lease expiry, 12-row MIME/category breakdown, Storage HEAD outcomes, effective ACL/owners and deployed Edge version still require owner read-only checks.
 
 **SQL runtime verified:** no PostgreSQL client/server was available in the workspace, so the migration was not compiled or executed. Static review cannot establish deployability or live function ownership/grants. The migration has guards for PostgreSQL 12+, catalog signatures/columns, private bucket MIME contract, owner consistency, and API-role ACLs, but the owner must review the live output.
 
 **Android runtime verified:** not applicable; no Android source or runtime flow was changed.
 
-Blocking owner actions are: confirm Cloud has not recorded 01100; pause and drain the shared worker; run preflight and confirm exact IDs/contract; apply 01050; run the explicit bounded unknown-outcome reaper; apply 01100; deploy the Edge Function; directly inspect all 14 Storage objects; reconcile only from that evidence; run postflight; and resume the cleanup schedule. Notification delivery remains not_implemented.
+Blocking owner actions are: confirm Cloud has not recorded 01100; pause and drain the shared worker; run preflight and confirm the 17 exact exhausted IDs and 12 pending rows/contracts; apply 01050; run the explicit bounded unknown-outcome reaper for the 17 IDs; apply 01100; deploy the Edge Function; directly inspect each of the 17 exact Storage objects; reconcile only from that evidence; run postflight; and resume the cleanup schedule. Notification delivery remains not_implemented.

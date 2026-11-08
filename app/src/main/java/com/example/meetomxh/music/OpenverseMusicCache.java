@@ -19,6 +19,14 @@ public final class OpenverseMusicCache {
     private static String signature(OpenverseTrack track){return key(track.audioUrl+"|"+track.durationMs+"|"+track.licenseUrl);}
     public static synchronized File find(Context context,String id){return new OpenverseMusicCache(context).findInternal(id);}
     public static boolean isManaged(Context context,String id,String path){try{File f=find(context,id);return f!=null&&f.getCanonicalFile().equals(new File(path).getCanonicalFile());}catch(IOException e){return false;}}
+    public static boolean isManaged(Context context,OpenverseTrack track){
+        if(track==null)return false;
+        if(track.library==null)return isManaged(context,track.id,track.localPath);
+        try{File f=new MusicLibraryCache(context).find(track.library);
+            boolean valid=f!=null&&f.getCanonicalFile().equals(new File(track.localPath).getCanonicalFile());
+            if(valid)MusicLibraryCache.protect(context,track);return valid;
+        }catch(IOException|RuntimeException invalid){return false;}
+    }
     private File findInternal(String id){File f=track(id);if(!f.isFile())return null;if(System.currentTimeMillis()-f.lastModified()>TTL){f.delete();return null;}f.setLastModified(System.currentTimeMillis());return f;}
     public File begin(String id)throws IOException{synchronized(OpenverseMusicCache.class){if(!root.isDirectory()&&!root.mkdirs())throw new IOException("Không tạo được vùng đệm nhạc.");cleanup(0);return new File(root,key(id)+"-"+java.util.UUID.randomUUID()+".part");}}
     public File commit(File temp,String id)throws IOException{synchronized(OpenverseMusicCache.class){

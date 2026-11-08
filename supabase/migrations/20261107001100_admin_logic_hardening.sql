@@ -11,10 +11,10 @@ DO $$ DECLARE installed boolean; BEGIN
   EXECUTE 'SELECT EXISTS(SELECT 1 FROM supabase_migrations.schema_migrations WHERE version=$1)'
   INTO installed USING '20261107001100';
   IF installed THEN RAISE EXCEPTION '54B is already installed; use a new forward-only fix migration'; END IF;
-  EXECUTE 'SELECT EXISTS(SELECT 1 FROM supabase_migrations.schema_migrations WHERE version=$1)'
-   INTO installed USING '20261107001050';
-  IF NOT installed THEN RAISE EXCEPTION 'Apply 20261107001050 media cleanup recovery before Admin 54B'; END IF;
  END IF;
+ -- Do not use the ledger as the 01050 prerequisite: earlier SQL Editor
+ -- deployments may not have ledger rows. The catalog guards below require
+ -- the actual 01050 recovery objects/signatures before this migration proceeds.
  IF EXISTS(SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
  WHERE n.nspname IN ('public','private') AND p.proname IN
  ('admin_get_capabilities','admin_target','admin_permitted_actions','admin_transition','admin_commit_action',

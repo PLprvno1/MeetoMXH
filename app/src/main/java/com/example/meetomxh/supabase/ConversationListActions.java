@@ -18,7 +18,7 @@ import java.util.function.BiConsumer;
 
 /** Inbox shortcuts reuse the same per-member controls as Conversation Details. */
 public final class ConversationListActions {
-    public enum Change { MUTED, ARCHIVED, BLOCKED, HIDDEN }
+    public enum Change { MUTED, ARCHIVING, ARCHIVED, ARCHIVE_FAILED, BLOCKED, HIDDEN }
     private ConversationListActions() {}
     public static void show(Activity activity, Chat chat, Inbox row, BiConsumer<Chat, Change> changed) {
         if (activity.isFinishing() || activity.isDestroyed()) return;
@@ -43,6 +43,28 @@ public final class ConversationListActions {
             sheet.setCancelable(!value);
         };
         java.util.function.BiConsumer<String, org.json.JSONObject> run = (rpc, input) -> {
+            if(!alive.getAsBoolean())return;
+            if ("set_conversation_archived".equals(rpc)) {
+                boolean previous=chat.archived;
+                chat.archived=input.optBoolean("p_archived");
+                changed.accept(chat,Change.ARCHIVING);
+                sheet.dismiss();
+                // This user mutation outlives the action sheet; dismiss must not cancel it.
+                // Api.run still fences requests/callbacks to the current account generation.
+                Api.run(()->RpcClient.call(rpc,input),new Api.Callback<Object>(){
+                    public void success(Object result){
+                        changed.accept(chat,Change.ARCHIVED);
+                        if(!activity.isFinishing()&&!activity.isDestroyed())Toast.makeText(activity,
+                                chat.archived?"Đã lưu trữ hội thoại":"Đã bỏ lưu trữ",Toast.LENGTH_SHORT).show();
+                    }
+                    public void error(String error){
+                        chat.archived=previous;changed.accept(chat,Change.ARCHIVE_FAILED);
+                        if(!activity.isFinishing()&&!activity.isDestroyed())Toast.makeText(activity,
+                                "Không lưu được thay đổi. Đã khôi phục hội thoại. "+error,Toast.LENGTH_LONG).show();
+                    }
+                });
+                return;
+            }
             busy.accept(true);
             request[0] = Api.run(() -> RpcClient.call(rpc, input), new Api.Callback<Object>() {
                 public void success(Object result) {

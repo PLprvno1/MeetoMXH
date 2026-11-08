@@ -27,19 +27,22 @@ public class SettingsActivity extends AppCompatActivity {
         super.onCreate(state);
         binding = ActivitySettingsBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
-        androidx.core.widget.NestedScrollView settingsScroll=binding.getRoot().findViewById(R.id.settingsScroll);
-        if(settingsScroll!=null&&settingsScroll.getChildAt(0) instanceof LinearLayout){
-            Button tagButton=new Button(this);tagButton.setText("Quyền gắn thẻ & bài viết có gắn thẻ");
-            tagButton.setOnClickListener(v->startActivity(new Intent(this,TagManagementActivity.class)));
-            ((LinearLayout)settingsScroll.getChildAt(0)).addView(tagButton,0);
-            Button requests=new Button(this);requests.setText("Yêu cầu theo dõi");requests.setOnClickListener(v->startActivity(new Intent(this,RequestCenterActivity.class).putExtra("mode","follow")));((LinearLayout)settingsScroll.getChildAt(0)).addView(requests,1);
-            Button messages=new Button(this);messages.setText("Tin nhắn chờ");messages.setOnClickListener(v->startActivity(new Intent(this,RequestCenterActivity.class).putExtra("mode","message")));((LinearLayout)settingsScroll.getChildAt(0)).addView(messages,2);
-        }
+        View connections=findViewById(R.id.connectionSettingsCard);
+        View tags=connections.findViewById(R.id.settingsOptionOne);
+        configureOption(tags,R.drawable.ic_tag,"Quyền gắn thẻ & bài viết có gắn thẻ",null);
+        tags.setOnClickListener(v->startActivity(new Intent(this,TagManagementActivity.class)));
+        View follows=connections.findViewById(R.id.settingsOptionTwo);
+        configureOption(follows,R.drawable.ic_person,"Yêu cầu theo dõi",null);
+        follows.setOnClickListener(v->startActivity(new Intent(this,RequestCenterActivity.class).putExtra("mode","follow")));
+        View messages=connections.findViewById(R.id.settingsOptionThree);
+        configureOption(messages,R.drawable.ic_messenger,"Tin nhắn chờ",null);
+        messages.setOnClickListener(v->startActivity(new Intent(this,RequestCenterActivity.class).putExtra("mode","message")));
         binding.btnBack.setOnClickListener(v -> finish());
         binding.rowThemeModeSettings.setOnClickListener(v -> chooseThemeMode());
         updateThemeModeLabel();
         binding.rowEditProfile.setOnClickListener(v -> startActivity(new Intent(this, ProfileEditActivity.class)));
         binding.rowAccountInfo.setOnClickListener(v -> accountInfo());
+        binding.rowChangePassword.setOnClickListener(v -> startActivity(new Intent(this, ChangePasswordActivity.class)));
         binding.rowPrivacy.setOnClickListener(v -> privacyCenter());
         binding.rowBlocked.setOnClickListener(v -> blockedUsers());
         binding.rowNotificationsSetting.setOnClickListener(v -> notificationSettings());
@@ -92,7 +95,6 @@ public class SettingsActivity extends AppCompatActivity {
                 new AlertDialog.Builder(SettingsActivity.this).setTitle("Tài khoản")
                         .setMessage("Email: " + user.getEmail() + "\nXác minh email: "
                                 + (profile.optBoolean("email_verified") ? "Đã xác minh" : "Chưa xác minh"))
-                        .setNeutralButton("Đổi mật khẩu", (d, w) -> startActivity(new Intent(SettingsActivity.this, ForgotPasswordActivity.class).putExtra("reset", true)))
                         .setPositiveButton("Đóng", null).show();
             }
             @Override public void error(String error) { toast(error); }
@@ -123,14 +125,32 @@ public class SettingsActivity extends AppCompatActivity {
         String[][] choices={{"Công khai","Riêng tư"},{"Mọi người","Người theo dõi","Chỉ mình tôi"},{"Mọi người","Người theo dõi","Chỉ mình tôi"}};
         String[][] values={{"public","private"},{"public","followers","private"},{"public","followers","private"}};
         String[] keys={"profile","last_seen","location"};LinearLayout list=new LinearLayout(this);list.setOrientation(1);
+        int inset=(int)(24*getResources().getDisplayMetrics().density);
+        list.setPadding(inset,inset/3,inset,inset/3);
+        View card=getLayoutInflater().inflate(R.layout.card_settings_options,list,false);list.addView(card);
+        int[] rowIds={R.id.settingsOptionOne,R.id.settingsOptionTwo,R.id.settingsOptionThree};
+        int[] icons={R.drawable.ic_person,R.drawable.ic_notifications,R.drawable.ic_location};
         for(int i=0;i<labels.length;i++){final int row=i;int selected=java.util.Arrays.asList(values[i]).indexOf(v.optString(keys[i]));if(selected<0)selected=i==0?1:2;
             try{v.put(keys[i],values[i][selected]);}catch(Exception ignored){}
-            Button button=new Button(this);button.setText(labels[i]+": "+choices[i][selected]);list.addView(button);button.setOnClickListener(x->new AlertDialog.Builder(this).setTitle(labels[row]).setItems(choices[row],(d,n)->{try{v.put(keys[row],values[row][n]);}catch(Exception ignored){}button.setText(labels[row]+": "+choices[row][n]);}).show());}
-        AlertDialog dialog=new AlertDialog.Builder(this).setTitle("Quyền riêng tư").setMessage("Tài khoản riêng tư chỉ cho người theo dõi đã được duyệt xem nội dung. Yêu cầu đang chờ không tự được chấp nhận khi chuyển công khai.").setView(list).setNegativeButton("Hủy",null).setPositiveButton("Lưu",null).create();
+            View option=card.findViewById(rowIds[i]);configureOption(option,icons[i],labels[i],choices[i][selected]);
+            option.setOnClickListener(x->{int checked=java.util.Arrays.asList(values[row]).indexOf(v.optString(keys[row]));
+                new com.google.android.material.dialog.MaterialAlertDialogBuilder(this).setTitle(labels[row])
+                    .setSingleChoiceItems(choices[row],checked,(d,n)->{try{v.put(keys[row],values[row][n]);}catch(Exception ignored){}
+                        configureOption(option,icons[row],labels[row],choices[row][n]);d.dismiss();})
+                    .setNegativeButton("Hủy",null).show();});}
+        ScrollView scroll=new ScrollView(this);scroll.addView(list);
+        AlertDialog dialog=new com.google.android.material.dialog.MaterialAlertDialogBuilder(this).setTitle("Quyền riêng tư").setMessage("Tài khoản riêng tư chỉ cho người theo dõi đã được duyệt xem nội dung. Yêu cầu đang chờ không tự được chấp nhận khi chuyển công khai.").setView(scroll).setNegativeButton("Hủy",null).setPositiveButton("Lưu",null).create();
         dialog.setOnShowListener(d->dialog.getButton(-1).setOnClickListener(x->{dialog.getButton(-1).setEnabled(false);Api.run(()->RpcClient.object("update_privacy_settings",Api.obj("p_profile_audience",v.optString("profile"),"p_last_seen_audience",v.optString("last_seen"),"p_location_audience",v.optString("location"))),new Api.Callback<JSONObject>(){
             public void success(JSONObject r){dialog.dismiss();toast("Đã lưu quyền riêng tư.");com.example.meetomxh.repositories.FeedRepository.getInstance().refresh();}
             public void error(String e){dialog.getButton(-1).setEnabled(true);toast(e);}
         });}));dialog.show();
+    }
+
+    private void configureOption(View row,int icon,String label,String value){
+        ((android.widget.ImageView)row.findViewById(R.id.settingsOptionIcon)).setImageResource(icon);
+        ((android.widget.TextView)row.findViewById(R.id.settingsOptionLabel)).setText(label);
+        android.widget.TextView selected=row.findViewById(R.id.settingsOptionValue);
+        selected.setText(value);selected.setVisibility(value==null?View.GONE:View.VISIBLE);
     }
 
 

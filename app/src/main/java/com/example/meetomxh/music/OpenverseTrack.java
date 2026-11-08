@@ -3,23 +3,35 @@ package com.example.meetomxh.music;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-/** Validated, public Openverse provenance kept with the rendered media draft. */
+/** Compatible selection/draft carrier for legacy Openverse and catalog-backed Meeto v2. */
 public final class OpenverseTrack {
     public final String id, title, creator, provider, source, landingUrl, audioUrl, license, licenseUrl, attribution;
     public final long durationMs;
     public final String localPath;
+    public final MusicLibraryTrack library;
     public int startMs, musicVolume = 35, sourceVolume = 100, stillDurationMs = 15_000;
     public long selectedDurationMs;
 
     public OpenverseTrack(String id, String title, String creator, String provider, String source,
             String landingUrl, String audioUrl, String license, String licenseUrl, String attribution,
             long durationMs, String localPath) {
+        this(id,title,creator,provider,source,landingUrl,audioUrl,license,licenseUrl,attribution,durationMs,localPath,null);
+    }
+    private OpenverseTrack(String id, String title, String creator, String provider, String source,
+            String landingUrl, String audioUrl, String license, String licenseUrl, String attribution,
+            long durationMs, String localPath, MusicLibraryTrack library) {
         this.id=id;this.title=title;this.creator=creator;this.provider=provider;this.source=source;
         this.landingUrl=landingUrl;this.audioUrl=audioUrl;this.license=license;this.licenseUrl=licenseUrl;
         this.attribution=attribution;this.durationMs=durationMs;this.localPath=localPath;
+        this.library=library;
+    }
+    public static OpenverseTrack library(MusicLibraryTrack track,String path){
+        return new OpenverseTrack(track.id,track.title,track.artist,"Meeto","meeto_library",track.sourceUrl,"",
+                "cc0",track.licenseUrl,track.attribution,track.durationMs,path,track);
     }
 
     public JSONObject metadata(long usedMs) throws JSONException {
+        if(library!=null)return library.metadata(startMs,usedMs,musicVolume,sourceVolume);
         return new JSONObject().put("id",id).put("title",title).put("creator",creator)
                 .put("provider",provider).put("source",source).put("source_url",landingUrl)
                 .put("audio_url",audioUrl).put("license","cc0").put("license_url",licenseUrl)
@@ -28,13 +40,15 @@ public final class OpenverseTrack {
     }
 
     public JSONObject draftJson() throws JSONException {
+        if(library!=null)return metadata(Math.min(60000,durationMs)).put("local_path",localPath)
+                .put("library_track",library.json()).put("still_duration_ms",stillDurationMs);
         return metadata(durationMs).put("duration_ms",durationMs).put("local_path",localPath)
                 .put("music_volume",musicVolume).put("source_volume",sourceVolume)
                 .put("still_duration_ms",stillDurationMs);
     }
 
     public OpenverseTrack copy() {
-        OpenverseTrack copy=new OpenverseTrack(id,title,creator,provider,source,landingUrl,audioUrl,license,licenseUrl,attribution,durationMs,localPath);
+        OpenverseTrack copy=new OpenverseTrack(id,title,creator,provider,source,landingUrl,audioUrl,license,licenseUrl,attribution,durationMs,localPath,library);
         copy.startMs=startMs;copy.musicVolume=musicVolume;copy.sourceVolume=sourceVolume;copy.stillDurationMs=stillDurationMs;
         copy.selectedDurationMs=selectedDurationMs;return copy;
     }
@@ -42,6 +56,22 @@ public final class OpenverseTrack {
     public static OpenverseTrack fromDraft(JSONObject o) {
         if(o==null)return null;
         try {
+            if(o.has("contract_version")){
+                MusicLibraryTrack library=MusicLibraryTrack.parse(o.getJSONObject("library_track"));
+                OpenverseTrack track=library(library,o.getString("local_path"));
+                if(track.localPath.trim().isEmpty())return null;
+                long start=MusicLibraryTrack.integer(o,"start_offset_ms");
+                long used=MusicLibraryTrack.integer(o,"used_duration_ms");
+                long volume=MusicLibraryTrack.integer(o,"music_volume"),sourceVolume=MusicLibraryTrack.integer(o,"source_volume");
+                if(start>=library.durationMs||volume>100||sourceVolume>100)return null;
+                track.startMs=(int)start;track.musicVolume=(int)volume;track.sourceVolume=(int)sourceVolume;
+                JSONObject expected=library.metadata(track.startMs,used,track.musicVolume,track.sourceVolume);
+                java.util.Iterator<String> keys=expected.keys();while(keys.hasNext()){String key=keys.next();Object value=expected.get(key);
+                    if(value instanceof Number){if(((Number)value).longValue()!=MusicLibraryTrack.integer(o,key))return null;}
+                    else if(!value.equals(o.get(key)))return null;}
+                track.stillDurationMs=Math.max(5_000,Math.min(60_000,o.optInt("still_duration_ms",15_000)));
+                return track;
+            }
             String id=o.getString("id"),title=o.getString("title"),creator=o.optString("creator",""),
                     provider=o.getString("provider"),source=o.getString("source"),landing=o.getString("source_url"),
                     audio=o.getString("audio_url"),license=o.getString("license"),licenseUrl=o.getString("license_url"),

@@ -89,6 +89,46 @@ public final class SupabaseAuthClient {
                 Api.obj("password", newPassword)), callback);
     }
 
+    /** Verify the existing password even when the project's current-password policy is disabled. */
+    public static Subscription changePassword(String currentPassword, String newPassword, Api.Callback<JSONObject> callback) {
+        SessionManager sessions=SessionManager.getInstance();
+        SessionUser account=sessions.getCurrentUser();
+        final long epoch=sessions.generation();
+        return Api.run(()->{
+            if(account==null||account.getEmail().isEmpty()||epoch!=sessions.generation())
+                throw new IllegalStateException("Vui lòng đăng nhập lại để đổi mật khẩu.");
+            JSONObject verified;
+            try{
+                verified=(JSONObject)SupabaseHttpClient.raw("POST","/auth/v1/token?grant_type=password",
+                        Api.obj("email",account.getEmail(),"password",currentPassword),null);
+            }catch(ErrorMapper.HttpError error){
+                if("invalid_credentials".equals(error.code))throw new IllegalStateException("Mật khẩu hiện tại không chính xác.");
+                throw error;
+            }
+            JSONObject user=verified.optJSONObject("user");
+            if(user==null||!account.getUid().equals(user.optString("id")))
+                throw new IllegalStateException("Không xác minh được tài khoản đang đăng nhập.");
+            synchronized(sessions){
+                Api.checkCancelled();
+                if(epoch!=sessions.generation()||!account.getUid().equals(sessions.uid()))
+                    throw new IllegalStateException("Tài khoản đã thay đổi. Vui lòng mở lại màn hình đổi mật khẩu.");
+                // Same-user reauthentication keeps the app logged in, including on wrong-new-password errors.
+                sessions.accept(verified);
+            }
+            Api.checkCancelled();
+            try{
+                return (JSONObject)SupabaseHttpClient.authorized("PUT","/auth/v1/user",
+                        Api.obj("password",newPassword,"current_password",currentPassword));
+            }catch(ErrorMapper.HttpError error){
+                if("same_password".equals(error.code))throw new IllegalStateException("Mật khẩu mới phải khác mật khẩu hiện tại.");
+                if("weak_password".equals(error.code))throw new IllegalStateException("Mật khẩu mới chưa đủ mạnh theo yêu cầu bảo mật. Hãy chọn mật khẩu khác.");
+                if("current_password_mismatch".equals(error.code))throw new IllegalStateException("Mật khẩu hiện tại không chính xác.");
+                if("reauthentication_needed".equals(error.code))throw new IllegalStateException("Máy chủ yêu cầu xác minh lại. Vui lòng đăng nhập lại rồi đổi mật khẩu.");
+                throw error;
+            }
+        },callback);
+    }
+
     private static void fail(Api.Callback<JSONObject> callback, Exception error) {
         String message = ErrorMapper.message(error);
         Api.MAIN.post(() -> callback.error(message));

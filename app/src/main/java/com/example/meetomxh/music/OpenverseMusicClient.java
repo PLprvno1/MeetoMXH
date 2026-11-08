@@ -274,6 +274,7 @@ public final class OpenverseMusicClient {
     }
     public static boolean validPublishedMetadata(JSONObject o){
         if(o==null)return false;
+        if(o.has("contract_version"))return MusicLibraryTrack.validMetadata(o);
         try{
             if(!hasExactPublishedKeys(o)||o.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8).length>16_384
                     ||!"cc0".equals(o.getString("license")))return false;

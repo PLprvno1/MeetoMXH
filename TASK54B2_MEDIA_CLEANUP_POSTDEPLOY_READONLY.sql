@@ -61,7 +61,8 @@ SELECT n.nspname,p.proname,pg_get_function_identity_arguments(p.oid) AS argument
  r.rolname,has_function_privilege(r.oid,p.oid,'EXECUTE') AS can_execute
 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace CROSS JOIN pg_roles r
 WHERE ((n.nspname='public' AND p.proname IN
- ('meeto_worker_claim_cleanup','meeto_worker_finish_cleanup','meeto_worker_record_cleanup_observation'))
+ ('meeto_worker_claim_cleanup','meeto_worker_finish_cleanup','meeto_worker_finish_run',
+  'meeto_worker_record_cleanup_observation'))
  OR (n.nspname='private' AND p.proname IN
  ('meeto_reap_exhausted_cleanup','meeto_reconcile_cleanup_event','meeto_cleanup_asset_blocked')))
  AND r.rolname IN ('anon','authenticated','service_role')

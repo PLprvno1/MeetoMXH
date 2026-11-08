@@ -33,7 +33,7 @@ import org.json.JSONObject;
  */
 public final class AdminPanelActivity extends AppCompatActivity {
     private static final String[] PRIMARY_TABS = {"Tổng quan", "Báo cáo", "Quản lý", "Nhật ký & Thêm"};
-    private static final String[] MANAGEMENT_SECTIONS = {"Người dùng", "Bài viết", "Reels", "Bình luận"};
+    private static final String[] MANAGEMENT_SECTIONS = {"Người dùng", "Yêu cầu tài khoản", "Bài viết", "Reels", "Bình luận"};
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final AdminRepository repository = new AdminRepository();
@@ -151,7 +151,6 @@ public final class AdminPanelActivity extends AppCompatActivity {
         tvErrorMessage = findViewById(R.id.tvErrorMessage);
         btnRetry = findViewById(R.id.btnRetry);
 
-        findViewById(R.id.btnBack).setOnClickListener(v -> finish());
         findViewById(R.id.btnAdminRefresh).setOnClickListener(v -> {
             resetPage();
             load(false);
@@ -360,6 +359,7 @@ public final class AdminPanelActivity extends AppCompatActivity {
         final String requestedTab = currentPrimaryTab;
         final String requestedManageSection = currentManageSection;
         final String requestedQuery = query;
+        final String requestedUserState = userStateFilter;
         final String requestedReportState = reportStateFilter;
         final boolean requestedReportMine = reportMineOnly;
         final String requestedAfterTime = afterTime;
@@ -397,10 +397,11 @@ public final class AdminPanelActivity extends AppCompatActivity {
             }
 
             if ("Quản lý".equals(requestedTab)) {
-                if ("Người dùng".equals(requestedManageSection)) {
+                if ("Người dùng".equals(requestedManageSection) || "Yêu cầu tài khoản".equals(requestedManageSection)) {
                     return RpcClient.call("admin_users_page_v2", Api.obj(
                             "p_query", requestedQuery,
-                            "p_state", userStateFilter.isEmpty() ? JSONObject.NULL : userStateFilter,
+                            "p_state", "Yêu cầu tài khoản".equals(requestedManageSection) ? "deletion_requested" :
+                                    requestedUserState.isEmpty() ? JSONObject.NULL : requestedUserState,
                             "p_after_time", nullable(requestedAfterTime),
                             "p_after_id", nullable(requestedAfterId),
                             "p_limit", 30));
@@ -427,7 +428,8 @@ public final class AdminPanelActivity extends AppCompatActivity {
                 adminRefresh.setRefreshing(false);
                 adminLoadMore.setEnabled(true);
 
-                if (!requestedTab.equals(currentPrimaryTab)) {
+                if (!requestedTab.equals(currentPrimaryTab) || !requestedQuery.equals(query)
+                        || ("Quản lý".equals(requestedTab) && !requestedManageSection.equals(currentManageSection))) {
                     load(false);
                     return;
                 }
@@ -474,7 +476,11 @@ public final class AdminPanelActivity extends AppCompatActivity {
                 adminLoadMore.setVisibility(hasMore ? View.VISIBLE : View.GONE);
 
                 if (rows.length() == 0 && !append) {
-                    showEmptyState("Không có dữ liệu phù hợp", "Không tìm thấy kết quả nào theo bộ lọc hoặc từ khóa.");
+                    if ("Quản lý".equals(currentPrimaryTab) && "Yêu cầu tài khoản".equals(currentManageSection)) {
+                        showEmptyState("Chưa có yêu cầu đang chờ", "Chỉ hiển thị tài khoản đang hoạt động đã gửi yêu cầu xóa / vô hiệu hóa. Kéo xuống để tải lại.");
+                    } else {
+                        showEmptyState("Không có dữ liệu phù hợp", "Không tìm thấy kết quả nào theo bộ lọc hoặc từ khóa.");
+                    }
                 } else {
                     renderRows(rows, append);
                 }
@@ -577,6 +583,18 @@ public final class AdminPanelActivity extends AppCompatActivity {
                     load(false);
                 });
 
+        renderMetricCard(R.drawable.ic_person, "Yêu cầu tài khoản", "Xem",
+                "Yêu cầu xóa / vô hiệu hóa đang chờ xử lý", () -> {
+                    currentPrimaryTab = "Quản lý";
+                    currentManageSection = "Yêu cầu tài khoản";
+                    query = "";
+                    adminSearch.setText("");
+                    buildPrimaryTabs();
+                    updateSubHeaderVisibility();
+                    resetPage();
+                    load(false);
+                });
+
         // Recent Reports Section
         JSONArray recentReports = d.optJSONArray("recent_reports");
         if (recentReports != null && recentReports.length() > 0) {
@@ -639,7 +657,7 @@ public final class AdminPanelActivity extends AppCompatActivity {
                 if (r != null) renderReportCard(r);
             }
         } else if ("Quản lý".equals(currentPrimaryTab)) {
-            if ("Người dùng".equals(currentManageSection)) {
+            if ("Người dùng".equals(currentManageSection) || "Yêu cầu tài khoản".equals(currentManageSection)) {
                 for (int i = 0; i < rows.length(); i++) {
                     JSONObject u = rows.optJSONObject(i);
                     if (u != null) renderUserCard(u);
@@ -654,7 +672,7 @@ public final class AdminPanelActivity extends AppCompatActivity {
             // First render More/Account overview card on top if not appending
             if (!append) {
                 renderMoreAccountSection();
-                addSectionHeader("Lịch sử kiểm duyệt (Audit Logs)");
+                addSectionHeader("Lịch sử kiểm duyệt");
             }
             for (int i = 0; i < rows.length(); i++) {
                 JSONObject a = rows.optJSONObject(i);
@@ -695,7 +713,7 @@ public final class AdminPanelActivity extends AppCompatActivity {
         box.addView(tvEmail);
 
         TextView tvVersion = new TextView(this);
-        tvVersion.setText("Meeto Admin · Phiên bản 1.0 (Task 54C)");
+        tvVersion.setText("Quản trị Meeto · Phiên bản 1.0");
         tvVersion.setTextColor(ContextCompat.getColor(this, R.color.text_tertiary));
         tvVersion.setTextSize(12);
         LinearLayout.LayoutParams vLp = new LinearLayout.LayoutParams(-1, -2);
@@ -711,10 +729,10 @@ public final class AdminPanelActivity extends AppCompatActivity {
         View card = LayoutInflater.from(this).inflate(R.layout.item_admin_report, adminContent, false);
 
         TextView tvKind = card.findViewById(R.id.tvReportTargetKind);
-        tvKind.setText(row.optString("target_kind", "report").toUpperCase(java.util.Locale.ROOT));
+        tvKind.setText(com.example.meetomxh.ui.AdminUi.kind(row.optString("target_kind", "report")));
 
         TextView tvReason = card.findViewById(R.id.tvReportReason);
-        tvReason.setText(row.optString("reason_code", "Lý do khác"));
+        tvReason.setText(com.example.meetomxh.ui.AdminUi.reason(row.optString("reason_code", "")));
 
         TextView tvState = card.findViewById(R.id.tvReportState);
         String state = row.optString("state", "open");
@@ -727,11 +745,12 @@ public final class AdminPanelActivity extends AppCompatActivity {
                         "dismissed".equals(state) ? R.color.text_secondary : R.color.status_warning));
 
         TextView tvPreview = card.findViewById(R.id.tvReportPreview);
-        String preview = row.optString("details", row.optString("preview", "(Không có bản xem trước)"));
+        String preview = com.example.meetomxh.ui.AdminUi.text(row,"details");
+        if(preview.isEmpty())preview="Chưa có nội dung báo cáo";
         tvPreview.setText(preview);
 
         TextView tvTime = card.findViewById(R.id.tvReportTime);
-        tvTime.setText(row.optString("created_at", ""));
+        tvTime.setText(com.example.meetomxh.ui.AdminUi.timestamp(row.optString("created_at", "")));
 
         TextView tvSnippet = card.findViewById(R.id.tvReportIdSnippet);
         String id = row.optString("id", "");
@@ -760,10 +779,20 @@ public final class AdminPanelActivity extends AppCompatActivity {
 
         TextView tvUid = card.findViewById(R.id.tvUserUid);
         String uid = row.optString("user_id", row.optString("id", ""));
-        tvUid.setText("UID: " + uid);
+        tvUid.setText("Mã tài khoản: " + uid);
 
         TextView tvJoined = card.findViewById(R.id.tvUserJoined);
-        tvJoined.setText("Tham gia: " + row.optString("created_at", ""));
+        tvJoined.setText("Tham gia: " + com.example.meetomxh.ui.AdminUi.timestamp(row.optString("created_at", "")));
+
+        String requestedAt = com.example.meetomxh.ui.AdminUi.text(row, "deletion_requested_at");
+        if (!requestedAt.isEmpty()) {
+            tvJoined.append("\nYêu cầu xóa / vô hiệu hóa: " + com.example.meetomxh.ui.AdminUi.timestamp(requestedAt));
+            if ("active".equals(state)) {
+                tvState.setText("Chờ xử lý");
+                tvState.setBackgroundResource(R.drawable.bg_badge_open);
+                tvState.setTextColor(ContextCompat.getColor(this, R.color.status_warning));
+            }
+        }
 
         card.setOnClickListener(v -> openSubject("account", uid));
         adminContent.addView(card);
@@ -792,7 +821,7 @@ public final class AdminPanelActivity extends AppCompatActivity {
         tvPreview.setText(body);
 
         TextView tvTime = card.findViewById(R.id.tvContentTime);
-        tvTime.setText("Ngày tạo: " + row.optString("created_at", ""));
+        tvTime.setText("Ngày tạo: " + com.example.meetomxh.ui.AdminUi.timestamp(row.optString("created_at", "")));
 
         String subjectKind = "comments".equals(kind) ? "comment" : "reels".equals(kind) ? "reel" : "post";
         card.setOnClickListener(v -> openSubject(subjectKind, row.optString("id")));
@@ -801,44 +830,7 @@ public final class AdminPanelActivity extends AppCompatActivity {
 
     private void renderAuditCard(JSONObject row) {
         View card = LayoutInflater.from(this).inflate(R.layout.item_admin_audit, adminContent, false);
-
-        TextView tvOp = card.findViewById(R.id.tvAuditOperation);
-        tvOp.setText(row.optString("operation", "").toUpperCase(java.util.Locale.ROOT));
-
-        TextView tvSubject = card.findViewById(R.id.tvAuditSubject);
-        tvSubject.setText(row.optString("subject_type", ""));
-
-        TextView tvTime = card.findViewById(R.id.tvAuditTime);
-        tvTime.setText(row.optString("created_at", ""));
-
-        TextView tvOldState = card.findViewById(R.id.tvAuditOldState);
-        TextView tvNewState = card.findViewById(R.id.tvAuditNewState);
-        String oldState = row.optString("old_state", "");
-        String newState = row.optString("new_state", "");
-        if (!oldState.isEmpty() || !newState.isEmpty()) {
-            tvOldState.setText(oldState.isEmpty() ? "none" : oldState);
-            tvNewState.setText(newState.isEmpty() ? "none" : newState);
-        } else {
-            card.findViewById(R.id.layoutAuditTransition).setVisibility(View.GONE);
-        }
-
-        TextView tvReason = card.findViewById(R.id.tvAuditReason);
-        String reason = row.optString("reason", "");
-        tvReason.setText(reason.isEmpty() ? "(Không ghi lý do)" : "Lý do: " + reason);
-
-        TextView tvActor = card.findViewById(R.id.tvAuditActor);
-        String actor = row.optString("actor_id", "");
-        tvActor.setText("Actor: " + (actor.length() > 8 ? actor.substring(0, 8) + "…" : actor));
-
-        TextView tvReportRef = card.findViewById(R.id.tvAuditReportRef);
-        String reportId = row.optString("report_id", "");
-        if (!reportId.isEmpty()) {
-            tvReportRef.setText("Report: #" + (reportId.length() > 8 ? reportId.substring(0, 8) : reportId));
-            tvReportRef.setVisibility(View.VISIBLE);
-        } else {
-            tvReportRef.setVisibility(View.GONE);
-        }
-
+        com.example.meetomxh.ui.AdminUi.bindAudit(card, row);
         adminContent.addView(card);
     }
 
@@ -859,28 +851,37 @@ public final class AdminPanelActivity extends AppCompatActivity {
                 JSONArray actions = result.optJSONArray("permitted_actions");
 
                 String currentState = target != null ? target.optString("state") : "";
-                String targetName = target != null ? target.optString("display_name", target.optString("body", "Đối tượng")) : id;
+                String targetName = target == null ? "" : com.example.meetomxh.ui.AdminUi.text(target,"display_name");
+                if(targetName.isEmpty()&&target!=null)targetName=com.example.meetomxh.ui.AdminUi.text(target,"body");
+                if(targetName.isEmpty())targetName="Không có văn bản xem trước";
+
+                String requestedAt = target == null ? "" : com.example.meetomxh.ui.AdminUi.text(target, "deletion_requested_at");
+                if ("account".equals(kind) && !requestedAt.isEmpty()) {
+                    targetName += "\n\nChủ tài khoản gửi yêu cầu xóa / vô hiệu hóa lúc: "
+                            + com.example.meetomxh.ui.AdminUi.timestamp(requestedAt)
+                            + "\nKhóa tài khoản chỉ vô hiệu hóa quyền truy cập; không xóa dữ liệu.";
+                }
 
                 AlertDialog.Builder builder = new AlertDialog.Builder(AdminPanelActivity.this)
                         .setTitle("Chi tiết quản trị")
-                        .setMessage("Loại: " + kind + "\nID: " + id + "\nTrạng thái: " + stateLabel(currentState) + "\n\n" + targetName +
+                        .setMessage("Loại: " + com.example.meetomxh.ui.AdminUi.kind(kind) + "\nMã đối tượng: " + id + "\nTrạng thái: " + stateLabel(currentState) + "\n\n" + targetName +
                                 "\n\n" + ("account".equals(kind) ? "Khóa đến khi được mở lại; không có cơ chế tự hết hạn." : "Gỡ một bình luận không gỡ các bình luận phản hồi."))
                         .setNegativeButton("Đóng", null);
 
                 if (actions != null && actions.length() > 0) {
                     builder.setPositiveButton("Thao tác", (d, w) -> {
-                        String[] labels = new String[actions.length()];
-                        for (int i = 0; i < labels.length; i++) {
-                            labels[i] = actionLabel(actions.optString(i));
-                        }
-                        subjectDialog = new AlertDialog.Builder(AdminPanelActivity.this)
-                                .setTitle("Chọn thao tác quản trị")
-                                .setItems(labels, (x, n) -> {
+                        subjectDialog = com.example.meetomxh.ui.AdminUi.actions(AdminPanelActivity.this,
+                                "Chọn thao tác quản trị", actions, n -> {
                                     subjectDraft = Api.obj("p_kind", kind, "p_target_id", id,
                                             "p_action", actions.optString(n), "p_expected_state", currentState, "p_reason", "");
                                     confirmSubjectAction(subjectDraft);
-                                }).setNegativeButton("Hủy", null).show();
+                                });
+                        subjectDialog.show();
                     });
+                } else {
+                    builder.setMessage("Loại: " + com.example.meetomxh.ui.AdminUi.kind(kind)
+                            + "\nMã đối tượng: " + id + "\nTrạng thái: " + stateLabel(currentState)
+                            + "\n\n" + targetName + "\n\nKhông có thao tác phù hợp với quyền của bạn hoặc trạng thái hiện tại.");
                 }
                 subjectDialog = builder.show();
             }
@@ -1004,7 +1005,7 @@ public final class AdminPanelActivity extends AppCompatActivity {
             case "published": return "Đang hiển thị";
             case "hidden": return "Đã ẩn";
             case "deleted": return "Đã gỡ";
-            default: return state;
+            default: return com.example.meetomxh.ui.AdminUi.state(state);
         }
     }
 
