@@ -76,7 +76,7 @@ public class FeedFragment extends Fragment implements FeedAdapter.OnPostClickLis
 
         FeedRepository.getInstance().loadingState.observe(getViewLifecycleOwner(),busy->{if(binding==null)return;binding.swipeFeed.setVisibility(View.VISIBLE);binding.swipeFeed.setRefreshing(pullRefreshing&&Boolean.TRUE.equals(busy));if(!Boolean.TRUE.equals(busy)){pullRefreshing=false;binding.swipeFeed.setRefreshing(false);binding.rvFeed.setVisibility(View.VISIBLE);}if(Boolean.TRUE.equals(busy)&&(viewModel.getPosts().getValue()==null||viewModel.getPosts().getValue().isEmpty())){binding.layoutShimmer.getRoot().setVisibility(View.VISIBLE);binding.layoutShimmer.getRoot().startShimmer();binding.feedStatus.setVisibility(View.GONE);}else if(!Boolean.TRUE.equals(busy)){binding.layoutShimmer.getRoot().stopShimmer();binding.layoutShimmer.getRoot().setVisibility(View.GONE);}});FeedRepository.getInstance().error.observe(getViewLifecycleOwner(),e->{if(binding!=null&&e!=null){pullRefreshing=false;binding.swipeFeed.setVisibility(View.VISIBLE);binding.rvFeed.setVisibility(View.VISIBLE);binding.swipeFeed.setRefreshing(false);binding.layoutShimmer.getRoot().stopShimmer();binding.layoutShimmer.getRoot().setVisibility(View.GONE);binding.feedStatus.setText(e+" · chạm để thử lại");binding.feedStatus.setVisibility(View.VISIBLE);}});binding.feedStatus.setOnClickListener(v->FeedRepository.getInstance().refresh());binding.rvFeed.addOnScrollListener(new androidx.recyclerview.widget.RecyclerView.OnScrollListener(){public void onScrolled(androidx.recyclerview.widget.RecyclerView r,int dx,int dy){if(dy>0&&!r.canScrollVertically(1))FeedRepository.getInstance().loadMore();}});
         binding.fabChat.setOnClickListener(v -> {
-            if (!isAdded()) return;
+            if (!isAdded()||getParentFragmentManager().isStateSaved()) return;
             androidx.fragment.app.FragmentManager fragmentManager = getParentFragmentManager();
             if (fragmentManager.findFragmentById(R.id.fragment_container) instanceof InboxFragment) return;
             fragmentManager.beginTransaction()
@@ -103,7 +103,7 @@ public class FeedFragment extends Fragment implements FeedAdapter.OnPostClickLis
 
     @Override
     public void onCommentClick(Post post) {
-        if (post != null && post.getPostId() != null) {
+        if (isAdded()&&!getChildFragmentManager().isStateSaved()&&post != null && post.getPostId() != null) {
             CommentsBottomSheetFragment bottomSheet = CommentsBottomSheetFragment.newInstance(post.getPostId());
             bottomSheet.show(getChildFragmentManager(), "CommentsBottomSheet");
         }
@@ -174,8 +174,14 @@ public class FeedFragment extends Fragment implements FeedAdapter.OnPostClickLis
 
     @Override
     public void onDestroyView() {
-        super.onDestroyView();
         handler.removeCallbacksAndMessages(null);
+        if(binding!=null){
+            binding.layoutShimmer.getRoot().stopShimmer();
+            binding.rvFeed.clearOnScrollListeners();
+            binding.rvFeed.setAdapter(null);
+        }
+        adapter=null;
         binding = null;
+        super.onDestroyView();
     }
  @Override public void onResume(){super.onResume();if(SessionManagerReady()){if(!com.example.meetomxh.supabase.PostViewerUpdates.returning(requireActivity()))FeedRepository.getInstance().refresh();if(adapter!=null)adapter.refreshStories();}} private boolean SessionManagerReady(){return com.example.meetomxh.supabase.SessionManager.getInstance().getCurrentUser()!=null;}}

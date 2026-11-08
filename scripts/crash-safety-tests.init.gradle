@@ -1,0 +1,15 @@
+allprojects {
+    afterEvaluate { project ->
+        if (project.path == ':app') {
+            project.tasks.withType(org.gradle.api.tasks.compile.JavaCompile).configureEach {
+                if (name != 'compileDebugAndroidTestJavaWithJavac') return
+                doFirst {
+                    setSource(project.fileTree('src/androidTest/java') {
+                        include '**/CrashSafetyTest.java', '**/ProfileLifecycleTest.java',
+                                '**/FeedReactionRenderingTest.java', '**/ReelsRenderingTest.java', '**/MusicPreviewTest.java'
+                    })
+                }
+            }
+        }
+    }
+}

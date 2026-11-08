@@ -173,6 +173,13 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<ChatMessageAdapter.
     @Override
     public int getItemCount() { return messages.size(); }
 
+    @Override public void onViewRecycled(@NonNull MessageViewHolder holder){
+        holder.cancelThumbnail();
+        holder.binding.ivMessageImage.setTag(null);
+        Glide.with(holder.itemView.getContext().getApplicationContext()).clear(holder.binding.ivMessageImage);
+        super.onViewRecycled(holder);
+    }
+
     public int indexOfMessage(String messageId) {
         if (messageId == null) return -1;
         for (int index = 0; index < messages.size(); index++) {
@@ -199,6 +206,8 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<ChatMessageAdapter.
 
     static class MessageViewHolder extends RecyclerView.ViewHolder {
         private final ItemChatMessageBinding binding;
+        private com.example.meetomxh.supabase.Subscription thumbnailRequest;
+        private void cancelThumbnail(){if(thumbnailRequest!=null){thumbnailRequest.remove();thumbnailRequest=null;}}
         private com.example.meetomxh.ui.ChatThemeRegistry.Palette palette;
 
         MessageViewHolder(ItemChatMessageBinding binding) {
@@ -210,6 +219,7 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<ChatMessageAdapter.
                   List<ChatMessage> allMessages, Long otherReadSeq, String latestOutgoingId,
                   boolean activeVoice, int voicePositionMs, int voiceDurationMs, boolean voicePlaying,
                   com.example.meetomxh.ui.ChatThemeRegistry.Palette palette,java.util.Map<String,String> memberNames,boolean group) {
+            cancelThumbnail();
             this.palette=palette;
             boolean mine = currentUid != null && currentUid.equals(message.getSenderId());
             binding.messageRow.setGravity(mine ? Gravity.END : Gravity.START);
@@ -267,15 +277,15 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<ChatMessageAdapter.
             } else if (hasMedia) {
                 Glide.with(binding.ivMessageImage).clear(binding.ivMessageImage);
                 String reference = mediaReference;
-                com.example.meetomxh.supabase.Api.run(() -> com.example.meetomxh.storage.SupabaseStorage.videoThumbnail(reference),
+                thumbnailRequest=com.example.meetomxh.supabase.Api.run(() -> com.example.meetomxh.storage.SupabaseStorage.videoThumbnail(reference),
                         new com.example.meetomxh.supabase.Api.Callback<android.graphics.Bitmap>() {
                             @Override public void success(android.graphics.Bitmap bitmap) {
-                                if (reference.equals(binding.ivMessageImage.getTag()))
+                                if (reference.equals(binding.ivMessageImage.getTag())&&com.example.meetomxh.ui.ViewSafety.isAlive(binding.ivMessageImage))
                                     Glide.with(binding.ivMessageImage).load(bitmap).centerCrop().into(binding.ivMessageImage);
                                 else if (bitmap != null && !bitmap.isRecycled()) bitmap.recycle();
                             }
                             @Override public void error(String error) { }
-                        });
+                        },bitmap->{if(bitmap!=null&&!bitmap.isRecycled())bitmap.recycle();});
             } else {
                 Glide.with(binding.ivMessageImage).clear(binding.ivMessageImage);
                 binding.ivMessageImage.setTag(null);

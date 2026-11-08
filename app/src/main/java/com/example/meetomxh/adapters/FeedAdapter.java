@@ -235,7 +235,9 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     public void onViewRecycled(@NonNull RecyclerView.ViewHolder holder) {
         super.onViewRecycled(holder);
         if (holder instanceof PostViewHolder) {
-            ((PostViewHolder) holder).cleanupAnimations();
+            PostViewHolder post=(PostViewHolder)holder;
+            post.cleanupAnimations();post.boundPostId=null;
+            if(post.sharedRequest!=null){post.sharedRequest.remove();post.sharedRequest=null;}
         }
     }
 
@@ -278,6 +280,7 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         private final boolean memoryMode;
         private final boolean hiddenMemoryMode;
         private String boundPostId;
+        private com.example.meetomxh.supabase.Subscription sharedRequest;
 
         public PostViewHolder(@NonNull ItemPostBinding binding, boolean memoryMode, boolean hiddenMemoryMode) {
             super(binding.getRoot());
@@ -588,6 +591,7 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         }
 
         private void bindSharedPost(Post post, boolean showPersonFallback) {
+            if(sharedRequest!=null){sharedRequest.remove();sharedRequest=null;}
             binding.cardSharedPost.setVisibility(View.GONE);
             binding.ivSharedPostMedia.setVisibility(View.GONE);
             binding.ivSharedPostMedia.setOnClickListener(null);
@@ -598,17 +602,18 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             String source=post.getOriginalPostId();
             if(source==null){binding.tvSharedPostAuthor.setText("Nội dung gốc không còn khả dụng với bạn.");return;}
             binding.cardSharedPost.setOnClickListener(v -> PostDetails.show((android.app.Activity)v.getContext(),source));
-            com.example.meetomxh.supabase.Api.run(() -> com.example.meetomxh.supabase.RpcClient.object("get_post",
+            sharedRequest=com.example.meetomxh.supabase.Api.run(() -> com.example.meetomxh.supabase.RpcClient.object("get_post",
                     com.example.meetomxh.supabase.Api.obj("p_post_id",source)),new com.example.meetomxh.supabase.Api.Callback<org.json.JSONObject>() {
                 @Override public void success(org.json.JSONObject original) {
-                    if(!post.getPostId().equals(boundPostId))return;
+                    if(!post.getPostId().equals(boundPostId)||!com.example.meetomxh.ui.ViewSafety.isAlive(itemView))return;
                     org.json.JSONObject author=original.optJSONObject("author");
                     binding.tvSharedPostAuthor.setText(author==null?"Người dùng Meeto":author.optString("display_name","Người dùng Meeto"));
                     String sharedAvatar=com.example.meetomxh.supabase.Dto.asset(author==null?null:com.example.meetomxh.supabase.Dto.nullable(author,"avatar_asset_id"));if(showPersonFallback)com.example.meetomxh.ui.AvatarViews.load(binding.ivSharedPostAvatar,sharedAvatar,"neutral");else com.example.meetomxh.ui.AvatarViews.loadWithoutPersonFallback(binding.ivSharedPostAvatar,sharedAvatar);
                     binding.tvSharedPostBody.setText(original.optString("body",""));
                     org.json.JSONArray media=original.optJSONArray("media");
-                    if(media!=null&&media.length()>0){String ref=com.example.meetomxh.supabase.Dto.asset(media.optJSONObject(0).optString("asset_id"));binding.ivSharedPostMedia.setVisibility(View.VISIBLE);Glide.with(binding.ivSharedPostMedia).load(ref).placeholder(R.drawable.ic_media_error).error(R.drawable.ic_media_error).into(binding.ivSharedPostMedia);
-                        if(!original.optBoolean("is_reel")&&media.optJSONObject(0).optString("mime_type").startsWith("image/"))binding.ivSharedPostMedia.setOnClickListener(v->PostMediaViewerActivity.open(v.getContext(),source,ref,0));
+                    org.json.JSONObject first=media==null?null:media.optJSONObject(0);
+                    if(first!=null){String ref=com.example.meetomxh.supabase.Dto.asset(first.optString("asset_id"));binding.ivSharedPostMedia.setVisibility(View.VISIBLE);Glide.with(binding.ivSharedPostMedia).load(ref).placeholder(R.drawable.ic_media_error).error(R.drawable.ic_media_error).into(binding.ivSharedPostMedia);
+                        if(!original.optBoolean("is_reel")&&first.optString("mime_type").startsWith("image/"))binding.ivSharedPostMedia.setOnClickListener(v->PostMediaViewerActivity.open(v.getContext(),source,ref,0));
                     }
                 }
                 @Override public void error(String error) { if(post.getPostId().equals(boundPostId)){binding.tvSharedPostAuthor.setText("Bài viết gốc không còn khả dụng với bạn.");binding.tvSharedPostBody.setText("");} }

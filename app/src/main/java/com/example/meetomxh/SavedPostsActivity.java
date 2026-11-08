@@ -41,10 +41,10 @@ public class SavedPostsActivity extends AppCompatActivity {
             public void onSavePostClick(Post p, boolean save, Runnable completed) {
                 if (save) { completed.run(); return; }
                 binding.tvStatus.setText("Đang bỏ lưu…");
-                com.example.meetomxh.supabase.SavedPostClient.set(p,false,new Api.Callback<Boolean>() {
+                com.example.meetomxh.supabase.SavedPostClient.set(p,false,requests.guard(new Api.Callback<Boolean>() {
                     public void success(Boolean ignored) { completed.run(); adapter.removePost(p.getPostId()); updateEmpty(); binding.tvStatus.setText("Đã bỏ lưu bài viết"); }
                     public void error(String e) { completed.run(); binding.tvStatus.setText(e); }
-                });
+                }));
             }
         }, false);
         binding.rvSavedPosts.setLayoutManager(new LinearLayoutManager(this)); binding.rvSavedPosts.setAdapter(adapter);com.example.meetomxh.supabase.PostUpdates.counts.observe(this,c->{if(c!=null)adapter.updateCommentCount(c.id,c.comments);});

@@ -36,6 +36,7 @@ public final class MediaThumbnailLoader {
         if(load!=null)recycle(load.bitmap);
     }
     public static void load(ImageView image,Post post){
+        if(!ViewSafety.isAlive(image))return;
         clear(image);Load load=new Load();image.setTag(R.id.search_thumbnail_binding,load);
         boolean video=video(post);int icon=video?R.drawable.ic_reel_video:android.R.drawable.ic_menu_edit;
         image.setImageResource(icon);String picture=null,clip=null;

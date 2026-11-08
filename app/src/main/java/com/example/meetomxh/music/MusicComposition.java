@@ -20,6 +20,9 @@ import java.util.List;
 
 /** One bounded audio timeline for preview and export. Legacy v1 never loops. */
 public final class MusicComposition {
+    // Ogg/Vorbis duration estimates differ by a few milliseconds across readers.
+    // File identity/integrity is verified separately by the library cache's SHA-256.
+    private static final long MAX_AUDIO_DURATION_DRIFT_US=50_000;
     private MusicComposition(){}
 
     public static CompositionPlayer previewPlayer(Context context){
@@ -62,12 +65,11 @@ public final class MusicComposition {
         File file=new File(music.localPath);
         if(!file.isFile())throw new IllegalStateException("Tệp nhạc đã hết khỏi cache. Hãy chọn lại bài nhạc.");
         long sourceUs=audioDurationUs(file);
-        if(music.library==null?sourceUs/1000!=music.durationMs:Math.abs(sourceUs-music.durationMs*1000)>1000)
-            throw new IllegalStateException("Thời lượng tệp nhạc đã thay đổi. Hãy chọn lại bài nhạc.");
+        validateAudioDurationUs(sourceUs,music.durationMs);
         long offset=effectiveStartMs(music,outputMs);music.startMs=(int)offset;
         long used=compositionDurationMs(music,outputMs);music.selectedDurationMs=used;
         List<MusicLoopTimeline.Segment> plan=music.library!=null
-                ?MusicLoopTimeline.plan(sourceUs,offset*1000,used*1000)
+                ?MusicLoopTimeline.plan(sourceUs,Math.min(offset*1000,sourceUs-1),used*1000)
                 :Collections.singletonList(new MusicLoopTimeline.Segment(offset*1000,Math.min(sourceUs,(offset+used)*1000),0));
         android.util.Log.i("MeetoMusic","stage=music_timeline library="+(music.library!=null)+" fileBytes="+file.length()
                 +" sourceUs="+sourceUs+" offsetMs="+offset+" usedMs="+used+" segments="+plan.size());
@@ -137,6 +139,11 @@ public final class MusicComposition {
         }finally{e.release();}
     }
     public static long audioDurationMs(File file)throws Exception{return audioDurationUs(file)/1000;}
+    static void validateAudioDurationUs(long actualUs,long expectedMs){
+        if(actualUs<=0||expectedMs<=0||expectedMs>3_600_000
+                ||Math.abs(actualUs-expectedMs*1000)>MAX_AUDIO_DURATION_DRIFT_US)
+            throw new IllegalStateException("Thời lượng tệp nhạc không khớp thư viện. Hãy chọn lại bài nhạc.");
+    }
     private static long audioDurationUs(File file)throws Exception{
         MediaExtractor e=new MediaExtractor();try{
             e.setDataSource(file.getAbsolutePath());long duration=0;boolean found=false;
@@ -150,7 +157,13 @@ public final class MusicComposition {
         MediaExtractor e=new MediaExtractor();long duration=0;
         try{e.setDataSource(file.getAbsolutePath());for(int i=0;i<e.getTrackCount();i++){MediaFormat f=e.getTrackFormat(i);if(f.containsKey(MediaFormat.KEY_DURATION))duration=Math.max(duration,f.getLong(MediaFormat.KEY_DURATION));}}
         finally{e.release();}
-        if(duration<=0){MediaMetadataRetriever r=new MediaMetadataRetriever();try{r.setDataSource(file.getAbsolutePath());String value=r.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);if(value!=null)duration=Long.parseLong(value)*1000;}finally{r.release();}}
+        // The editor selects milliseconds from container metadata. Its rounded
+        // endpoint can exceed the extractor's microsecond track duration slightly.
+        // Supply the full container/track duration to Media3, before clipping.
+        MediaMetadataRetriever r=new MediaMetadataRetriever();
+        try{r.setDataSource(file.getAbsolutePath());String value=r.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
+            if(value!=null)duration=Math.max(duration,Long.parseLong(value)*1000);
+        }finally{r.release();}
         if(duration<=0)throw new IllegalStateException("Không xác định được thời lượng media nguồn.");return duration;
     }
     private static MediaItem clipped(File file,long startUs,long endUs){return new MediaItem.Builder().setUri(Uri.fromFile(file))

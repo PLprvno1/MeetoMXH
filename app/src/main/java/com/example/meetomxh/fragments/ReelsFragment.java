@@ -551,8 +551,8 @@ public final class ReelsFragment extends Fragment {
             bindEngagement(h,p);
             h.progress.setProgress(active&&player.getDuration()>0?(int)(player.getCurrentPosition()*1000/player.getDuration()):0);
             h.progress.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-                public void onStartTrackingTouch(SeekBar s) { if (player != null && position == activePosition) player.pause(); }
-                public void onStopTrackingTouch(SeekBar s) { if (player != null && position == activePosition) { endedReelId=null;userPaused=false;long d = player.getDuration(); if (d > 0) player.seekTo(d * s.getProgress() / 1000); player.play(); } }
+                public void onStartTrackingTouch(SeekBar s) { if (player != null && h.getBindingAdapterPosition()!=RecyclerView.NO_POSITION && h.getBindingAdapterPosition() == activePosition) player.pause(); }
+                public void onStopTrackingTouch(SeekBar s) { if (player != null && h.getBindingAdapterPosition()!=RecyclerView.NO_POSITION && h.getBindingAdapterPosition() == activePosition) { endedReelId=null;userPaused=false;long d = player.getDuration(); if (d > 0) player.seekTo(d * s.getProgress() / 1000); player.play(); } }
                 public void onProgressChanged(SeekBar s, int value, boolean user) {}
             });
             h.gestureDetector = new android.view.GestureDetector(requireContext(), new android.view.GestureDetector.SimpleOnGestureListener() {
@@ -560,7 +560,7 @@ public final class ReelsFragment extends Fragment {
                     return true;
                 }
                 @Override public boolean onSingleTapConfirmed(android.view.MotionEvent e) {
-                    if (position == activePosition && player != null) {
+                    if (h.getBindingAdapterPosition()!=RecyclerView.NO_POSITION && h.getBindingAdapterPosition() == activePosition && player != null) {
                         userPaused=player.getPlayWhenReady()&&player.getPlaybackState()!=Player.STATE_ENDED;
                         if (userPaused) player.pause(); else {if(player.getPlaybackState()==Player.STATE_ENDED){endedReelId=null;player.seekTo(0);}player.play();}
                     }
@@ -583,7 +583,7 @@ public final class ReelsFragment extends Fragment {
             };
             h.playerView.setOnTouchListener(mediaTouch);
             h.cover.setOnTouchListener(mediaTouch);
-            h.retry.setOnClickListener(v -> { if (position == activePosition) prepare(p, position); });
+            h.retry.setOnClickListener(v -> { int current=h.getBindingAdapterPosition();if(current!=RecyclerView.NO_POSITION&&current==activePosition)prepare(p,current); });
             h.like.setOnClickListener(v -> {
                 h.like.animate().scaleX(1.3f).scaleY(1.3f).setDuration(120).withEndAction(() -> h.like.animate().scaleX(1f).scaleY(1f).setDuration(100).start()).start();
                 toggleLike(p, h);

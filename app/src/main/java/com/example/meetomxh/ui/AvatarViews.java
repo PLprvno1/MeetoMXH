@@ -25,6 +25,7 @@ public final class AvatarViews {
     }
 
     private static void load(ImageView view, String privateAssetReference, String publicPreset, boolean showFallback) {
+        if(!ViewSafety.isAlive(view))return;
         int fallback = showFallback ? placeholder(publicPreset) : 0;
         if (privateAssetReference == null || privateAssetReference.trim().isEmpty()) {
             Glide.with(view).clear(view);

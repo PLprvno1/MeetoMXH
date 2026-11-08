@@ -47,7 +47,8 @@ public final class ChangePasswordActivity extends AppCompatActivity {
         wrapper.setEndIconContentDescription("Hiện hoặc ẩn mật khẩu");
         com.google.android.material.textfield.TextInputEditText field=new com.google.android.material.textfield.TextInputEditText(wrapper.getContext());
         field.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD);
-        field.setSingleLine(true);field.setSaveEnabled(false);field.setAutofillHints(autofill);
+        field.setSingleLine(true);field.setSaveEnabled(false);
+        if(android.os.Build.VERSION.SDK_INT>=26)field.setAutofillHints(autofill);
         field.setTextColor(getColor(R.color.text_primary));
         wrapper.addView(field,new LinearLayout.LayoutParams(-1,-2));
         LinearLayout.LayoutParams layout=new LinearLayout.LayoutParams(-1,-2);
