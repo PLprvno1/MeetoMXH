@@ -366,10 +366,10 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             JSONArray tags=new JSONArray();JSONArray rawTags=post.getTags();if(rawTags!=null)for(int i=0;i<rawTags.length();i++){JSONObject t=rawTags.optJSONObject(i);if(t!=null&&"accepted".equals(t.optString("state","accepted")))tags.put(t);}
             if(tags.length()>0){
                 java.util.ArrayList<String> names=new java.util.ArrayList<>();
-                for(int i=0;i<tags.length();i++){JSONObject tag=tags.optJSONObject(i);if(tag!=null)names.add(tag.optString("display_name","Meeto user"));}
+                for(int i=0;i<tags.length();i++){JSONObject tag=tags.optJSONObject(i);if(tag!=null)names.add(tag.optString("display_name","Người dùng Meeto"));}
                 binding.tvTaggedPeople.setText("Cùng với "+android.text.TextUtils.join(", ",names));
                 binding.tvTaggedPeople.setVisibility(View.VISIBLE);
-                binding.tvTaggedPeople.setOnClickListener(v->{String[] labels=new String[tags.length()];String[] ids=new String[tags.length()];for(int i=0;i<tags.length();i++){JSONObject tag=tags.optJSONObject(i);labels[i]=tag==null?"Meeto user":tag.optString("display_name","Meeto user");ids[i]=tag==null?null:tag.optString("user_id",null);}new android.app.AlertDialog.Builder(v.getContext()).setTitle("Được gắn thẻ trong bài viết").setItems(labels,(dialog,index)->{if(ids[index]!=null&&!ids[index].equals("null"))v.getContext().startActivity(new android.content.Intent(v.getContext(),com.example.meetomxh.ProfileActivity.class).putExtra("target_uid",ids[index]));}).setPositiveButton("Đóng",null).show();});
+                binding.tvTaggedPeople.setOnClickListener(v->{String[] labels=new String[tags.length()];String[] ids=new String[tags.length()];for(int i=0;i<tags.length();i++){JSONObject tag=tags.optJSONObject(i);labels[i]=tag==null?"Người dùng Meeto":tag.optString("display_name","Người dùng Meeto");ids[i]=tag==null?null:tag.optString("user_id",null);}new android.app.AlertDialog.Builder(v.getContext()).setTitle("Được gắn thẻ trong bài viết").setItems(labels,(dialog,index)->{if(ids[index]!=null&&!ids[index].equals("null"))v.getContext().startActivity(new android.content.Intent(v.getContext(),com.example.meetomxh.ProfileActivity.class).putExtra("target_uid",ids[index]));}).setPositiveButton("Đóng",null).show();});
             }else{binding.tvTaggedPeople.setText("");binding.tvTaggedPeople.setVisibility(View.GONE);binding.tvTaggedPeople.setOnClickListener(null);}
             bindSharedPost(post, showPersonFallback);
 
@@ -592,7 +592,7 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 @Override public void success(org.json.JSONObject original) {
                     if(!post.getPostId().equals(boundPostId))return;
                     org.json.JSONObject author=original.optJSONObject("author");
-                    binding.tvSharedPostAuthor.setText(author==null?"Meeto user":author.optString("display_name","Meeto user"));
+                    binding.tvSharedPostAuthor.setText(author==null?"Người dùng Meeto":author.optString("display_name","Người dùng Meeto"));
                     String sharedAvatar=com.example.meetomxh.supabase.Dto.asset(author==null?null:com.example.meetomxh.supabase.Dto.nullable(author,"avatar_asset_id"));if(showPersonFallback)com.example.meetomxh.ui.AvatarViews.load(binding.ivSharedPostAvatar,sharedAvatar,"neutral");else com.example.meetomxh.ui.AvatarViews.loadWithoutPersonFallback(binding.ivSharedPostAvatar,sharedAvatar);
                     binding.tvSharedPostBody.setText(original.optString("body",""));
                     org.json.JSONArray media=original.optJSONArray("media");

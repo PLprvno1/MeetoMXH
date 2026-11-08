@@ -12,7 +12,7 @@ public final class NotificationItem {
         targetId=row.isNull("target_id")?null:row.optString("target_id");
         targetContextId=row.isNull("target_context_id")?null:row.optString("target_context_id");
         createdAt=row.optString("created_at"); actorId=row.isNull("actor_id")?null:row.optString("actor_id");
-        actorName=row.optString("actor_name","Meeto user");
+        actorName=row.optString("actor_name","Người dùng Meeto");
         actorAvatarId=row.isNull("actor_avatar_asset_id")?null:row.optString("actor_avatar_asset_id");
         actorAvatarPreset=row.optString("actor_avatar_preset","neutral");
         unread=row.isNull("read_at"); targetAvailable=row.optBoolean("target_available",false);

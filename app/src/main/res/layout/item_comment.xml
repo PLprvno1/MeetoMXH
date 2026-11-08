@@ -19,7 +19,7 @@
         android:id="@+id/ivCommentAvatar"
         android:layout_width="36dp"
         android:layout_height="36dp"
-        android:contentDescription="Avatar"
+        android:contentDescription="Ảnh đại diện"
         android:scaleType="centerCrop"
         android:src="@drawable/ic_person"
         app:layout_constraintStart_toEndOf="@id/commentTreeGuide"

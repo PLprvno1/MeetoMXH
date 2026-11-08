@@ -81,7 +81,7 @@ public final class ProfileAlbumsActivity extends AppCompatActivity {
         setContentView(root);
         header = new LinearLayout(this); header.setGravity(Gravity.CENTER_VERTICAL); header.setPadding(dp(16),dp(10),dp(16),dp(10));
         root.addView(header, new LinearLayout.LayoutParams(-1,-2));
-        Button back = new Button(this); back.setText("‹"); back.setContentDescription("Back");
+        Button back = new Button(this); back.setText("‹"); back.setContentDescription("Quay lại");
         header.addView(back); back.setOnClickListener(v -> finish());
         TextView title = new TextView(this); title.setText("Album ảnh"); title.setTextSize(20); title.setTextColor(getColor(R.color.text_primary)); title.setTypeface(null,1);
         LinearLayout.LayoutParams tp=new LinearLayout.LayoutParams(0,-2,1); tp.leftMargin=dp(12); header.addView(title,tp);

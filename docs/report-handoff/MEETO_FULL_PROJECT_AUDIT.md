@@ -208,7 +208,7 @@ Storage private, URL/path không phải quyền truy cập; loader vẫn user JW
 | Task35 Memories/Marketplace/voice preview | Task36 removed Memories/Marketplace và deferred voice; Marketplace trước đó UI-only. |
 | Task36:40 migration, debug/instrumentation+30 JVM+109 localSQL+4 targeted UI smoke | Source nay68 migrations và late changes; không mang số/count/PASS đó sang snapshot mới. |
 | Task50 session identity/thumbnail semaphore | Task51/source đã tăng generation khi UID đổi và có acquired flag/tryAcquire/release đúng. Chỉ source fix, chưa runtime hiện tại. |
-| Task51 nói có migration tag-list transaction fix |070008 hiện **1 byte**. list_my_post_tags030012 vẫn STABLE, b_actor→lock_profile có SELECT FOR UPDATE.080006 không sửa listing. Không ghi lỗi đã sửa; còn risk read-only transaction25006. |
+| Task51 nói có migration tag-list transaction fix |070008 hiện **1 byte**. list_my_post_tags trong030012 vẫn STABLE, b_actor→lock_profile có SELECT FOR UPDATE.080006 không sửa listing. Không ghi lỗi đã sửa; còn risk read-only transaction25006. |
 | Openverse52/v1 không loop | V1 giữ không-loop; Library v2/Tasks03–05 có finite loop/cache/source gain. Tên class legacy không phải nguồn nhạc mới. |
 | Music03 chưa loop | Mốc trước Music04, không phủ nhận MusicLoopTimeline hiện tại. |
 | Music04 build verified | Không chứng minh Music05/06A/hotfix08/11 build hoặc audio thực. |

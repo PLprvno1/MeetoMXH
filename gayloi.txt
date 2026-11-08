@@ -1,0 +1,36 @@
+MEETO — RÀ SOÁT SOURCE, 08/11/2026
+Phạm vi: đối chiếu audit toàn dự án với source hiện tại; quét 169 file Java, 214 XML tài nguyên, 68 migration và đọc các luồng/rủi ro bên dưới. Không chạy build, kiểm thử, thiết bị hay Cloud; đây không phải xác nhận ứng dụng hết lỗi.
+
+ĐÃ SỬA TEXT
+- ErrorMapper.java: Việt hóa thông báo upload, quyền quản trị, giới hạn email; bỏ hướng dẫn Owner/Cloud/Storage khỏi các thông báo lỗi chung, bỏ lời hứa luôn giữ bản nháp khi không có căn cứ cho mọi màn.
+- FeedAdapter.java, NotificationItem.java, ShareActions.java: fallback “Meeto user” → “Người dùng Meeto”; nhãn sao chép liên kết → “Bài viết Meeto”.
+- PostDetails.java: lỗi “unavailable” → thông báo nội dung không khả dụng bằng tiếng Việt.
+- ProfileAlbumsActivity.java và XML: “Back” → “Quay lại”, “Avatar” → “Ảnh đại diện”; màn tạo tin: “Story” → “Tạo tin”, “Filter” → “Bộ lọc”. Không đổi tên RPC, trạng thái hoặc khóa dữ liệu.
+
+ĐIỂM CÓ THỂ GÂY LỖI — ƯU TIÊN CAO
+1. Gắn thẻ: migration 20261107000800_tag_management_rpc_transactions.sql chỉ có 1 byte. list_my_post_tags ở 20261103001200_tag_mentions.sql khai báo STABLE nhưng gọi b_actor → lock_profile → SELECT FOR UPDATE; có nguy cơ lỗi transaction 25006. Migration 080006 không sửa luồng liệt kê này.
+2. Các chức năng mới phụ thuộc migration 080001–080009. Chưa xác nhận Cloud đã áp dụng: có thể thiếu RPC/cột, tìm biệt danh không ra, danh sách theo dõi/album/chuyển tiếp/Admin không hoạt động. Căn cứ: supabase/migrations/2026110800*.sql; không suy trạng thái triển khai từ file local.
+3. Reel có nhạc: owner từng báo nghe thử trong Picker được nhưng mixed preview lỗi. Source đã thêm chẩn đoán, chưa xác định nguyên nhân hoặc retest. Căn cứ: CreateReelActivity.java, music/MusicComposition.java, docs/music-reports/.
+4. Story có nhạc: owner từng gặp lỗi kiểm tra H.264/AAC/kích thước khi xuất. Đã có xử lý rotation trong source, chưa xác nhận hết lỗi trên video thật. Căn cứ: music/StoryMusicExportChecks.java, ui/StoryMediaExporter.java, StoryCreateActivity.java.
+5. Upload/cleanup: Edge worker, cron, quyền bucket và các migration phải khớp. Worker/cron sai hoặc dừng có thể làm chậm xác minh/dọn tệp; báo cáo cũ có backlog nhưng không phải số hiện tại. Căn cứ: supabase/functions/meeto-background-cleanup/, TASK54B2_MEDIA_CLEANUP_RECOVERY_REPORT.md.
+
+RỦI RO TỪ LOGIC SOURCE — CẦN XEM XÉT
+6. ErrorMapper.java: nhánh HTTP 403 chung đứng trước các mã lỗi cụ thể như follow_list_private, system_admin_required, contact_blocked. Người dùng có thể chỉ nhận thông báo quyền chung, mất lý do cụ thể; lần này chỉ sửa text, chưa đổi thứ tự xử lý.
+7. ErrorMapper.java và các màn tạo Story/Reel: còn trả trực tiếp Exception.getMessage(). Lỗi thư viện/codec có thể hiện tiếng Anh, tên kỹ thuật hoặc chuỗi rỗng; cần chuẩn hóa theo từng loại lỗi, không dịch tùy tiện mọi exception.
+8. Admin yêu cầu tài khoản: lọc active + deletion_requested_at nhưng không có trạng thái duyệt riêng. Mở khóa tài khoản có thể làm yêu cầu cũ hiện lại. Căn cứ: 20261108000200_admin_account_requests.sql, AdminPanelActivity.java.
+9. Chuyển tiếp: UUID chống gửi trùng chỉ giữ trong ForwardMessagePicker.requestIds. Đóng/xoay/tạo lại màn sau khi server đã gửi nhưng client chưa nhận kết quả có thể tạo UUID mới và gửi trùng nếu thử lại. Cần lưu receipt/request identity bền qua recreation.
+10. Album: save dùng expected_version. Nếu server lưu thành công nhưng phản hồi bị mất, bấm Lưu lại với version cũ nhận conflict; cần tải lại album để đối chiếu. Đóng editor album mới cũng mất UUID bản nháp. Căn cứ: ui/FeaturedAlbumsUi.java, 20261108000500_featured_photo_albums.sql.
+11. Lọc ảnh trùng: chỉ loại tệp có cùng SHA-256; ảnh nhìn giống nhưng nén/crop khác vẫn hiện. Hash tải lỗi thì giữ ảnh riêng, nên mạng yếu vẫn có thể thấy trùng. Nhóm nhiều ảnh cùng dung lượng làm tải/hash chậm. Căn cứ: ui/ExactPhotoFingerprint.java, ui/FeaturedAlbumsUi.java.
+12. Music: phối hai nguồn 100% có thể clipping; join AAC/offset sát EOF/seek qua loop phụ thuộc thiết bị. Probe codec/duration không chứng minh âm thanh không im lặng hoặc không click. Căn cứ: music/MusicComposition.java, music/MusicLoopTimeline.java, ui/ReelClipExporter.java.
+13. MP4 đã trộn trả về Create Post mất các stem/offset gốc. Mở lại editor rồi bỏ/đổi nhạc không tách được nhạc đã nhúng, có thể trộn chồng. Căn cứ: CreatePostActivity.java, CreateReelActivity.java.
+14. Export: kiểm tra dung lượng ban đầu không bảo đảm còn đủ trong lúc encode; codec/HDR/rotation khác thiết bị có thể bị probe từ chối. Căn cứ: ui/ReelClipExporter.java, ui/StoryMediaExporter.java.
+
+CÁC LUỒNG CẦN OWNER KIỂM TRA THỰC TẾ
+15. Auth: xác minh email, callback khôi phục mật khẩu, đổi mật khẩu rồi đăng nhập lại; cấu hình email và chính sách Auth Cloud chưa xác nhận. Căn cứ: AuthCallbackActivity.java, ChangePasswordActivity.java, supabase/SupabaseAuthClient.java.
+16. Follow/nhắc tên: thử private-owner/private-other, theo dõi hai chiều độc lập, block hoặc đổi quyền sau khi Picker đã mở; server có thể từ chối lựa chọn từng hợp lệ. Căn cứ: FollowListActivity.java, ui/PostTagPicker.java, ui/MentionComposer.java, migration 080001/080006.
+17. Chat/Realtime: thử hai tài khoản, mất mạng, archive rollback, lời mời nhóm và partial forwarding. Có refetch/poll; không bảo đảm mọi cập nhật xuất hiện tức thì. Căn cứ: fragments/InboxFragment.java, ChatActivity.java, supabase/RealtimeClient.java, ui/ForwardMessagePicker.java.
+18. Admin: thử claim/action đồng thời, đổi trạng thái khi dialog đang mở, thiếu bằng chứng và retry cùng receipt. Cảnh cáo hiện chỉ ghi nhận, không đồng nghĩa đã gửi thông báo. Căn cứ: AdminPanelActivity.java, supabase/AdminReportActions.java, migration admin hardening.
+19. Privacy/media: đổi quyền hoặc xóa bài nguồn khi đang xem ảnh/album/Story có thể làm lần tải tiếp theo bị từ chối; cần kiểm tra viewer xử lý lỗi và không giữ hiển thị sai quyền. Căn cứ: FeaturedAlbumViewerActivity.java, supabase/StoryClient.java, storage/SupabaseStorage.java.
+20. Voice recording hiện bị ẩn/hoãn, không phải tính năng gửi hoàn chỉnh. Không dùng source recorder cũ làm bằng chứng hoạt động. Căn cứ: ChatActivity.java, MEETO_TASK35_PROGRESS.md, MEETO_TASK36_PROGRESS.md.
+
+KIỂM TRA TĨNH: 214 XML tài nguyên đọc được bằng XML parser; không tìm thấy ký tự thay thế Unicode U+FFFD trong Java/XML. Điều này không thay thế compile, không chứng minh toàn bộ text/luồng runtime đúng. Không sửa logic nghiệp vụ hoặc triển khai SQL trong lần rà này.

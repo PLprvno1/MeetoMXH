@@ -64,14 +64,14 @@ public final class PostDetails {
         String id = selectedId;
         Set<String> seen = new HashSet<>();
         for (int depth = 0; depth < 8; depth++) {
-            if (id == null || id.trim().isEmpty() || !seen.add(id)) throw new IllegalStateException("unavailable");
+            if (id == null || id.trim().isEmpty() || !seen.add(id)) throw new IllegalStateException("Nội dung không còn khả dụng hoặc bạn không có quyền xem.");
             JSONObject post = RpcClient.object("get_post", Api.obj("p_post_id", id));
-            if (post == null || post.length() == 0 || post.isNull("id")) throw new IllegalStateException("unavailable");
+            if (post == null || post.length() == 0 || post.isNull("id")) throw new IllegalStateException("Nội dung không còn khả dụng hoặc bạn không có quyền xem.");
             if (!"share".equals(post.optString("kind"))) return post;
-            if (!post.optBoolean("original_available", false) || post.isNull("original_post_id")) throw new IllegalStateException("unavailable");
+            if (!post.optBoolean("original_available", false) || post.isNull("original_post_id")) throw new IllegalStateException("Nội dung không còn khả dụng hoặc bạn không có quyền xem.");
             id = post.optString("original_post_id", null);
         }
-        throw new IllegalStateException("unavailable");
+        throw new IllegalStateException("Nội dung không còn khả dụng hoặc bạn không có quyền xem.");
     }
 
     public static void unavailable(Activity activity) {
