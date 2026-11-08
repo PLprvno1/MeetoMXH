@@ -78,7 +78,8 @@ public final class FeaturedAlbumsUi {
                     if(n%3==0){row=new LinearLayout(host);container.addView(row,new LinearLayout.LayoutParams(-1,-2));}
                     LinearLayout tile=column();LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,-2,1);lp.setMargins(dp(3),dp(4),dp(3),dp(8));row.addView(tile,lp);
                     JSONArray items=album.optJSONArray("items");int count=items==null?0:items.length();
-                    ImageView cover=photo(count==0?null:items.optJSONObject(0).optString("asset_id"));
+                    JSONObject first=count==0?null:items.optJSONObject(0);
+                    ImageView cover=photo(first==null?null:first.optString("asset_id"));
                     cover.setContentDescription(album.optString("title")+", "+count+" ảnh");tile.addView(cover,new LinearLayout.LayoutParams(-1,dp(105)));
                     TextView title=text(album.optString("title"),13);title.setMaxLines(2);title.setTypeface(null,Typeface.BOLD);title.setPadding(0,dp(6),0,0);tile.addView(title);
                     if(count>1){TextView extra=text("+"+(count-1),12);extra.setTextColor(color(R.color.brand_blue));tile.addView(extra);}

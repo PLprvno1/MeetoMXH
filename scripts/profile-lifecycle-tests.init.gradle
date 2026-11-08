@@ -1,0 +1,16 @@
+// Run the lifecycle regression independently of legacy Android tests that
+// reference removed UI IDs and CommentClient.thread().
+allprojects {
+    afterEvaluate { project ->
+        if (project.path == ':app') {
+            project.tasks.withType(org.gradle.api.tasks.compile.JavaCompile).configureEach {
+                if (name != 'compileDebugAndroidTestJavaWithJavac') return
+                doFirst {
+                    setSource(project.fileTree('src/androidTest/java') {
+                        include '**/ProfileLifecycleTest.java'
+                    })
+                }
+            }
+        }
+    }
+}

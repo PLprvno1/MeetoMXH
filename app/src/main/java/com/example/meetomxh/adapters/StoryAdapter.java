@@ -32,14 +32,19 @@ public class StoryAdapter extends RecyclerView.Adapter<StoryAdapter.Holder> {
                 owner=com.example.meetomxh.supabase.SessionManager.getInstance().uid();s.setAuthorId(owner);
             }
             String id=com.example.meetomxh.supabase.StoryClient.validId(s.getId())?s.getId():null;
-            View.OnClickListener open=com.example.meetomxh.ui.StoryNavigation.listener(owner,id);
+            View.OnClickListener create=v->v.getContext().startActivity(new Intent(v.getContext(),StoryCreateActivity.class));
+            View.OnClickListener viewStory=com.example.meetomxh.ui.StoryNavigation.listener(owner,id);
+            View.OnClickListener open=v->{
+                if(s.isAddStory()&&(id==null||s.expiryMillis()<=System.currentTimeMillis()))create.onClick(v);
+                else viewStory.onClick(v);
+            };
             b.getRoot().setOnClickListener(open);
             b.tvStoryUserName.setOnClickListener(open);
             b.layoutAvatarRing.setVisibility(View.VISIBLE);b.layoutAvatarRing.setAlpha(1f);
             b.layoutAvatarRing.setOnClickListener(open);
             com.example.meetomxh.ui.StoryRings.bindTray(b.layoutAvatarRing,b.ivStoryAvatar,s,open);
             b.ivAddStoryIcon.setVisibility(s.isAddStory()?View.VISIBLE:View.GONE);
-            b.ivAddStoryIcon.setOnClickListener(s.isAddStory()?v->v.getContext().startActivity(new Intent(v.getContext(),StoryCreateActivity.class)):null);
+            b.ivAddStoryIcon.setOnClickListener(s.isAddStory()?create:null);
             b.ivAddStoryIcon.setClickable(s.isAddStory());
             Glide.with(b.ivStoryBg).clear(b.ivStoryBg);
             View.OnLongClickListener report=v->{if(s.isAddStory()||id==null)return false;

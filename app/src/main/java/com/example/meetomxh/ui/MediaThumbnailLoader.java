@@ -31,7 +31,8 @@ public final class MediaThumbnailLoader {
         Object previous=image.getTag(R.id.search_thumbnail_binding);
         Load load=previous instanceof Load?(Load)previous:null;
         if(load!=null&&load.job!=null)load.job.remove();
-        image.setTag(R.id.search_thumbnail_binding,null);Glide.with(image).clear(image);image.setImageDrawable(null);
+        // Recycling can run inside Activity.onDestroy, when Glide.with(view) rejects the host.
+        image.setTag(R.id.search_thumbnail_binding,null);Glide.with(image.getContext().getApplicationContext()).clear(image);image.setImageDrawable(null);
         if(load!=null)recycle(load.bitmap);
     }
     public static void load(ImageView image,Post post){

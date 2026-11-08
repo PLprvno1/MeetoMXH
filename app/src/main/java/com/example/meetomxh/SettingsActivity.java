@@ -4,7 +4,6 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.CheckBox;
-import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.Toast;
@@ -160,9 +159,41 @@ public class SettingsActivity extends AppCompatActivity {
 
     private void blockedUsers() {
         Api.run(()->(JSONArray)RpcClient.call("list_blocked_users",Api.obj()),new Api.Callback<JSONArray>(){
-            public void success(JSONArray users){if(users.length()==0){toast("Danh sách chặn đang trống.");return;}ScrollView scroll=new ScrollView(SettingsActivity.this);LinearLayout list=new LinearLayout(SettingsActivity.this);list.setOrientation(1);scroll.addView(list);AlertDialog dialog=new AlertDialog.Builder(SettingsActivity.this).setTitle("Tài khoản đã chặn").setView(scroll).setPositiveButton("Đóng",null).create();
-                for(int i=0;i<users.length();i++){JSONObject p=users.optJSONObject(i);if(p==null)continue;LinearLayout row=new LinearLayout(SettingsActivity.this);row.setGravity(android.view.Gravity.CENTER_VERTICAL);android.widget.ImageView avatar=new android.widget.ImageView(SettingsActivity.this);int size=(int)(48*getResources().getDisplayMetrics().density);row.addView(avatar,new LinearLayout.LayoutParams(size,size));com.example.meetomxh.ui.AvatarViews.load(avatar,com.example.meetomxh.supabase.Dto.asset(com.example.meetomxh.supabase.Dto.nullable(p,"avatar_asset_id")),p.optString("avatar_preset","neutral"));android.widget.TextView name=new android.widget.TextView(SettingsActivity.this);name.setText(p.isNull("display_name")?"Người dùng không khả dụng":p.optString("display_name","Người dùng"));name.setTextColor(getColor(R.color.text_primary));row.addView(name,new LinearLayout.LayoutParams(0,-2,1));Button unblock=new Button(SettingsActivity.this);unblock.setText("Bỏ chặn");row.addView(unblock);list.addView(row,new LinearLayout.LayoutParams(-1,-2));unblock.setOnClickListener(v->new AlertDialog.Builder(SettingsActivity.this).setTitle("Bỏ chặn tài khoản?").setMessage("Quan hệ theo dõi đã gỡ sẽ không tự khôi phục.").setNegativeButton("Hủy",null).setPositiveButton("Bỏ chặn",(d,w)->{unblock.setEnabled(false);Api.run(()->RpcClient.call("set_block",Api.obj("p_target",p.optString("user_id"),"p_blocked",false)),new Api.Callback<Object>(){public void success(Object r){list.removeView(row);if(list.getChildCount()==0)dialog.dismiss();}public void error(String e){unblock.setEnabled(true);toast(e);}});}).show());}
-                dialog.show();}
+            public void success(JSONArray users){
+                if(isFinishing()||isDestroyed())return;
+                if(users.length()==0){toast("Danh sách chặn đang trống.");return;}
+                ScrollView scroll=new ScrollView(SettingsActivity.this);
+                LinearLayout list=new LinearLayout(SettingsActivity.this);list.setOrientation(LinearLayout.VERTICAL);
+                int padding=Math.round(20*getResources().getDisplayMetrics().density);
+                list.setPadding(padding,padding/2,padding,padding/2);scroll.addView(list);
+                AlertDialog dialog=new AlertDialog.Builder(SettingsActivity.this).setTitle("Tài khoản đã chặn")
+                    .setView(scroll).setPositiveButton("Đóng",null).create();
+                for(int i=0;i<users.length();i++){
+                    JSONObject p=users.optJSONObject(i);if(p==null)continue;
+                    com.example.meetomxh.databinding.ItemBlockedUserBinding row=
+                        com.example.meetomxh.databinding.ItemBlockedUserBinding.inflate(getLayoutInflater(),list,false);
+                    com.example.meetomxh.ui.AvatarViews.load(row.ivBlockedAvatar,
+                        com.example.meetomxh.supabase.Dto.asset(com.example.meetomxh.supabase.Dto.nullable(p,"avatar_asset_id")),
+                        p.optString("avatar_preset","neutral"));
+                    row.tvBlockedName.setText(p.isNull("display_name")?"Người dùng không khả dụng":p.optString("display_name","Người dùng"));
+                    String username=com.example.meetomxh.supabase.Dto.nullable(p,"username");
+                    if(username!=null&&!username.trim().isEmpty()){
+                        row.tvBlockedUsername.setText("@"+username);row.tvBlockedUsername.setVisibility(View.VISIBLE);
+                    }
+                    row.btnUnblock.setContentDescription("Bỏ chặn "+row.tvBlockedName.getText());
+                    list.addView(row.getRoot());
+                    row.btnUnblock.setOnClickListener(v->new AlertDialog.Builder(SettingsActivity.this)
+                        .setTitle("Bỏ chặn tài khoản?").setMessage("Quan hệ theo dõi đã gỡ sẽ không tự khôi phục.")
+                        .setNegativeButton("Hủy",null).setPositiveButton("Bỏ chặn",(d,w)->{
+                            row.btnUnblock.setEnabled(false);
+                            Api.run(()->RpcClient.call("set_block",Api.obj("p_target",p.optString("user_id"),"p_blocked",false)),new Api.Callback<Object>(){
+                                public void success(Object r){list.removeView(row.getRoot());if(list.getChildCount()==0)dialog.dismiss();}
+                                public void error(String e){row.btnUnblock.setEnabled(true);toast(e);}
+                            });
+                        }).show());
+                }
+                dialog.show();
+            }
             public void error(String e){toast(e);}
         });
     }

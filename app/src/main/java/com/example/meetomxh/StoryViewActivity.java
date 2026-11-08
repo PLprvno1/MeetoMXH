@@ -86,7 +86,13 @@ public final class StoryViewActivity extends AppCompatActivity {
   },new Api.Callback<List<Story>>(){
    public void success(List<Story> rows){discoveryLoading=false;if(destroyed)return;groups.clear();for(Story s:rows)if(Objects.equals(s.getId(),selected))selectedAuthor=s.getAuthorId();if(selectedAuthor!=null)expandedAuthors.add(selectedAuthor);LinkedHashMap<String,List<Story>> grouped=new LinkedHashMap<>();for(Story s:rows)if(s.isActive())grouped.computeIfAbsent(s.getAuthorId(),k->new ArrayList<>()).add(s);groups.addAll(grouped.values());
     boolean found=false;for(int g=0;g<groups.size()&&!found;g++)for(int n=0;n<groups.get(g).size();n++){Story s=groups.get(g).get(n);if(Objects.equals(s.getId(),selected)||(selected==null&&Objects.equals(s.getAuthorId(),selectedAuthor))){group=g;index=n;found=true;break;}}
-    if(!found&&(selected!=null||selectedAuthor!=null)){unavailable("Người này chưa có tin còn hiệu lực hoặc bạn không còn quyền xem. Chạm để đóng; dùng dấu + trong khay để tạo tin của bạn.");closeOnError=true;return;}show(true);
+    if(!found&&(selected!=null||selectedAuthor!=null)){
+     String self=SessionManager.getInstance().uid();
+     if(StoryClient.validId(self)&&self.equalsIgnoreCase(selectedAuthor)&&!grouped.containsKey(selectedAuthor)){
+      startActivity(new Intent(StoryViewActivity.this,StoryCreateActivity.class));finish();return;
+     }
+     unavailable("Người này chưa có tin còn hiệu lực hoặc bạn không còn quyền xem. Chạm để đóng; dùng dấu + trong khay để tạo tin của bạn.");closeOnError=true;return;
+    }show(true);
    }
    public void error(String message){discoveryLoading=false;if(!destroyed)loadFailure(message);}
   });

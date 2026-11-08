@@ -27,7 +27,9 @@ public final class NotificationAdapter extends RecyclerView.Adapter<Notification
     }
     @Override public void onBindViewHolder(@NonNull Holder h,int position){
         NotificationItem item=rows.get(position);
-        h.text.setText(item.message()); h.time.setText(com.example.meetomxh.ui.PostTimestampFormatter.format(item.createdAt));
+        android.text.SpannableString message=new android.text.SpannableString(item.message());
+        if(item.isGroupMessage())message.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD),0,item.groupTitle().length(),android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        h.text.setText(message); h.time.setText(com.example.meetomxh.ui.PostTimestampFormatter.format(item.createdAt));
         h.dot.setVisibility(item.unread?View.VISIBLE:View.INVISIBLE);
         h.itemView.setBackgroundResource(item.unread?R.color.surface_variant:R.color.surface_bg);
         AvatarViews.load(h.avatar,Dto.asset(item.actorAvatarId),item.actorAvatarPreset);

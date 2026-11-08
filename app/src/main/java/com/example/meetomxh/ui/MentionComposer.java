@@ -1,13 +1,13 @@
 package com.example.meetomxh.ui;
 
 import android.content.Context;
-import android.graphics.Color;
 import android.graphics.Rect;
-import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -36,6 +36,7 @@ public final class MentionComposer implements TextWatcher {
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Runnable searchTask = this::search;
     private PopupWindow popup;
+    private final Rect popupBounds=new Rect();
     private LinearLayout rows;
     private Subscription request;
     private int lastSelection=-1;
@@ -45,6 +46,7 @@ public final class MentionComposer implements TextWatcher {
         boolean focused=input.hasFocus();int position=input.getSelectionStart();
         if(focused&&(position!=lastSelection||!lastFocused)){lastSelection=position;lastFocused=true;schedule();}
         else if(!focused&&lastFocused){lastFocused=false;cancelSearch();dismiss();}
+        if(popup!=null&&popup.isShowing())showPopup();
         return true;
     }
     private final View.OnAttachStateChangeListener attachment=new View.OnAttachStateChangeListener(){
@@ -111,8 +113,11 @@ public final class MentionComposer implements TextWatcher {
 
     private void ensurePopup(){
         if(popup!=null)return; Context c=input.getContext(); rows=new LinearLayout(c);rows.setOrientation(LinearLayout.VERTICAL);
-        int surface=c.getColor(R.color.surface_bg);rows.setBackgroundColor(surface);ScrollView scroll=new ScrollView(c);scroll.addView(rows);popup=new PopupWindow(scroll,Math.max(input.getWidth(),dp(c,250)),dp(c,48),false);
-        popup.setBackgroundDrawable(new ColorDrawable(surface));popup.setOutsideTouchable(true);popup.setElevation(dp(c,8));
+        ScrollView scroll=new ScrollView(c);scroll.setFillViewport(false);scroll.setClipToOutline(true);
+        scroll.setPadding(0,dp(c,4),0,dp(c,4));scroll.addView(rows,new ScrollView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.WRAP_CONTENT));
+        GradientDrawable background=new GradientDrawable();background.setColor(c.getColor(R.color.surface_bg));background.setCornerRadius(dp(c,12));background.setStroke(dp(c,1),c.getColor(R.color.outline_color));
+        scroll.setBackground(background);popup=new PopupWindow(scroll,Math.max(input.getWidth(),dp(c,250)),dp(c,64),false);
+        popup.setBackgroundDrawable(background);popup.setOutsideTouchable(true);popup.setElevation(dp(c,12));
         popup.setInputMethodMode(PopupWindow.INPUT_METHOD_NEEDED);
     }
     private void showLoading(){ensurePopup();rows.removeAllViews();TextView t=label("Đang tìm người…",false);rows.addView(t);showPopup();}
@@ -123,23 +128,39 @@ public final class MentionComposer implements TextWatcher {
         for(int i=0;i<people.length();i++){
             JSONObject person=people.optJSONObject(i);if(person==null)continue;
             LinearLayout row=new LinearLayout(input.getContext());row.setGravity(Gravity.CENTER_VERTICAL);row.setPadding(dp(input.getContext(),12),dp(input.getContext(),6),dp(input.getContext(),12),dp(input.getContext(),6));
-            ShapeableImageView avatar=new ShapeableImageView(input.getContext());LinearLayout.LayoutParams ap=new LinearLayout.LayoutParams(dp(input.getContext(),34),dp(input.getContext(),34));row.addView(avatar,ap);
+            row.setMinimumHeight(dp(input.getContext(),64));
+            ShapeableImageView avatar=new ShapeableImageView(input.getContext());avatar.setShapeAppearanceModel(avatar.getShapeAppearanceModel().toBuilder().setAllCornerSizes(dp(input.getContext(),20)).build());avatar.setScaleType(android.widget.ImageView.ScaleType.CENTER_CROP);LinearLayout.LayoutParams ap=new LinearLayout.LayoutParams(dp(input.getContext(),40),dp(input.getContext(),40));row.addView(avatar,ap);
             AvatarViews.load(avatar,Dto.asset(Dto.nullable(person,"avatar_asset_id")),person.optString("avatar_preset","neutral"));
             String username=Dto.nullable(person,"username");
-            TextView name=label(person.optString("display_name","Người dùng")+(username==null?"":" · @"+username),true);LinearLayout.LayoutParams np=new LinearLayout.LayoutParams(0,ViewGroup.LayoutParams.WRAP_CONTENT,1);np.leftMargin=dp(input.getContext(),10);row.addView(name,np);
-            JSONObject choice=person;row.setOnClickListener(v->insert(choice));rows.addView(row,new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,dp(input.getContext(),48)));
+            LinearLayout details=new LinearLayout(input.getContext());details.setOrientation(LinearLayout.VERTICAL);
+            TextView name=personLabel(person.optString("display_name","Người dùng"),true);details.addView(name);
+            if(username!=null){TextView handle=personLabel("@"+username,false);handle.setTextSize(12);handle.setTextColor(input.getContext().getColor(R.color.text_secondary));details.addView(handle);}
+            LinearLayout.LayoutParams np=new LinearLayout.LayoutParams(0,ViewGroup.LayoutParams.WRAP_CONTENT,1);np.leftMargin=dp(input.getContext(),12);row.addView(details,np);
+            android.util.TypedValue feedback=new android.util.TypedValue();input.getContext().getTheme().resolveAttribute(android.R.attr.selectableItemBackground,feedback,true);if(feedback.resourceId!=0)row.setBackgroundResource(feedback.resourceId);
+            JSONObject choice=person;row.setOnClickListener(v->insert(choice));rows.addView(row,new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.WRAP_CONTENT));
         }
         showPopup();
     }
     private TextView label(String value,boolean bold){TextView t=new TextView(input.getContext());t.setText(value);t.setTextColor(input.getContext().getColor(R.color.text_primary));t.setTextSize(14);t.setGravity(Gravity.CENTER_VERTICAL);t.setPadding(dp(input.getContext(),12),dp(input.getContext(),12),dp(input.getContext(),12),dp(input.getContext(),12));if(bold)t.setTypeface(null,android.graphics.Typeface.BOLD);return t;}
+    private TextView personLabel(String value,boolean bold){TextView t=label(value,bold);t.setPadding(0,0,0,0);t.setSingleLine(true);t.setEllipsize(TextUtils.TruncateAt.END);t.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.WRAP_CONTENT));return t;}
     private void showPopup(){
         if(!input.isAttachedToWindow()||!input.hasFocus()||disposed)return;
         Context c=input.getContext();Rect visible=new Rect();input.getWindowVisibleDisplayFrame(visible);int[] location=new int[2];input.getLocationOnScreen(location);
-        int above=Math.max(0,location[1]-visible.top-dp(c,4)),below=Math.max(0,visible.bottom-location[1]-input.getHeight()-dp(c,4));
+        int gap=dp(c,8),margin=dp(c,12);
+        int above=Math.max(0,location[1]-visible.top-gap),below=Math.max(0,visible.bottom-location[1]-input.getHeight()-gap);
         boolean up=above>below;int available=up?above:below;if(available<dp(c,40)){dismiss();return;}
-        int height=Math.min(available,dp(c,Math.min(5,Math.max(1,rows.getChildCount()))*48));
-        int width=Math.min(visible.width(),Math.max(input.getWidth(),dp(c,250))),offset=up?-input.getHeight()-height-dp(c,2):dp(c,2);
-        try{popup.setWidth(width);popup.setHeight(height);if(popup.isShowing())popup.update(input,0,offset,width,height);else popup.showAsDropDown(input,0,offset);}catch(android.view.WindowManager.BadTokenException ignored){dismiss();}
+        int width=Math.min(visible.width()-2*margin,Math.max(input.getWidth(),dp(c,250)));if(width<=0){dismiss();return;}
+        rows.measure(View.MeasureSpec.makeMeasureSpec(width,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(0,View.MeasureSpec.UNSPECIFIED));
+        int height=Math.min(available,Math.min(dp(c,328),rows.getMeasuredHeight()+dp(c,8)));
+        int x=Math.max(visible.left+margin,Math.min(location[0],visible.right-margin-width));
+        int y=up?location[1]-gap-height:location[1]+input.getHeight()+gap;
+        // Position in the input's window without scrolling its parent to make room.
+        View root=input.getRootView();int[] screen=new int[2],window=new int[2];root.getLocationOnScreen(screen);root.getLocationInWindow(window);x-=screen[0]-window[0];y-=screen[1]-window[1];
+        try{
+            if(popup.isShowing()){if(!popupBounds.equals(new Rect(x,y,x+width,y+height)))popup.update(x,y,width,height);}
+            else{popup.setWidth(width);popup.setHeight(height);popup.showAtLocation(input,Gravity.TOP|Gravity.LEFT,x,y);}
+            popupBounds.set(x,y,x+width,y+height);
+        }catch(android.view.WindowManager.BadTokenException ignored){dismiss();}
     }
     private void insert(JSONObject person){
         Editable e=input.getText();int start=Math.max(0,Math.min(tokenStart,e.length()));int end=Math.max(start,Math.min(cursorAt,e.length()));
