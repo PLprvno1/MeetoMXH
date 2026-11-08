@@ -13,6 +13,8 @@ public class Chat {
     public long version,highWater,lastReadSeq,lastDeliveredSeq,unreadCount;
     public String title,state,role;
     public String themeId="meeto_pink",peerName;
+    public boolean inboxProfileIncluded;
+    public String peerAvatar,peerAvatarPreset="neutral";
     public final Map<String,String> memberNames=new HashMap<>();
     public boolean archived,muted; public String avatar; public String ownerId;
     private String chatId;

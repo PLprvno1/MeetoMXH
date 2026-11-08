@@ -360,17 +360,10 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                     : "private".equals(post.getVisibility()) ? "Ch\u1ec9 m\u00ecnh t\u00f4i" : "C\u00f4ng khai";
             String groupStatus="pending_review".equals(post.getPostState())?" · Đang chờ duyệt":"";
             binding.tvTimeAgo.setText(timestamp + " \u00b7 " + audience + groupStatus);
-            MentionText.bind(binding.tvContent,post.getContent(),post.getMentions());
+            MentionText.bindPost(binding.tvContent,post.getContent(),post.getMentions(),post.getTags());
             binding.tvContent.setOnClickListener(v -> PostDetails.show((android.app.Activity) v.getContext(), post.getPostId()));
             com.example.meetomxh.music.MusicAttribution.bind(binding.getRoot().getContext(),binding.tvMusicMetadata,post.getMusicMetadata());
-            JSONArray tags=new JSONArray();JSONArray rawTags=post.getTags();if(rawTags!=null)for(int i=0;i<rawTags.length();i++){JSONObject t=rawTags.optJSONObject(i);if(t!=null&&"accepted".equals(t.optString("state","accepted")))tags.put(t);}
-            if(tags.length()>0){
-                java.util.ArrayList<String> names=new java.util.ArrayList<>();
-                for(int i=0;i<tags.length();i++){JSONObject tag=tags.optJSONObject(i);if(tag!=null)names.add(tag.optString("display_name","Người dùng Meeto"));}
-                binding.tvTaggedPeople.setText("Cùng với "+android.text.TextUtils.join(", ",names));
-                binding.tvTaggedPeople.setVisibility(View.VISIBLE);
-                binding.tvTaggedPeople.setOnClickListener(v->{String[] labels=new String[tags.length()];String[] ids=new String[tags.length()];for(int i=0;i<tags.length();i++){JSONObject tag=tags.optJSONObject(i);labels[i]=tag==null?"Người dùng Meeto":tag.optString("display_name","Người dùng Meeto");ids[i]=tag==null?null:tag.optString("user_id",null);}new android.app.AlertDialog.Builder(v.getContext()).setTitle("Được gắn thẻ trong bài viết").setItems(labels,(dialog,index)->{if(ids[index]!=null&&!ids[index].equals("null"))v.getContext().startActivity(new android.content.Intent(v.getContext(),com.example.meetomxh.ProfileActivity.class).putExtra("target_uid",ids[index]));}).setPositiveButton("Đóng",null).show();});
-            }else{binding.tvTaggedPeople.setText("");binding.tvTaggedPeople.setVisibility(View.GONE);binding.tvTaggedPeople.setOnClickListener(null);}
+            binding.tvTaggedPeople.setText("");binding.tvTaggedPeople.setVisibility(View.GONE);binding.tvTaggedPeople.setOnClickListener(null);
             bindSharedPost(post, showPersonFallback);
 
             binding.tvLikesCount.setText(post.getLikesCount() + " lượt thích");

@@ -123,8 +123,9 @@ public class InboxFragment extends Fragment {
                 sortChatsNewestFirst();
                 for (Chat chat : allChats) {
                     String otherUid = getOtherUid(chat);
-                    if (otherUid != null && !"group".equals(chat.getType())) loadProfileOnce(otherUid);
+                    if (otherUid != null && !"group".equals(chat.getType())&&!chat.inboxProfileIncluded) loadProfileOnce(otherUid);
                 }
+                if(searchingConversations)scheduleConversationSearch(binding.etSearchConversations.getText().toString());
                 renderChats();
             }
 
@@ -132,6 +133,7 @@ public class InboxFragment extends Fragment {
             public void onError(String error) {
                 if (!isCurrentChatsListener(listenerGeneration)) return;
                 if(!searchingConversations)binding.swipeInbox.setRefreshing(false);
+                if(chatsLoaded)return;
                 binding.progressInbox.setVisibility(View.GONE);
                 binding.rvInbox.setVisibility(View.GONE);
                 binding.tvInboxState.setVisibility(View.VISIBLE);
@@ -211,7 +213,8 @@ public class InboxFragment extends Fragment {
             if(chat.archived!=showArchived)continue;
             String otherUid = getOtherUid(chat);
             if (otherUid == null) continue;
-            UserProfile profile = "group".equals(chat.getType()) ? new UserProfile(chat.title,chat.avatar) : profiles.get(otherUid);
+            UserProfile profile = "group".equals(chat.getType()) ? new UserProfile(chat.title,chat.avatar)
+                    :chat.inboxProfileIncluded?new UserProfile(chat.peerName==null?"Người dùng không khả dụng":chat.peerName,chat.peerAvatar):profiles.get(otherUid);
             String preview = chat.getLastMessage();
             if (chat.getLastMessageHiddenFor() != null && currentUid != null
                     && chat.getLastMessageHiddenFor().contains(currentUid)) preview = "Tin nhắn đã xóa";
@@ -221,7 +224,8 @@ public class InboxFragment extends Fragment {
                     "private".equals(chat.getType())&&chat.peerName!=null?chat.peerName:profile == null ? "Người dùng" : profile.name,
                     preview,
                     profile == null ? null : profile.avatarUrl,
-                    formatServerTime(chat.getLastMessageAt()));
+                    formatServerTime(com.example.meetomxh.ui.InboxOrder.activityTime(chat)));
+            if(!"group".equals(chat.getType())&&chat.inboxProfileIncluded)row.setAvatarPreset(chat.peerAvatarPreset);
             row.setUnread(chat.isUnreadFor(currentUid));
             row.setMuted(chat.muted);
             rows.add(row);
@@ -259,7 +263,7 @@ public class InboxFragment extends Fragment {
                 sortChatsNewestFirst();
                 for (Chat chat : chats) {
                     String other = getOtherUid(chat);
-                    if (other != null && !"group".equals(chat.getType())) loadProfileOnce(other);
+                    if (other != null && !"group".equals(chat.getType())&&!chat.inboxProfileIncluded) loadProfileOnce(other);
                 }
                 renderChats();
                 if (chats.isEmpty()) showState("Không tìm thấy cuộc trò chuyện.");
@@ -274,14 +278,7 @@ public class InboxFragment extends Fragment {
     }
 
     private void sortChatsNewestFirst() {
-        chats.sort((first, second) -> {
-            ServerTime firstTime = first.getLastMessageAt();
-            ServerTime secondTime = second.getLastMessageAt();
-            if (firstTime == null && secondTime == null) return 0;
-            if (firstTime == null) return 1;
-            if (secondTime == null) return -1;
-            return secondTime.compareTo(firstTime);
-        });
+        chats.sort(com.example.meetomxh.ui.InboxOrder.NEWEST_FIRST);
     }
 
     private String getOtherUid(Chat chat) {

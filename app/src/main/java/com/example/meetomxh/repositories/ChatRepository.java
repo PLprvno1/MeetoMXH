@@ -25,8 +25,43 @@ public final class ChatRepository {
  }
  public void getOrCreatePrivateChat(String peer,OnChatListener cb){Api.run(()->load(RpcClient.object("get_or_create_private",Api.obj("p_peer",peer)).getString("id")),new Api.Callback<Chat>(){public void success(Chat c){cb.onSuccess(c);}public void error(String e){cb.onError(e);}});}
  public void getChat(String id,OnChatListener cb){Api.run(()->load(id),new Api.Callback<Chat>(){public void success(Chat c){cb.onSuccess(c);}public void error(String e){cb.onError(e);}});}
- public Subscription listenToCurrentUserChats(OnChatsListener cb){return new com.example.meetomxh.supabase.Observer<>(()->{List<Chat> result=new ArrayList<>();JSONObject cursor=Api.obj("p_limit",50,"p_include_archived",true);for(int page=0;page<20;page++){JSONArray rows=(JSONArray)RpcClient.call("get_inbox",cursor);for(int i=0;i<rows.length();i++){Chat chat=Dto.chat(rows.getJSONObject(i));JSONArray members=(JSONArray)RpcClient.call("get_conversation_members",Api.obj("p_conversation_id",chat.getChatId()));List<String> ids=new ArrayList<>();for(int j=0;j<members.length();j++)ids.add(members.getJSONObject(j).getString("user_id"));chat.setParticipants(ids);setMuteState(chat);result.add(chat);}if(rows.length()<50)break;JSONObject last=rows.getJSONObject(rows.length()-1);cursor.put("p_after_time",last.getString("updated_at")).put("p_after_id",last.getString("id"));}return result;},new Api.Callback<List<Chat>>(){public void success(List<Chat> rows){cb.onChats(rows);}public void error(String e){cb.onChats(new ArrayList<>());cb.onError(e);}});}
- public void loadCurrentUserChats(OnChatsListener cb){Api.run(()->{List<Chat> result=new ArrayList<>();JSONArray rows=(JSONArray)RpcClient.call("get_inbox",Api.obj("p_limit",50,"p_include_archived",false));for(int i=0;i<rows.length();i++){Chat chat=Dto.chat(rows.getJSONObject(i));JSONArray members=(JSONArray)RpcClient.call("get_conversation_members",Api.obj("p_conversation_id",chat.getChatId()));List<String> ids=new ArrayList<>();for(int j=0;j<members.length();j++)ids.add(members.getJSONObject(j).getString("user_id"));chat.setParticipants(ids);setMuteState(chat);result.add(chat);}return result;},new Api.Callback<List<Chat>>(){public void success(List<Chat> rows){cb.onChats(rows);}public void error(String e){cb.onError(e);}});}
+ public Subscription listenToCurrentUserChats(OnChatsListener cb){
+  return new com.example.meetomxh.supabase.Observer<>(()->inbox(true),new Api.Callback<List<Chat>>(){
+   public void success(List<Chat> rows){cb.onChats(rows);}
+   public void error(String error){cb.onError(error);}
+  },5000);
+ }
+ public void loadCurrentUserChats(OnChatsListener cb){
+  Api.run(()->inbox(false),new Api.Callback<List<Chat>>(){
+   public void success(List<Chat> rows){cb.onChats(rows);}
+   public void error(String error){cb.onError(error);}
+  });
+ }
+ private List<Chat> inbox(boolean includeArchived)throws Exception{
+  List<Chat> result=new ArrayList<>();Set<String> seen=new HashSet<>();
+  JSONObject cursor=Api.obj("p_limit",50,"p_include_archived",includeArchived);
+  for(int page=0;page<20;page++){
+   Api.checkCancelled();JSONArray rows=(JSONArray)RpcClient.call("get_inbox",cursor);
+   for(int i=0;i<rows.length();i++){
+    JSONObject row=rows.getJSONObject(i);String id=row.getString("id");
+    if(seen.add(id))result.add(inboxChat(row));
+   }
+   if(rows.length()<50)break;
+   JSONObject last=rows.getJSONObject(rows.length()-1);
+   cursor.put("p_after_time",last.getString("updated_at")).put("p_after_id",last.getString("id"));
+  }
+  return result;
+ }
+ private Chat inboxChat(JSONObject row)throws Exception{
+  Chat chat=Dto.chat(row);
+  if(!InboxProjection.apply(chat,row)){
+   // Compatibility until the inbox projection migration is deployed.
+   JSONArray members=(JSONArray)RpcClient.call("get_conversation_members",Api.obj("p_conversation_id",chat.getChatId()));
+   List<String> ids=new ArrayList<>();for(int i=0;i<members.length();i++)ids.add(members.getJSONObject(i).getString("user_id"));
+   chat.setParticipants(ids);setMuteState(chat);
+  }
+  return chat;
+ }
  public Subscription listenToChatState(String id,OnChatStateListener cb){return new com.example.meetomxh.supabase.Observer<>(()->load(id),new Api.Callback<Chat>(){public void success(Chat c){cb.onState(c);}public void error(String e){cb.onError(e);}});}
  public List<ChatMessage> history(String id,int limit)throws Exception{List<ChatMessage> result=new ArrayList<>();JSONObject cursor=Api.obj("p_conversation_id",id,"p_limit",Math.min(100,limit));for(int page=0;result.size()<limit;page++){JSONArray rows=RpcClient.object("get_messages",cursor).getJSONArray("items");for(int i=0;i<rows.length();i++)result.add(Dto.message(rows.getJSONObject(i)));if(rows.length()<cursor.getInt("p_limit"))break;cursor.put("p_before_seq",rows.getJSONObject(rows.length()-1).getLong("seq"));cursor.put("p_limit",Math.min(100,limit-result.size()));}result.sort(Comparator.comparingLong(m->m.seq));return result;}
  public Subscription listenToMessages(String id,OnMessagesListener cb){return listenToMessages(id,50,cb);}
@@ -48,7 +83,7 @@ public final class ChatRepository {
  public void deleteMessageForMe(String id,ChatMessage message,OnMessageActionListener cb){action("hide_message_for_me",Api.obj("p_message_id",message.getMessageId()),cb);}
  public void editMessage(ChatMessage message,String body,OnMessageActionListener cb){if(message==null){cb.onError("Tin nhắn không khả dụng.");return;}action("edit_message",Api.obj("p_message_id",message.getMessageId(),"p_body",body,"p_expected_version",message.version),cb);}
  public void forwardTextMessage(String sourceId,String targetId,OnMessageActionListener cb){String requestId=UUID.randomUUID().toString();Api.run(()->RpcClient.call("forward_text_message",Api.obj("p_source_message_id",sourceId,"p_target_conversation_id",targetId,"p_client_request_id",requestId)),new Api.Callback<Object>(){public void success(Object value){cb.onSuccess();}public void error(String error){cb.onError(error);}});}
- public void searchConversations(String query,boolean archived,OnChatsListener cb){Api.run(()->{List<Chat> result=new ArrayList<>();Set<String> seen=new HashSet<>();String time=null,id=null;while(true){JSONArray rows=(JSONArray)RpcClient.call("search_conversations_v36",Api.obj("p_query",query,"p_archived",archived,"p_after_time",time,"p_after_id",id,"p_limit",30));for(int i=0;i<rows.length();i++){JSONObject row=rows.getJSONObject(i);Chat chat=Dto.chat(row);if(!seen.add(chat.getChatId()))continue;JSONArray members=(JSONArray)RpcClient.call("get_conversation_members",Api.obj("p_conversation_id",chat.getChatId()));List<String> ids=new ArrayList<>();for(int j=0;j<members.length();j++)ids.add(members.getJSONObject(j).getString("user_id"));chat.setParticipants(ids);setMuteState(chat);result.add(chat);}if(rows.length()<30)break;JSONObject last=rows.getJSONObject(rows.length()-1);time=last.getString("updated_at");id=last.getString("id");Api.checkCancelled();}return result;},new Api.Callback<List<Chat>>(){public void success(List<Chat> rows){cb.onChats(rows);}public void error(String error){cb.onError(error);}});}
+ public void searchConversations(String query,boolean archived,OnChatsListener cb){Api.run(()->{List<Chat> result=new ArrayList<>();Set<String> seen=new HashSet<>();String time=null,id=null;while(true){JSONArray rows=(JSONArray)RpcClient.call("search_conversations_v36",Api.obj("p_query",query,"p_archived",archived,"p_after_time",time,"p_after_id",id,"p_limit",30));for(int i=0;i<rows.length();i++){JSONObject row=rows.getJSONObject(i);if(!seen.add(row.getString("id")))continue;result.add(inboxChat(row));}if(rows.length()<30)break;JSONObject last=rows.getJSONObject(rows.length()-1);time=last.getString("updated_at");id=last.getString("id");Api.checkCancelled();}return result;},new Api.Callback<List<Chat>>(){public void success(List<Chat> rows){cb.onChats(rows);}public void error(String error){cb.onError(error);}});}
  private void setMuteState(Chat chat)throws Exception{chat.muted=RpcClient.object("get_conversation_mute",Api.obj("p_conversation_id",chat.getChatId())).optBoolean("muted",false);}
  public void action(String rpc,JSONObject input,OnMessageActionListener cb){Api.run(()->RpcClient.call(rpc,input),new Api.Callback<Object>(){public void success(Object v){cb.onSuccess();}public void error(String e){cb.onError(e);}});}
  public void search(String id,String query,OnMessagesListener cb){Api.run(()->{JSONArray rows=RpcClient.object("search_messages",Api.obj("p_conversation_id",id,"p_query",query,"p_limit",100)).getJSONArray("items");List<ChatMessage> found=new ArrayList<>();for(int i=0;i<rows.length();i++)found.add(Dto.message(rows.getJSONObject(i)));return found;},new Api.Callback<List<ChatMessage>>(){public void success(List<ChatMessage> rows){cb.onMessages(rows);}public void error(String e){cb.onError(e);}});}

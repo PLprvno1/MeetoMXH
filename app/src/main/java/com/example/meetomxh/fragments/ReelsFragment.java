@@ -372,6 +372,7 @@ public final class ReelsFragment extends Fragment {
         ScrollView scroll=new ScrollView(requireContext());
         String captionText=post.getContent();if(!post.getMusicLabel().isEmpty())captionText=captionText.isEmpty()?post.getMusicLabel():captionText+"\n"+post.getMusicLabel();
         TextView caption=sheetText(captionText,16);caption.setTextIsSelectable(true);
+        com.example.meetomxh.ui.MentionText.bindPost(caption,captionText,post.getMentions(),post.getTags());
         if(post.getMusicMetadata()!=null)caption.setOnClickListener(v->com.example.meetomxh.music.MusicAttribution.showLinks(v.getContext(),post.getMusicMetadata()));
         scroll.addView(caption);content.addView(scroll,new LinearLayout.LayoutParams(-1,Math.min(dp(360),getResources().getDisplayMetrics().heightPixels/2)));
         openSheet(content);
@@ -526,7 +527,7 @@ public final class ReelsFragment extends Fragment {
             }else h.cover.setVisibility(View.GONE);
             h.name.setText(p.getUserName()==null?"Meeto":p.getUserName());AvatarViews.load(h.avatar,p.getUserAvatar(),p.getUserAvatarPreset());
             String musicLabel=p.getMusicLabel();String captionText=p.getContent();if(!musicLabel.isEmpty())captionText=captionText.isEmpty()?musicLabel:captionText+"\n"+musicLabel;
-            h.caption.setText(captionText);h.caption.setVisibility(android.text.TextUtils.isEmpty(captionText)?View.GONE:View.VISIBLE);
+            com.example.meetomxh.ui.MentionText.bindPost(h.caption,captionText,p.getMentions(),p.getTags());h.caption.setVisibility(android.text.TextUtils.isEmpty(h.caption.getText())?View.GONE:View.VISIBLE);
             h.caption.setOnClickListener(v->{if(p.getMusicMetadata()!=null)com.example.meetomxh.music.MusicAttribution.showLinks(v.getContext(),p.getMusicMetadata());});
             bindCaption(h,p);
             h.captionExpand.setOnClickListener(v->showCaption(p));
