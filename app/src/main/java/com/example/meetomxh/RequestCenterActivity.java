@@ -12,6 +12,7 @@ import org.json.*;
 
 /** Recipient-owned follow requests, message requests, and Messenger group invitations. */
 public final class RequestCenterActivity extends AppCompatActivity {
+    private com.example.meetomxh.ui.ActivityRequests requests;
     private String mode, afterTime, afterId;
     private boolean loading;
 
@@ -32,6 +33,7 @@ public final class RequestCenterActivity extends AppCompatActivity {
     @Override
     public void onCreate(Bundle saved) {
         super.onCreate(saved);
+        requests=new com.example.meetomxh.ui.ActivityRequests(this);
         mode = getIntent().getStringExtra("mode");
         if (mode == null) mode = "follow";
 
@@ -101,7 +103,7 @@ public final class RequestCenterActivity extends AppCompatActivity {
         }
         btnNext.setEnabled(false);
 
-        Api.run(() -> (JSONArray) RpcClient.call(rpc(),
+        requests.run(() -> (JSONArray) RpcClient.call(rpc(),
                         Api.obj("p_after_time", afterTime, "p_after_id", afterId, "p_limit", 30)),
                 new Api.Callback<JSONArray>() {
                     public void success(JSONArray page) {
@@ -195,7 +197,7 @@ public final class RequestCenterActivity extends AppCompatActivity {
                                             .setTitle("Chặn người dùng?")
                                             .setNegativeButton("Hủy", null)
                                             .setPositiveButton("Chặn", (x, y) ->
-                                                    Api.run(() -> RpcClient.call("set_block",
+                                                    requests.run(() -> RpcClient.call("set_block",
                                                                     Api.obj("p_target", id, "p_blocked", true)),
                                                             new Api.Callback<Object>() {
                                                                 public void success(Object o) {
@@ -224,7 +226,7 @@ public final class RequestCenterActivity extends AppCompatActivity {
         String key = "message".equals(mode) ? "p_sender" :
                 "group".equals(mode) ? "p_conversation_id" : "p_requester";
 
-        Api.run(() -> RpcClient.object(name,
+        requests.run(() -> RpcClient.object(name,
                         Api.obj(key, row.optString("group".equals(mode) ? "conversation_id" : "profile_id"),
                                 "p_accept", accept)),
                 new Api.Callback<JSONObject>() {

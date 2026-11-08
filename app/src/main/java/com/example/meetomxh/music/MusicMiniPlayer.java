@@ -62,36 +62,45 @@ public final class MusicMiniPlayer extends FrameLayout {
     public void pause() { if (player != null) player.pause(); update(); }
     public void toggle() {
         if(player==null)return;
-        if(player.isPlaying())player.pause();
+        // Buffering and audio-focus suppression can make isPlaying() false even
+        // though playback is requested. A second tap must cancel that request.
+        if(player.getPlayWhenReady()&&player.getPlaybackState()!=Player.STATE_ENDED)player.pause();
         else{if(player.getPlaybackState()==Player.STATE_ENDED)player.seekTo(0);player.play();}
         update();
     }
     public void show(OpenverseTrack track, Mode mode, Player prepared, long lengthMs,
                      long positionMs, boolean autoplay, Runnable confirm) {
         close(); player = prepared; durationMs = Math.max(1, lengthMs);
-        listener=new Player.Listener(){
-            @Override public void onEvents(Player observed,Player.Events events){if(player==prepared)update();}
-            @Override public void onPlaybackStateChanged(int state){
-                if(player==prepared)android.util.Log.i("MeetoMusic","stage=mini_player_state state="+state+" playWhenReady="+prepared.getPlayWhenReady());
-            }
-            @Override public void onPlaybackSuppressionReasonChanged(int reason){
-                if(player==prepared)android.util.Log.i("MeetoMusic","stage=mini_player_suppression reason="+reason);
-            }
-            @Override public void onPlayerError(androidx.media3.common.PlaybackException failure){
-                if(player!=prepared)return;
-                MusicDiagnostics.failure("mini_player_async",failure);
-                int code=failure.errorCode;
-                close();error.accept("Không phát được bản phối (mã Media3 "+code+"). Hãy thử lại; bản chỉnh sửa vẫn được giữ.");
-            }
-        };
-        title.setText(track.title + (mode == Mode.TRACK && !track.creator.isEmpty() ? " · " + track.creator : ""));
-        action.setText(mode == Mode.TRACK ? "Chọn nhạc" : "Xác nhận");
-        action.setOnClickListener(v -> confirm.run());
-        seek.setMax((int)Math.min(Integer.MAX_VALUE, durationMs));
-        player.addListener(listener); player.seekTo(Math.min(Math.max(0, positionMs), durationMs - 1));
-        setVisibility(VISIBLE); update(); main.post(tick);
-        post(() -> requestRectangleOnScreen(new android.graphics.Rect(0, 0, getWidth(), getHeight()), false));
-        if (autoplay) player.play();
+        // Ownership transfers here, including failures while attaching/seeking.
+        try {
+            listener=new Player.Listener(){
+                @Override public void onEvents(Player observed,Player.Events events){if(player==prepared)update();}
+                @Override public void onPlaybackStateChanged(int state){
+                    if(player==prepared)android.util.Log.i("MeetoMusic","stage=mini_player_state state="+state+" playWhenReady="+prepared.getPlayWhenReady());
+                }
+                @Override public void onPlaybackSuppressionReasonChanged(int reason){
+                    if(player==prepared)android.util.Log.i("MeetoMusic","stage=mini_player_suppression reason="+reason);
+                }
+                @Override public void onPlayerError(androidx.media3.common.PlaybackException failure){
+                    if(player!=prepared)return;
+                    MusicDiagnostics.failure("mini_player_async",failure);
+                    int code=failure.errorCode;
+                    close();error.accept("Không nghe thử được nhạc (mã Media3 "+code+"). Hãy thử lại; bản chỉnh sửa vẫn được giữ.");
+                }
+            };
+            title.setText(track.title + (mode == Mode.TRACK && !track.creator.isEmpty() ? " · " + track.creator : ""));
+            action.setText(mode == Mode.TRACK ? "Chọn nhạc" : "Xác nhận");
+            action.setOnClickListener(v -> confirm.run());
+            seek.setMax((int)Math.min(Integer.MAX_VALUE, durationMs));
+            player.addListener(listener);
+            // A supplied player may already have failed before its listener was attached.
+            if(prepared.getPlayerError()!=null){listener.onPlayerError(prepared.getPlayerError());return;}
+            player.seekTo(Math.min(Math.max(0, positionMs), durationMs - 1));
+            setVisibility(VISIBLE); main.post(tick);
+            post(() -> {if(player==prepared&&isAttachedToWindow())requestRectangleOnScreen(new android.graphics.Rect(0, 0, getWidth(), getHeight()), false);});
+            if (autoplay) player.play();
+            update();
+            } catch(RuntimeException failure) { close(); throw failure; }
     }
 
     public void close() {
@@ -99,8 +108,9 @@ public final class MusicMiniPlayer extends FrameLayout {
         Player previous = player; player = null;
         Player.Listener previousListener=listener;listener=null;
         if (previous != null) {
-            if(previousListener!=null)previous.removeListener(previousListener);
-            try{previous.release();}catch(RuntimeException releaseError){MusicDiagnostics.failure("mini_player_release",releaseError);}
+            try{if(previousListener!=null)previous.removeListener(previousListener);}
+            catch(RuntimeException listenerError){MusicDiagnostics.failure("mini_player_remove_listener",listenerError);}
+            finally{try{previous.release();}catch(RuntimeException releaseError){MusicDiagnostics.failure("mini_player_release",releaseError);}}
         }
         setVisibility(GONE);
         if (previous != null) closed.run();
@@ -115,7 +125,7 @@ public final class MusicMiniPlayer extends FrameLayout {
             long position = Math.min(durationMs, positionMs()); seek.setProgress((int)position);
             time.setText(format(position) + " / " + format(durationMs));
         }
-        play.setText(player.isPlaying() ? "Tạm dừng" : "Phát");
+        play.setText(player.getPlayWhenReady()&&player.getPlaybackState()!=Player.STATE_ENDED ? "Tạm dừng" : "Phát");
     }
     private static String format(long ms) { return String.format(Locale.ROOT, "%d:%02d", ms / 60_000, ms / 1000 % 60); }
     @Override protected void onDetachedFromWindow() { close(); super.onDetachedFromWindow(); }

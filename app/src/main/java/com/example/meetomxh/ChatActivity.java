@@ -149,6 +149,15 @@ public class ChatActivity extends AppCompatActivity {
         binding = ActivityChatBinding.inflate(getLayoutInflater());
         composerImages=Glide.with(this);
         setContentView(binding.getRoot());
+        final int headerHeight=binding.layoutChatHeader.getLayoutParams().height;
+        final int headerTopPadding=binding.layoutChatHeader.getPaddingTop();
+        final int composerBottomPadding=binding.layoutChatComposer.getPaddingBottom();
+        getWindow().setStatusBarColor(android.graphics.Color.TRANSPARENT);
+        getWindow().setNavigationBarColor(android.graphics.Color.TRANSPARENT);
+        if(android.os.Build.VERSION.SDK_INT>=29){
+            getWindow().setStatusBarContrastEnforced(false);
+            getWindow().setNavigationBarContrastEnforced(false);
+        }
         ViewCompat.setOnApplyWindowInsetsListener(binding.getRoot(), (root, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars()
                     | WindowInsetsCompat.Type.displayCutout());
@@ -157,8 +166,16 @@ public class ChatActivity extends AppCompatActivity {
             boolean wasAtBottom = adapter == null || adapter.getItemCount() == 0
                     || !binding.rvMessages.canScrollVertically(1);
 
-            root.setPadding(systemBars.left, systemBars.top, systemBars.right,
-                    Math.max(systemBars.bottom, ime.bottom));
+            // Extend the header/composer surfaces beneath the system bars while
+            // keeping their controls clear of the status icons and home gesture.
+            root.setPadding(systemBars.left,0,systemBars.right,keyboardVisible?ime.bottom:0);
+            android.view.ViewGroup.LayoutParams header=binding.layoutChatHeader.getLayoutParams();
+            header.height=headerHeight+systemBars.top;
+            binding.layoutChatHeader.setLayoutParams(header);
+            binding.layoutChatHeader.setPadding(binding.layoutChatHeader.getPaddingLeft(),
+                    headerTopPadding+systemBars.top,binding.layoutChatHeader.getPaddingRight(),binding.layoutChatHeader.getPaddingBottom());
+            binding.layoutChatComposer.setPadding(binding.layoutChatComposer.getPaddingLeft(),binding.layoutChatComposer.getPaddingTop(),
+                    binding.layoutChatComposer.getPaddingRight(),composerBottomPadding+(keyboardVisible?0:systemBars.bottom));
             if (keyboardVisible && !imeVisible && wasAtBottom) {
                 root.post(() -> scrollToLatestIfAtBottom());
             }
@@ -1336,6 +1353,9 @@ public class ChatActivity extends AppCompatActivity {
         com.example.meetomxh.ui.ChatThemeRegistry.Palette p=com.example.meetomxh.ui.ChatThemeRegistry.get(id).palette(this);
         binding.getRoot().setBackgroundColor(p.background);binding.layoutChatHeader.setBackgroundColor(p.input);
         binding.layoutChatComposer.setBackgroundColor(p.input);binding.tvChatTitle.setTextColor(p.text);
+        boolean lightSurface=androidx.core.graphics.ColorUtils.calculateLuminance(p.input)>0.5;
+        WindowCompat.getInsetsController(getWindow(),binding.getRoot()).setAppearanceLightStatusBars(lightSurface);
+        WindowCompat.getInsetsController(getWindow(),binding.getRoot()).setAppearanceLightNavigationBars(lightSurface);
         binding.btnChatSearch.setBackground(com.example.meetomxh.ui.ChatThemeRegistry.shape(p.input,24,this));
         android.graphics.drawable.GradientDrawable input=com.example.meetomxh.ui.ChatThemeRegistry.shape(p.input,22,this);
         input.setStroke(Math.round(getResources().getDisplayMetrics().density),p.border);binding.etMessage.setBackground(input);

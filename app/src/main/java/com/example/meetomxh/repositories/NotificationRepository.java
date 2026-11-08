@@ -6,6 +6,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 public final class NotificationRepository {
+    public static final int MAX_PAGE_SIZE=50;
     private NotificationRepository() {}
     public static JSONArray page(boolean unreadOnly,String afterTime,String afterId,int limit) throws Exception {
         JSONArray data=(JSONArray) RpcClient.call("get_notifications",Api.obj("p_unread_only",unreadOnly,

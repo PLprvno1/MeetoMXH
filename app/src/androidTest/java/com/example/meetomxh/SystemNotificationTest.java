@@ -12,6 +12,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.example.meetomxh.models.NotificationItem;
 import com.example.meetomxh.notifications.SystemNotifications;
 import com.example.meetomxh.supabase.SessionManager;
+import com.example.meetomxh.repositories.NotificationRepository;
 import org.json.JSONObject;
 import org.junit.*;
 import org.junit.runner.RunWith;
@@ -50,6 +51,15 @@ public class SystemNotificationTest {
     }
     @Test public void differentRecipientCannotDisplayNotification()throws Exception{
         SystemNotifications.show(context,UUID.randomUUID().toString(),item());assertNull(posted());
+    }
+    @Test public void systemNotificationFetchUsesAValidLiveSupabasePage()throws Exception{
+        assertEquals(50,NotificationRepository.MAX_PAGE_SIZE);
+        java.lang.reflect.Method fetch=SystemNotifications.class.getDeclaredMethod("fetchSnapshot");fetch.setAccessible(true);
+        Object snapshot=fetch.invoke(null);
+        java.lang.reflect.Field rows=snapshot.getClass().getDeclaredField("rows"),settings=snapshot.getClass().getDeclaredField("settings");
+        rows.setAccessible(true);settings.setAccessible(true);
+        assertNotNull(rows.get(snapshot));assertTrue(((org.json.JSONArray)rows.get(snapshot)).length()<=NotificationRepository.MAX_PAGE_SIZE);
+        assertTrue(((JSONObject)settings.get(snapshot)).has("enabled"));
     }
     @After public void cleanup(){
         StatusBarNotification active=posted();if(active!=null)context.getSystemService(NotificationManager.class).cancel(active.getTag(),active.getId());

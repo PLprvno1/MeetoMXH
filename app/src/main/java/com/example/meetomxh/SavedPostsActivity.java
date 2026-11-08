@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SavedPostsActivity extends AppCompatActivity {
+    private com.example.meetomxh.ui.ActivityRequests requests;
     private ActivitySavedPostsBinding binding;
     private FeedAdapter adapter;
     private String afterTime, afterId;
@@ -28,6 +29,7 @@ public class SavedPostsActivity extends AppCompatActivity {
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
+        requests=new com.example.meetomxh.ui.ActivityRequests(this);
         binding = ActivitySavedPostsBinding.inflate(getLayoutInflater()); setContentView(binding.getRoot());
         adapter = new FeedAdapter(new FeedAdapter.OnPostClickListener() {
             public void onLikeClick(Post p, Runnable done) { done.run(); }
@@ -71,7 +73,7 @@ public class SavedPostsActivity extends AppCompatActivity {
         loading=true; binding.btnRetry.setVisibility(View.GONE); binding.btnLoadMore.setVisibility(View.GONE);
         binding.tvStatus.setText(append ? "Đang tải thêm…" : "Đang tải bài đã lưu…");
         final String t=append?afterTime:null, id=append?afterId:null;
-        Api.run(() -> {
+        requests.run(() -> {
             JSONArray rows=(JSONArray)RpcClient.call("get_saved_posts",Api.obj("p_after_time",t,"p_after_id",id,"p_limit",20));
             List<Post> page=new ArrayList<>(); String nextTime=null,nextId=null;
             for(int i=0;i<rows.length();i++) { JSONObject row=rows.getJSONObject(i); JSONObject p=row.optJSONObject("post"); if(p!=null)page.add(Dto.post(p)); if(i==rows.length()-1){nextTime=row.optString("saved_at");nextId=p==null?null:p.optString("id");} }

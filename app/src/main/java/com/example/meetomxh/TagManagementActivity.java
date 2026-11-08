@@ -13,6 +13,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 public final class TagManagementActivity extends AppCompatActivity {
+    private com.example.meetomxh.ui.ActivityRequests requests;
     private String policy = "everyone";
     private boolean review = true;
 
@@ -29,6 +30,7 @@ public final class TagManagementActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
+        requests=new com.example.meetomxh.ui.ActivityRequests(this);
         setContentView(R.layout.activity_tag_management);
 
         findViewById(R.id.btnBack).setOnClickListener(v -> finish());
@@ -51,7 +53,7 @@ public final class TagManagementActivity extends AppCompatActivity {
     }
 
     private void loadSettings() {
-        Api.run(() -> RpcClient.object("get_tagging_settings", Api.obj()), new Api.Callback<JSONObject>() {
+        requests.run(() -> RpcClient.object("get_tagging_settings", Api.obj()), new Api.Callback<JSONObject>() {
             public void success(JSONObject o) {
                 policy = o.optString("tagging_policy", "everyone");
                 review = o.optBoolean("tag_review_required", true);
@@ -86,7 +88,7 @@ public final class TagManagementActivity extends AppCompatActivity {
     }
 
     private void saveSettings(String next, boolean required) {
-        Api.run(() -> RpcClient.object("update_tagging_settings",
+        requests.run(() -> RpcClient.object("update_tagging_settings",
                         Api.obj("p_policy", next, "p_review_required", required)),
                 new Api.Callback<JSONObject>() {
                     public void success(JSONObject o) {
@@ -108,7 +110,7 @@ public final class TagManagementActivity extends AppCompatActivity {
         layoutEmpty.setVisibility(View.GONE);
         cardError.setVisibility(View.GONE);
 
-        Api.run(() -> (JSONArray) RpcClient.call("list_my_post_tags", Api.obj("p_state", null, "p_limit", 30)),
+        requests.run(() -> (JSONArray) RpcClient.call("list_my_post_tags", Api.obj("p_state", null, "p_limit", 30)),
                 new Api.Callback<JSONArray>() {
                     public void success(JSONArray rows) {
                         if (isFinishing()) return;
@@ -177,7 +179,7 @@ public final class TagManagementActivity extends AppCompatActivity {
     }
 
     private void resolve(String post, String action) {
-        Api.run(() -> RpcClient.object("review_post_tag", Api.obj("p_post_id", post, "p_action", action)),
+        requests.run(() -> RpcClient.object("review_post_tag", Api.obj("p_post_id", post, "p_action", action)),
                 new Api.Callback<JSONObject>() {
                     public void success(JSONObject o) {
                         load();

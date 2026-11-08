@@ -16,6 +16,7 @@ import java.util.*;
 
 /** Active members only; all role/removal mutations go through the authorized group RPC. */
 public final class GroupMembersActivity extends AppCompatActivity {
+    private com.example.meetomxh.ui.ActivityRequests requests;
     public static final String EXTRA_CHAT_ID = "chat_id";
 
     private String chatId, self;
@@ -36,6 +37,7 @@ public final class GroupMembersActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle saved) {
         super.onCreate(saved);
+        requests=new com.example.meetomxh.ui.ActivityRequests(this);
         chatId = getIntent().getStringExtra(EXTRA_CHAT_ID);
         self = SessionManager.getInstance().uid();
         if (chatId == null) {
@@ -80,7 +82,7 @@ public final class GroupMembersActivity extends AppCompatActivity {
             scrollMembers.setVisibility(View.GONE);
         }
 
-        Api.run(() -> {
+        requests.run(() -> {
             Chat c = ChatRepository.getInstance().load(chatId);
             JSONArray members = (JSONArray) RpcClient.call("get_conversation_members", Api.obj("p_conversation_id", chatId));
             return new Object[]{c, members};
@@ -213,7 +215,7 @@ public final class GroupMembersActivity extends AppCompatActivity {
                             .setMessage("Xác nhận thay đổi quyền thành viên?")
                             .setNegativeButton("Hủy", null)
                             .setPositiveButton("Xác nhận", (x, w) ->
-                                    Api.run(() -> RpcClient.call("manage_conversation_member",
+                                    requests.run(() -> RpcClient.call("manage_conversation_member",
                                                     Api.obj("p_conversation_id", chatId,
                                                             "p_target", member.optString("user_id"),
                                                             "p_action", action)),

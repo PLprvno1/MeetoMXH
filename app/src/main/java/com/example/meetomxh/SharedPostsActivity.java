@@ -17,6 +17,7 @@ import java.util.Set;
 
 /** Lists only posts/reels actually shared in this readable conversation. */
 public final class SharedPostsActivity extends AppCompatActivity {
+    private com.example.meetomxh.ui.ActivityRequests requests;
     public static final String EXTRA_CHAT_ID = "chat_id";
 
     private String chatId;
@@ -37,6 +38,7 @@ public final class SharedPostsActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle saved) {
         super.onCreate(saved);
+        requests=new com.example.meetomxh.ui.ActivityRequests(this);
         chatId = getIntent().getStringExtra(EXTRA_CHAT_ID);
         if (chatId == null) {
             finish();
@@ -78,7 +80,7 @@ public final class SharedPostsActivity extends AppCompatActivity {
         }
 
         long cursor = beforeSeq;
-        Api.run(() -> {
+        requests.run(() -> {
             JSONObject page = RpcClient.object("get_messages",
                     Api.obj("p_conversation_id", chatId,
                             "p_before_seq", cursor == 0 ? null : cursor,

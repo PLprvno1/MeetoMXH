@@ -21,9 +21,11 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 public class SettingsActivity extends AppCompatActivity {
+    private com.example.meetomxh.ui.ActivityRequests requests;
     private ActivitySettingsBinding binding;
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
+        requests=new com.example.meetomxh.ui.ActivityRequests(this);
         binding = ActivitySettingsBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
         View connections=findViewById(R.id.connectionSettingsCard);
@@ -46,7 +48,7 @@ public class SettingsActivity extends AppCompatActivity {
         binding.rowBlocked.setOnClickListener(v -> blockedUsers());
         binding.rowNotificationsSetting.setOnClickListener(v -> notificationSettings());
         binding.rowPlatformModeration.setVisibility(View.GONE);
-        Api.run(() -> RpcClient.call("admin_get_capabilities", Api.obj()), new Api.Callback<Object>() {
+        requests.run(() -> RpcClient.call("admin_get_capabilities", Api.obj()), new Api.Callback<Object>() {
             @Override public void success(Object value) { if(!isFinishing() && !isDestroyed() && value instanceof JSONObject && ((JSONObject)value).optInt("contract_version")==2) binding.rowPlatformModeration.setVisibility(((JSONObject)value).optBoolean("can_review_reports")?View.VISIBLE:View.GONE); }
             @Override public void error(String error) { if(!isFinishing() && !isDestroyed()) binding.rowPlatformModeration.setVisibility(View.GONE); }
         });
@@ -89,7 +91,7 @@ public class SettingsActivity extends AppCompatActivity {
     private void accountInfo() {
         SessionUser user = SessionManager.getInstance().getCurrentUser();
         if (user == null) return;
-        Api.run(() -> RpcClient.object("get_profile", Api.obj("p_target", user.getUid())), new Api.Callback<JSONObject>() {
+        requests.run(() -> RpcClient.object("get_profile", Api.obj("p_target", user.getUid())), new Api.Callback<JSONObject>() {
             @Override public void success(JSONObject profile) {
                 new AlertDialog.Builder(SettingsActivity.this).setTitle("Tài khoản")
                         .setMessage("Email: " + user.getEmail() + "\nXác minh email: "
@@ -103,7 +105,7 @@ public class SettingsActivity extends AppCompatActivity {
     private void privacyCenter() {
         SessionUser user = SessionManager.getInstance().getCurrentUser();
         if (user == null) return;
-        Api.run(() -> RpcClient.object("get_profile", Api.obj("p_target", user.getUid())), new Api.Callback<JSONObject>() {
+        requests.run(() -> RpcClient.object("get_profile", Api.obj("p_target", user.getUid())), new Api.Callback<JSONObject>() {
             @Override public void success(JSONObject profile) {
                 JSONObject settings = profile.optJSONObject("settings");
                 JSONObject values = new JSONObject();
@@ -139,7 +141,7 @@ public class SettingsActivity extends AppCompatActivity {
                     .setNegativeButton("Hủy",null).show();});}
         ScrollView scroll=new ScrollView(this);scroll.addView(list);
         AlertDialog dialog=new com.google.android.material.dialog.MaterialAlertDialogBuilder(this).setTitle("Quyền riêng tư").setMessage("Tài khoản riêng tư chỉ cho người theo dõi đã được duyệt xem nội dung. Yêu cầu đang chờ không tự được chấp nhận khi chuyển công khai.").setView(scroll).setNegativeButton("Hủy",null).setPositiveButton("Lưu",null).create();
-        dialog.setOnShowListener(d->dialog.getButton(-1).setOnClickListener(x->{dialog.getButton(-1).setEnabled(false);Api.run(()->RpcClient.object("update_privacy_settings",Api.obj("p_profile_audience",v.optString("profile"),"p_last_seen_audience",v.optString("last_seen"),"p_location_audience",v.optString("location"))),new Api.Callback<JSONObject>(){
+        dialog.setOnShowListener(d->dialog.getButton(-1).setOnClickListener(x->{dialog.getButton(-1).setEnabled(false);requests.run(()->RpcClient.object("update_privacy_settings",Api.obj("p_profile_audience",v.optString("profile"),"p_last_seen_audience",v.optString("last_seen"),"p_location_audience",v.optString("location"))),new Api.Callback<JSONObject>(){
             public void success(JSONObject r){dialog.dismiss();toast("Đã lưu quyền riêng tư.");com.example.meetomxh.repositories.FeedRepository.getInstance().refresh();}
             public void error(String e){dialog.getButton(-1).setEnabled(true);toast(e);}
         });}));dialog.show();
@@ -158,7 +160,7 @@ public class SettingsActivity extends AppCompatActivity {
 
 
     private void blockedUsers() {
-        Api.run(()->(JSONArray)RpcClient.call("list_blocked_users",Api.obj()),new Api.Callback<JSONArray>(){
+        requests.run(()->(JSONArray)RpcClient.call("list_blocked_users",Api.obj()),new Api.Callback<JSONArray>(){
             public void success(JSONArray users){
                 if(isFinishing()||isDestroyed())return;
                 if(users.length()==0){toast("Danh sách chặn đang trống.");return;}
@@ -186,7 +188,7 @@ public class SettingsActivity extends AppCompatActivity {
                         .setTitle("Bỏ chặn tài khoản?").setMessage("Quan hệ theo dõi đã gỡ sẽ không tự khôi phục.")
                         .setNegativeButton("Hủy",null).setPositiveButton("Bỏ chặn",(d,w)->{
                             row.btnUnblock.setEnabled(false);
-                            Api.run(()->RpcClient.call("set_block",Api.obj("p_target",p.optString("user_id"),"p_blocked",false)),new Api.Callback<Object>(){
+                            requests.run(()->RpcClient.call("set_block",Api.obj("p_target",p.optString("user_id"),"p_blocked",false)),new Api.Callback<Object>(){
                                 public void success(Object r){list.removeView(row.getRoot());if(list.getChildCount()==0)dialog.dismiss();}
                                 public void error(String e){row.btnUnblock.setEnabled(true);toast(e);}
                             });
@@ -201,7 +203,7 @@ public class SettingsActivity extends AppCompatActivity {
     private void requestDeletion() {
         new AlertDialog.Builder(this).setTitle("Yêu cầu xóa tài khoản")
                 .setMessage("Yêu cầu sẽ được ghi nhận để xử lý. Tài khoản chưa bị vô hiệu hóa hoặc xóa ngay.")
-                .setNegativeButton("Hủy", null).setPositiveButton("Gửi yêu cầu", (d, w) -> Api.run(
+                .setNegativeButton("Hủy", null).setPositiveButton("Gửi yêu cầu", (d, w) -> requests.run(
                         () -> RpcClient.object("request_account_deletion", Api.obj()), new Api.Callback<JSONObject>() {
                             @Override public void success(JSONObject r) { toast("Đã gửi yêu cầu xử lý tài khoản."); }
                             @Override public void error(String error) { toast(error); }
@@ -209,7 +211,7 @@ public class SettingsActivity extends AppCompatActivity {
     }
 
     private void notificationSettings() {
-        Api.run(() -> com.example.meetomxh.repositories.NotificationRepository.settings(), new Api.Callback<JSONObject>() {
+        requests.run(() -> com.example.meetomxh.repositories.NotificationRepository.settings(), new Api.Callback<JSONObject>() {
             @Override public void success(JSONObject settings) {
                 JSONObject prefs = settings.optJSONObject("preferences"); if (prefs == null) prefs = new JSONObject();
                 final JSONObject current = prefs;
@@ -225,7 +227,7 @@ public class SettingsActivity extends AppCompatActivity {
                 for(int i=0;i<keys.length;i++){boxes[i]=new CheckBox(SettingsActivity.this);boxes[i].setText(labels[i]);boxes[i].setChecked(current.optBoolean(keys[i],true));options.addView(boxes[i]);}
                 ScrollView scroll=new ScrollView(SettingsActivity.this);scroll.addView(options);
                 new AlertDialog.Builder(SettingsActivity.this).setTitle("Thông báo").setView(scroll).setNegativeButton("Hủy",null)
-                        .setPositiveButton("Lưu",(d,w)->Api.run(()->{JSONObject updated=new JSONObject();for(int i=0;i<keys.length;i++)updated.put(keys[i],boxes[i].isChecked());return com.example.meetomxh.repositories.NotificationRepository.updateSettings(enabled.isChecked(),updated);},new Api.Callback<JSONObject>(){
+                        .setPositiveButton("Lưu",(d,w)->requests.run(()->{JSONObject updated=new JSONObject();for(int i=0;i<keys.length;i++)updated.put(keys[i],boxes[i].isChecked());return com.example.meetomxh.repositories.NotificationRepository.updateSettings(enabled.isChecked(),updated);},new Api.Callback<JSONObject>(){
                             @Override public void success(JSONObject r){toast("Đã lưu cài đặt thông báo.");}
                             @Override public void error(String e){toast(e);}
                         })).show();

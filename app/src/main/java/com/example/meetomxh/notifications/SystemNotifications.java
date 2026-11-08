@@ -30,6 +30,7 @@ public final class SystemNotifications {
     private static final NotificationArrival arrivals=new NotificationArrival();
     private static long generation;
     private static Context context;
+    private static boolean fetchFailureLogged;
     private static final class Snapshot {
         final JSONArray rows;final JSONObject settings;
         Snapshot(JSONArray rows,JSONObject settings){this.rows=rows;this.settings=settings;}
@@ -46,9 +47,10 @@ public final class SystemNotifications {
     private static void start(){
         String uid=SessionManager.getInstance().uid();if(observer!=null||uid.isEmpty())return;
         long token=++generation;
-        observer=new Observer<>(()->new Snapshot(NotificationRepository.page(true,null,null,100),NotificationRepository.settings()),new Api.Callback<Snapshot>(){
+        observer=new Observer<>(SystemNotifications::fetchSnapshot,new Api.Callback<Snapshot>(){
             public void success(Snapshot snapshot){
                 if(token!=generation||!uid.equals(SessionManager.getInstance().uid()))return;
+                fetchFailureLogged=false;
                 JSONArray rows=snapshot.rows;java.util.Set<String> active=activeIds();
                 boolean baseline=arrivals.isInitialized();
                 for(int i=0;i<rows.length();i++){
@@ -60,8 +62,13 @@ public final class SystemNotifications {
                 arrivals.initialized();
                 reconcileReadNotifications(snapshot);
             }
-            public void error(String ignored){/* Keep the baseline and reconnect/poll normally. */}
-        });
+            public void error(String ignored){
+                if(!fetchFailureLogged){android.util.Log.w("MeetoNotifications","stage=fetch_failed; retry_pending");fetchFailureLogged=true;}
+            }
+        },5000);
+    }
+    private static Snapshot fetchSnapshot()throws Exception{
+        return new Snapshot(NotificationRepository.page(true,null,null,NotificationRepository.MAX_PAGE_SIZE),NotificationRepository.settings());
     }
     private static void stop(){generation++;if(observer!=null){observer.remove();observer=null;}arrivals.clear();}
     public static void refresh(Context c){if(context==null)return;start();if(observer!=null)observer.refresh();}
@@ -128,7 +135,7 @@ public final class SystemNotifications {
             String tag=active.getTag();if(tag!=null&&tag.startsWith("meeto:")){
                 String id=tag.substring(tag.lastIndexOf(':')+1);
                 if(!snapshot.settings.optBoolean("enabled",true)||Boolean.FALSE.equals(unread.get(id))
-                    ||(!unread.containsKey(id)&&rows.length()<100))manager.cancel(tag,active.getId());
+                    ||(!unread.containsKey(id)&&rows.length()<NotificationRepository.MAX_PAGE_SIZE))manager.cancel(tag,active.getId());
             }
         }
     }

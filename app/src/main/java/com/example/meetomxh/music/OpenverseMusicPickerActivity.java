@@ -160,12 +160,13 @@ public final class OpenverseMusicPickerActivity extends AppCompatActivity {
                 try{
                     if(!active()||version!=audioVersion)return;
                     downloading=null;updateProgress();
-                    if(!contains(track)){status.setText("Bài nhạc không còn trong thư viện hiện tại. Hãy tải lại danh sách.");return;}
+                    if(!contains(track)){render();status.setText("Bài nhạc không còn trong thư viện hiện tại. Hãy tải lại danh sách.");return;}
                     retained.catalog.cached.add(key(track));
                     MusicLibraryCache.protect(OpenverseMusicPickerActivity.this,audio.track);
                     if(choose){
                         setResult(RESULT_OK,new Intent().putExtra(EXTRA_TRACK_JSON,audio.track.draftJson().toString()));finish();
-                    }else openPreview(audio.track,0,true);
+                    // audio() already verified and leased this immutable file on its worker.
+                    }else openVerifiedPreview(audio.track,0,true);
                     render();
                 }catch(Exception invalid){status.setText("Không đọc được bản nhạc đã tải. Hãy chọn lại.");}
                 finally{audio.close();}
@@ -179,16 +180,27 @@ public final class OpenverseMusicPickerActivity extends AppCompatActivity {
     private void openPreview(OpenverseTrack track,long position,boolean autoplay){
         mini.close();
         if(!OpenverseMusicCache.isManaged(this,track)){status.setText("Cache nhạc không hợp lệ. Hãy chọn lại để tải bài nhạc.");return;}
-        ExoPlayer player=new ExoPlayer.Builder(this).build();
+        openVerifiedPreview(track,position,autoplay);
+    }
+    private void openVerifiedPreview(OpenverseTrack track,long position,boolean autoplay){
+        mini.close();
+        ExoPlayer player=null;boolean handedToMini=false;
         try{
+            player=new ExoPlayer.Builder(this).build();
             player.setAudioAttributes(new androidx.media3.common.AudioAttributes.Builder().setUsage(androidx.media3.common.C.USAGE_MEDIA)
                     .setContentType(androidx.media3.common.C.AUDIO_CONTENT_TYPE_MUSIC).build(),true);
             player.setHandleAudioBecomingNoisy(true);
             player.setMediaItem(MediaItem.fromUri(Uri.fromFile(new File(track.localPath))));player.prepare();
             retained.preview=track;retained.previewOpen=true;retained.position=position;
+            handedToMini=true;
             mini.show(track,MusicMiniPlayer.Mode.TRACK,player,track.durationMs,position,autoplay,()->select(track.library,true));
-            retained.previewOpen=true;status.setText("Nghe thử · "+track.title);
-        }catch(RuntimeException invalid){player.release();retained.previewOpen=false;status.setText("Không phát được bài nhạc này.");}
+            retained.previewOpen=mini.isOpen();if(retained.previewOpen)status.setText("Nghe thử · "+track.title);
+        }catch(RuntimeException invalid){
+            MusicDiagnostics.failure("picker_preview",invalid);
+            if(handedToMini)mini.close();
+            else if(player!=null)try{player.release();}catch(RuntimeException releaseError){MusicDiagnostics.failure("picker_preview_release",releaseError);}
+            retained.previewOpen=false;status.setText("Không phát được bài nhạc này. Hãy nghe thử lại hoặc chọn bài khác.");
+        }
     }
     private void restorePreview(){if(retained.previewOpen&&retained.preview!=null&&!mini.isOpen()&&contains(retained.preview.library))openPreview(retained.preview,retained.position,false);}
     private void updateProgress(){progress.setVisibility(catalogLoading||downloading!=null?View.VISIBLE:View.INVISIBLE);}

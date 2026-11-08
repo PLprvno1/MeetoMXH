@@ -12,6 +12,7 @@ import com.example.meetomxh.supabase.RequestIds;
 import com.example.meetomxh.supabase.RpcClient;
 
 public class ReportContentActivity extends AppCompatActivity {
+    private com.example.meetomxh.ui.ActivityRequests requests;
     public static final String EXTRA_TARGET_TYPE = "extra_target_type";
     public static final String EXTRA_TARGET_ID = "extra_target_id";
     public static final String EXTRA_GROUP_ID = "extra_group_id";
@@ -19,6 +20,7 @@ public class ReportContentActivity extends AppCompatActivity {
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
+        requests=new com.example.meetomxh.ui.ActivityRequests(this);
         binding = ActivityReportContentBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
         ViewCompat.setOnApplyWindowInsetsListener(binding.appBarLayout, (v, insets) -> {
@@ -41,7 +43,7 @@ public class ReportContentActivity extends AppCompatActivity {
         String operation=group==null?"content_report":"group_report";
         String fingerprint=(group==null?"":group+"|")+type+"|"+target+"|"+submittedReason+"|"+details;
         binding.btnSubmitReport.setEnabled(false);
-        Api.run(()->{
+        requests.run(()->{
             String request=RequestIds.get(operation,fingerprint);
             Object result;
             if(group!=null) result=RpcClient.call("report_group_target",Api.obj("p_group_id",group,"p_target_type",type,

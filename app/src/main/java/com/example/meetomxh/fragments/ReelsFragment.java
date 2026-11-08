@@ -42,6 +42,7 @@ import java.util.*;
 
 /** Full-height vertical Reels pager. Exactly one authorized ExoPlayer is kept per visible page. */
 public final class ReelsFragment extends Fragment {
+    private static final Object ENGAGEMENT_PAYLOAD = new Object();
     private static int savedPosition;
     private static long savedPlaybackPosition;
     private static boolean muted=true;
@@ -51,6 +52,12 @@ public final class ReelsFragment extends Fragment {
     private ExoPlayer player; private boolean pageVisible; private int activePosition=-1;
     private ReelPlaybackMonitor playbackMonitor;
     private Player.Listener playerListener;
+    private DefaultHttpDataSource.Factory playbackHttp;
+    private static final class PreparedReel {
+        final JSONObject info;
+        final String accessToken;
+        PreparedReel(JSONObject info, String accessToken) { this.info=info; this.accessToken=accessToken; }
+    }
     private int mediaGeneration;
     private boolean feedLoading,hasMore=true,userPaused,autoScroll;
     private String endedReelId;
@@ -77,7 +84,9 @@ public final class ReelsFragment extends Fragment {
         root=inflater.inflate(R.layout.fragment_reels,parent,false);list=root.findViewById(R.id.reels_list);title=root.findViewById(R.id.reels_title);
         message=root.findViewById(R.id.reels_message);loading=root.findViewById(R.id.reels_loading);retry=root.findViewById(R.id.reels_retry);
         modeButton=root.findViewById(R.id.reels_mode);muteButton=root.findViewById(R.id.reels_mute);
-        layout=new LinearLayoutManager(requireContext(),RecyclerView.VERTICAL,false);list.setLayoutManager(layout);list.setItemViewCacheSize(1);
+        layout=new LinearLayoutManager(requireContext(),RecyclerView.VERTICAL,false);list.setLayoutManager(layout);list.setItemViewCacheSize(2);
+        // Full-screen video pages must not cross-fade or temporarily duplicate their surfaces.
+        list.setItemAnimator(null);
         adapter=new Adapter();list.setAdapter(adapter);snap=new PagerSnapHelper();snap.attachToRecyclerView(list);
         title.setOnClickListener(v->load(true));modeButton.setOnClickListener(v->{mode="discover".equals(mode)?"following":"discover";updateHeader();savedPosition=0;load(true);});
         root.findViewById(R.id.reels_create).setOnClickListener(v->startActivity(new Intent(requireContext(),ReelsCameraActivity.class)));
@@ -96,13 +105,13 @@ public final class ReelsFragment extends Fragment {
         if(adapter.getItemCount()==0&&targetReelId==null)load(false);else if(adapter.getItemCount()>0){list.scrollToPosition(Math.min(savedPosition,adapter.getItemCount()-1));showContent();}
         return root;
     }
-    @Override public void onViewCreated(@NonNull View v,@Nullable Bundle state){super.onViewCreated(v,state);PostUpdates.counts.observe(getViewLifecycleOwner(),c->{if(c==null||adapter==null)return;for(int i=0;i<adapter.rows.size();i++){Post p=adapter.rows.get(i);if(c.id.equals(p.getPostId())){p.setCommentsCount(c.comments);com.example.meetomxh.supabase.PostViewerUpdates.publish(p,false);adapter.notifyItemChanged(i);break;}}});
+    @Override public void onViewCreated(@NonNull View v,@Nullable Bundle state){super.onViewCreated(v,state);PostUpdates.counts.observe(getViewLifecycleOwner(),c->{if(c==null||adapter==null)return;for(int i=0;i<adapter.rows.size();i++){Post p=adapter.rows.get(i);if(c.id.equals(p.getPostId())){p.setCommentsCount(c.comments);com.example.meetomxh.supabase.PostViewerUpdates.publishEngagement(p);break;}}});
         com.example.meetomxh.supabase.PostViewerUpdates.changes.observe(getViewLifecycleOwner(),value->{if(adapter==null)return;
             for(com.example.meetomxh.supabase.PostViewerUpdates.Event event:com.example.meetomxh.supabase.PostViewerUpdates.events()){
                 if(event.revision<=viewerRevisions.getOrDefault(event.id,0L))continue;
                 viewerRevisions.put(event.id,event.revision);
                 if(event.deleted){removeReel(event.id,false);continue;}
-                for(int i=0;i<adapter.rows.size();i++){Post p=adapter.rows.get(i);if(event.id.equals(p.getPostId())){event.apply(p);adapter.notifyItemChanged(i);break;}}
+                for(int i=0;i<adapter.rows.size();i++){Post p=adapter.rows.get(i);if(event.id.equals(p.getPostId())){event.apply(p);if(event.engagementOnly)adapter.notifyItemChanged(i,ENGAGEMENT_PAYLOAD);else adapter.notifyItemChanged(i);break;}}
             }
         });
         PostUpdates.content.observe(getViewLifecycleOwner(),c->{if(c==null||adapter==null)return;
@@ -347,14 +356,17 @@ public final class ReelsFragment extends Fragment {
     private void reconcileReel(Post post,JSONObject reel){
         if(mutationPending.contains(post.getPostId()))return;
         if(reel.optLong("version",post.version)<post.version)return;
+        boolean contentChanged=post.version!=reel.optLong("version",post.version)
+                ||!Objects.equals(post.getContent(),reel.optString("body",post.getContent()))
+                ||!Objects.equals(post.getVisibility(),reel.optString("audience"));
         post.setVisibility(reel.optString("audience"));post.version=reel.optLong("version",post.version);
         post.setContent(reel.optString("body",post.getContent()));
         post.setReelFollowing(reel.optBoolean("is_following",post.isReelFollowing()));
         post.setReaction(Dto.nullable(reel,"my_reaction"));post.setSaved(reel.optBoolean("is_saved"));
         post.setLikesCount(reel.optInt("reactions_count"));post.setCommentsCount(reel.optInt("comments_count"));
         post.setSharesCount(reel.optInt("shares_count"));post.setReelViewsCount(reel.optInt("views_count",post.getReelViewsCount()));
-        com.example.meetomxh.supabase.PostViewerUpdates.publish(post,false);
-        if(adapter!=null){int index=adapter.rows.indexOf(post);if(index>=0)adapter.notifyItemChanged(index);}
+        if(contentChanged)com.example.meetomxh.supabase.PostViewerUpdates.publish(post,false);
+        else com.example.meetomxh.supabase.PostViewerUpdates.publishEngagement(post);
     }
 
     private void showSearch(){
@@ -408,7 +420,7 @@ public final class ReelsFragment extends Fragment {
         savedPosition=pos;activePosition=pos;endedReelId=null;userPaused=false;
         handler.removeCallbacks(progressTicker);recordView(post);if(player==null)createPlayer();adapter.attachPlayer(pos,player);prepare(post,pos);
     }
-    private void recordView(Post post){if(post==null||!post.isReel()||post.getPostId()==null||!countedViews.add(post.getPostId()))return;Api.run(()->RpcClient.object("record_reel_view",Api.obj("p_post_id",post.getPostId())),new Api.Callback<JSONObject>(){public void success(JSONObject result){post.setReelViewsCount(result.optInt("views_count",post.getReelViewsCount()));if(adapter!=null){int index=adapter.rows.indexOf(post);if(index>=0)adapter.notifyItemChanged(index);}}public void error(String e){countedViews.remove(post.getPostId());}});}
+    private void recordView(Post post){if(post==null||!post.isReel()||post.getPostId()==null||!countedViews.add(post.getPostId()))return;Api.run(()->RpcClient.object("record_reel_view",Api.obj("p_post_id",post.getPostId())),new Api.Callback<JSONObject>(){public void success(JSONObject result){post.setReelViewsCount(result.optInt("views_count",post.getReelViewsCount()));}public void error(String e){countedViews.remove(post.getPostId());}});}
     private void prepare(Post post,int position){
         if(player==null)createPlayer();
         if(mediaRequest!=null)mediaRequest.remove();
@@ -420,15 +432,21 @@ public final class ReelsFragment extends Fragment {
         String reference=asset;
         mediaRequest=Api.run(()->{
             JSONObject access=RpcClient.object("get_reel_access",Api.obj("p_post_id",post.getPostId()));
-            if(!access.optBoolean("available"))return Api.obj("reel_unavailable",true);
-            JSONObject info=SupabaseStorage.info(reference);info.put("authorized_reel",access.optJSONObject("reel"));return info;
-        },new Api.Callback<JSONObject>(){
-            public void success(JSONObject info){
+            if(!access.optBoolean("available"))return new PreparedReel(Api.obj("reel_unavailable",true),null);
+            JSONObject info=SupabaseStorage.info(reference);info.put("authorized_reel",access.optJSONObject("reel"));
+            // Token renewal can perform network I/O and must stay off the UI thread.
+            return new PreparedReel(info,SessionManager.getInstance().access(false));
+        },new Api.Callback<PreparedReel>(){
+            public void success(PreparedReel prepared){
+                JSONObject info=prepared.info;
                 if(!isAdded()||token!=mediaGeneration||position!=activePosition||!pageVisible||adapter==null||position>=adapter.rows.size()||!Objects.equals(post.getPostId(),adapter.rows.get(position).getPostId()))return;
                 try{
                     if(info.optBoolean("reel_unavailable")){ReelsRepository.contentChanged(post.getPostId(),"",0,true);com.example.meetomxh.supabase.PostViewerUpdates.publish(post,true);removeReel(post.getPostId(),true);return;}
                     JSONObject authorized=info.optJSONObject("authorized_reel");if(authorized!=null)reconcileReel(post,authorized);
                     if(!info.optString("mime_type").startsWith("video/")){adapter.failed(position);return;}
+                    Map<String,String> headers=new HashMap<>();headers.put("apikey",SupabaseConfig.KEY);
+                    headers.put("Authorization","Bearer "+prepared.accessToken);
+                    playbackHttp.setDefaultRequestProperties(headers);
                     adapter.attachPlayer(position,player);
                     player.setMediaItem(new MediaItem.Builder().setUri(SupabaseStorage.url(info)).setMediaId(post.getPostId()).build());
                     player.seekTo(savedPlaybackPosition);player.setVolume(muted?0f:1f);player.prepare();
@@ -440,9 +458,8 @@ public final class ReelsFragment extends Fragment {
     }
     private void createPlayer(){
         Map<String,String> headers=new HashMap<>();headers.put("apikey",SupabaseConfig.KEY);
-        try{headers.put("Authorization","Bearer "+SessionManager.getInstance().access(false));}catch(Exception ignored){}
-        DefaultHttpDataSource.Factory http=new DefaultHttpDataSource.Factory().setDefaultRequestProperties(headers).setConnectTimeoutMs(15000).setReadTimeoutMs(30000).setAllowCrossProtocolRedirects(false);
-        DefaultDataSource.Factory data=new DefaultDataSource.Factory(requireContext(),http);
+        playbackHttp=new DefaultHttpDataSource.Factory().setDefaultRequestProperties(headers).setConnectTimeoutMs(15000).setReadTimeoutMs(30000).setAllowCrossProtocolRedirects(false);
+        DefaultDataSource.Factory data=new DefaultDataSource.Factory(requireContext(),playbackHttp);
         player=new ExoPlayer.Builder(requireContext(),new DefaultRenderersFactory(requireContext()).setEnableDecoderFallback(true)).setMediaSourceFactory(new DefaultMediaSourceFactory(data)).build();
         player.setRepeatMode(autoScroll?Player.REPEAT_MODE_OFF:Player.REPEAT_MODE_ONE);player.setVolume(muted?0f:1f);
         playbackMonitor=new ReelPlaybackMonitor(player,new ReelPlaybackMonitor.Callback(){
@@ -478,7 +495,7 @@ public final class ReelsFragment extends Fragment {
     }
     private void releasePlayback(){
         ExoPlayer oldPlayer=player;ReelPlaybackMonitor oldMonitor=playbackMonitor;
-        activePosition=-1;player=null;playbackMonitor=null;
+        activePosition=-1;player=null;playbackMonitor=null;playbackHttp=null;
         if(oldPlayer!=null&&playerListener!=null)oldPlayer.removeListener(playerListener);playerListener=null;
         if(oldMonitor!=null)oldMonitor.release();
         if(oldPlayer!=null){oldPlayer.pause();oldPlayer.clearMediaItems();oldPlayer.release();}
@@ -531,16 +548,7 @@ public final class ReelsFragment extends Fragment {
             h.caption.setOnClickListener(v->{if(p.getMusicMetadata()!=null)com.example.meetomxh.music.MusicAttribution.showLinks(v.getContext(),p.getMusicMetadata());});
             bindCaption(h,p);
             h.captionExpand.setOnClickListener(v->showCaption(p));
-            h.like.setImageResource(p.isLiked() ? R.drawable.ic_like_filled : R.drawable.ic_like_outline);
-            h.like.setColorFilter(p.isLiked() ? 0xFFED4956 : 0xFFFFFFFF);
-            h.likes.setText(count(p.getLikesCount()));
-            h.comments.setText(count(p.getCommentsCount()));
-            h.shares.setText(count(p.getSharesCount()));
-            h.save.setImageResource(p.isSaved() ? R.drawable.ic_bookmark : R.drawable.ic_bookmark_outline);
-            boolean own = SessionManager.getInstance().uid().equals(p.getAuthorUid());
-            h.follow.setEnabled(true);
-            h.follow.setVisibility(own ? View.GONE : View.VISIBLE);
-            h.follow.setText(p.isReelFollowing() ? "Đang theo dõi" : "Theo dõi");
+            bindEngagement(h,p);
             h.progress.setProgress(active&&player.getDuration()>0?(int)(player.getCurrentPosition()*1000/player.getDuration()):0);
             h.progress.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
                 public void onStartTrackingTouch(SeekBar s) { if (player != null && position == activePosition) player.pause(); }
@@ -588,7 +596,7 @@ public final class ReelsFragment extends Fragment {
                 p.setSaved(desired);
                 h.save.setImageResource(desired ? R.drawable.ic_bookmark : R.drawable.ic_bookmark_outline);
                 SavedPostClient.set(p, desired, new Api.Callback<Boolean>() {
-                    public void success(Boolean saved) { mutationPending.remove(p.getPostId());p.setSaved(saved); com.example.meetomxh.supabase.PostViewerUpdates.publish(p,false);notifyPost(p); }
+                    public void success(Boolean saved) { mutationPending.remove(p.getPostId());p.setSaved(saved); com.example.meetomxh.supabase.PostViewerUpdates.publishEngagement(p); }
                     public void error(String e) { mutationPending.remove(p.getPostId());p.setSaved(!desired); notifyPost(p); if(isAdded())Toast.makeText(requireContext(), e, Toast.LENGTH_SHORT).show(); }
                 });
             });
@@ -600,8 +608,28 @@ public final class ReelsFragment extends Fragment {
             h.name.setOnClickListener(profile);
             h.avatar.setOnClickListener(profile);
         }
+        @Override public void onBindViewHolder(@NonNull Holder h,int position,@NonNull List<Object> payloads){
+            if(!payloads.isEmpty()&&h.post==rows.get(position)){
+                boolean engagementOnly=true;
+                for(Object payload:payloads)if(payload!=ENGAGEMENT_PAYLOAD){engagementOnly=false;break;}
+                if(engagementOnly){bindEngagement(h,h.post);return;}
+            }
+            onBindViewHolder(h,position);
+        }
+        private void bindEngagement(Holder h,Post p){
+            h.like.setImageResource(p.isLiked() ? R.drawable.ic_like_filled : R.drawable.ic_like_outline);
+            h.like.setColorFilter(p.isLiked() ? 0xFFED4956 : 0xFFFFFFFF);
+            h.likes.setText(count(p.getLikesCount()));
+            h.comments.setText(count(p.getCommentsCount()));
+            h.shares.setText(count(p.getSharesCount()));
+            h.save.setImageResource(p.isSaved() ? R.drawable.ic_bookmark : R.drawable.ic_bookmark_outline);
+            boolean own = SessionManager.getInstance().uid().equals(p.getAuthorUid());
+            h.follow.setEnabled(true);
+            h.follow.setVisibility(own ? View.GONE : View.VISIBLE);
+            h.follow.setText(p.isReelFollowing() ? "Đang theo dõi" : "Theo dõi");
+        }
         @Override public int getItemCount(){return rows.size();}
-        private void notifyPost(Post post){int index=rows.indexOf(post);if(adapter==this&&index>=0)notifyItemChanged(index);}
+        private void notifyPost(Post post){int index=rows.indexOf(post);if(adapter==this&&index>=0)notifyItemChanged(index,ENGAGEMENT_PAYLOAD);}
         @Override public void onViewAttachedToWindow(@NonNull Holder h){
             super.onViewAttachedToWindow(h);
             if(adapter==this&&list!=null&&playbackMonitor!=null&&h.getBindingAdapterPosition()==activePosition&&pageVisible&&player!=null){attachPlayer(activePosition,player);if(reelSheet==null&&!managingReel&&!userPaused&&!playbackMonitor.hasFailed()&&list.getScrollState()==RecyclerView.SCROLL_STATE_IDLE)player.play();}
@@ -665,8 +693,7 @@ public final class ReelsFragment extends Fragment {
                     mutationPending.remove(p.getPostId());
                     p.setReaction(Dto.nullable(r,"reaction"));
                     p.setLikesCount(r.optInt("reactions_count", p.getLikesCount()));
-                    com.example.meetomxh.supabase.PostViewerUpdates.publish(p,false);
-                    notifyPost(p);
+                    com.example.meetomxh.supabase.PostViewerUpdates.publishEngagement(p);
                 }
                 public void error(String e) {
                     mutationPending.remove(p.getPostId());
