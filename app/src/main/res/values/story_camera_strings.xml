@@ -1,0 +1,13 @@
+<resources>
+    <string name="story_camera_title">Tạo Story</string>
+    <string name="story_camera_subtitle">Ghi lại khoảnh khắc của bạn</string>
+    <string name="story_camera_close">Đóng camera Story</string>
+    <string name="story_camera_preview">Khung xem trước camera Story</string>
+    <string name="story_camera_loading">Đang mở camera…</string>
+    <string name="story_camera_photo">Ảnh</string>
+    <string name="story_camera_change_mode">Chuyển chế độ ảnh hoặc video</string>
+    <string name="story_camera_microphone">Bật micro</string>
+    <string name="story_camera_capture">Chụp</string>
+    <string name="story_camera_flip">Đổi camera</string>
+    <string name="story_camera_hint">Chọn chế độ · Chạm nút giữa để bắt đầu</string>
+</resources>

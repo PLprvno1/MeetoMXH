@@ -81,7 +81,7 @@ public final class StoryViewActivity extends AppCompatActivity {
   request=Api.run(()->{
    List<Story> all=StoryClient.list(null);String targetAuthor=selectedAuthor;
    if(selected!=null){String actual=StoryClient.get(selected).getAuthorId();if(targetAuthor!=null&&!targetAuthor.equals(actual))throw new IllegalStateException("Story không thuộc người đăng vừa chọn. Hãy mở lại tin từ khay Story.");targetAuthor=actual;}
-   if(targetAuthor!=null){List<Story> own=StoryClient.list(targetAuthor);int insertion=all.size();for(int n=0;n<all.size();n++)if(targetAuthor.equals(all.get(n).getAuthorId())){insertion=n;break;}String owner=targetAuthor;all.removeIf(s->owner.equals(s.getAuthorId()));all.addAll(Math.min(insertion,all.size()),own);}
+   if(targetAuthor!=null)all=StoryPlaybackOrder.replaceAuthor(all,StoryClient.list(targetAuthor),targetAuthor,SessionManager.getInstance().uid());
    return all;
   },new Api.Callback<List<Story>>(){
    public void success(List<Story> rows){discoveryLoading=false;if(destroyed)return;groups.clear();for(Story s:rows)if(Objects.equals(s.getId(),selected))selectedAuthor=s.getAuthorId();if(selectedAuthor!=null)expandedAuthors.add(selectedAuthor);LinkedHashMap<String,List<Story>> grouped=new LinkedHashMap<>();for(Story s:rows)if(s.isActive())grouped.computeIfAbsent(s.getAuthorId(),k->new ArrayList<>()).add(s);groups.addAll(grouped.values());

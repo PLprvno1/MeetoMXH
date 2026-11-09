@@ -45,6 +45,7 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<ChatMessageAdapter.
         void onVoiceTap(ChatMessage message);
     }
     private final List<ChatMessage> messages = new ArrayList<>();
+    private final List<String> dayLabels = new ArrayList<>();
     private final List<ChatMessage> allMessages = new ArrayList<>();
     private final String currentUid;
     private OnMessageInteractionListener interactionListener;
@@ -64,6 +65,10 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<ChatMessageAdapter.
         List<ChatMessage> next = new ArrayList<>();
         if (items != null) for (ChatMessage message : items)
             if (message != null && !message.isDeletedFor(currentUid)) next.add(message);
+        List<String> nextDayLabels=new ArrayList<>();
+        java.util.TimeZone zone=java.util.TimeZone.getDefault();
+        for(int i=0;i<next.size();i++)nextDayLabels.add(com.example.meetomxh.ui.ChatDaySeparator.label(
+                i==0?null:next.get(i-1).getCreatedAt(),next.get(i).getCreatedAt(),zone));
         DiffUtil.DiffResult diff = DiffUtil.calculateDiff(new DiffUtil.Callback() {
             @Override public int getOldListSize() { return messages.size(); }
             @Override public int getNewListSize() { return next.size(); }
@@ -73,7 +78,8 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<ChatMessageAdapter.
             @Override public boolean areContentsTheSame(int oldPosition, int newPosition) {
                 ChatMessage oldMessage = messages.get(oldPosition);
                 ChatMessage newMessage = next.get(newPosition);
-                return safeEquals(oldMessage.getText(), newMessage.getText())
+                return safeEquals(dayLabels.get(oldPosition),nextDayLabels.get(newPosition))
+                        && safeEquals(oldMessage.getText(), newMessage.getText())
                         && safeEquals(oldMessage.getSenderId(), newMessage.getSenderId())
                         && oldMessage.isRecalled() == newMessage.isRecalled()
                         && oldMessage.isForwarded() == newMessage.isForwarded()
@@ -94,6 +100,7 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<ChatMessageAdapter.
         });
         messages.clear();
         messages.addAll(next);
+        dayLabels.clear();dayLabels.addAll(nextDayLabels);
         diff.dispatchUpdatesTo(this);
         notifyReadReceiptsChanged();
     }
@@ -149,6 +156,10 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<ChatMessageAdapter.
                 otherParticipantLastReadSeq, latestOutgoingId,
                 safeEquals(messages.get(position).getMessageId(), voiceMessageId), voicePositionMs, voiceDurationMs, voicePlaying,
                 palette,memberNames,groupConversation);
+        holder.binding.tvMessageDay.setText(dayLabels.get(position));
+        holder.binding.tvMessageDay.setVisibility(dayLabels.get(position).isEmpty()?android.view.View.GONE:android.view.View.VISIBLE);
+        holder.binding.tvMessageDay.setTextColor(palette==null
+                ?ContextCompat.getColor(holder.itemView.getContext(),R.color.text_secondary):palette.secondary);
     }
 
     private String latestOutgoingId() {
